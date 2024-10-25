@@ -29,7 +29,7 @@ functions:
                 offset: false
               headers:
                 X-Authorization: true # Required header
-            requestBody:
+            body:
               description: "Request body containing an array of PackageQuery objects."
               content:
                 application/json:
@@ -49,6 +49,7 @@ functions:
                   type: array
                   items:
                     $ref: '#/components/schemas/PackageMetadata'
+              '400':
                 description: "There is missing field(s) in the PackageQuery or it is formed improperly, or is invalid."
               '403':
                 description: "Authentication failed due to invalid or missing AuthenticationToken."
@@ -75,66 +76,72 @@ functions:
             '403':
               description: "Authentication failed due to invalid or missing AuthenticationToken."
   
-getPackageById:
-    handler: handler.getPackageById
+  getPackageById:
+      handler: handler.getPackageById
+      events:
+        - http:
+            path: packages/{id}
+            method: get
+            cors: true
+            request:
+              parameters:
+                paths:  # Path parameters
+                  id:
+                    description: "ID of package to fetch."
+                    required: true
+                    schema:
+                      $ref: '#/components/schemas/PackageID'
+            responses:
+              '200':
+                description: "Return the package. Cncent is required"
+                content:
+                    application/json:
+                      schema:
+                        $ref: '#/components/schemas/Package'
+              '400':
+                description: "There is missing field(s) in the PackageID or it is formed improperly, or is invalid."
+              '403':
+                description: "Authentication failed due to invalid or missing AuthenticationToken."
+              '404':
+                description: "Package does nt exist."
+
+  updatePackage:
+    handler: handler.updatePackage
     events:
       - http:
           path: packages/{id}
-          method: get
+          method: put
           cors: true
           request:
             parameters:
-              paths:  # Path parameters
-                id:
-                  description: "ID of package to fetch."
+              paths:
+                id: 
                   required: true
-                  schema:
-                    $ref: '#/components/schemas/PackageID'
+            headers:
+              X-Authorization: true
           responses:
             '200':
-              description: "Return the package. Cncent is required"
-              content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Package'
+              description: 'Version is updated.'
             '400':
-              description: "There is missing field(s) in the PackageID or it is formed improperly, or is invalid."
+              description: 'There is missing field(s) in the PackageID or it is formed improperly, or is invalid.'
             '403':
-              description: "Authentication failed due to invalid or missing AuthenticationToken."
+              description: 'Authentication failed due to invalid or missing AuthenticationToken.'
             '404':
-              description: "Package does nt exist."
+              description: 'Package does not exist.'
 
-updatePackage:
-  handler: handler.updatePackage
-  events:
-    - http:
-        path: packages/{id}
-        method: put
-        request:
-          parameters:
-            paths:
-              id: 
-                required: true
-          headers:
-            X-Authorization: true
-        cors: true
-        request:
-          schemas:
-            application/json: ${file(models/Package.json)}
-
-deletePackage:
-  handler: handler.deletePackage
-  events:
-    - http:
-        path: packages/{id}
-        method: delete
-        request:
-          parameters:
-            paths:
-              id: true
-          headers:
-            X-Authorization: true
-        cors: true
+  deletePackage:
+    handler: handler.deletePackage
+    events:
+      - http:
+          path: packages/{id}
+          method: delete
+          request:
+            parameters:
+              paths:
+                id: true
+            headers:
+              X-Authorization: true
+          cors: true
 
   authenticate:
     handler: src/handlers/authenticate.handler # Replace with your handler file and function
@@ -148,7 +155,7 @@ deletePackage:
               application/json:
                 # Include the schema for AuthenticationRequest here
                 "$ref": "#/components/schemas/AuthenticationRequest" # Reference to your schema
-            requestBody:
+            body:
               content:
                 application/json:
                   schema:
