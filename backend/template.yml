@@ -8,19 +8,19 @@ Resources:
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: Test
+      StageName: dev
       # DefinitionBody: 
       #   Fn::Transform:
       #     Name: AWS::Include
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
 
-  GetPackageByIdFunction:
+  PackageRetrieve:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/handlers/packageById.handler
+      Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: src/handlers/packageById   # Ensure this points only to the necessary code
+      CodeUri: src/handlers/PackageRetrieve   # Ensure this points only to the necessary code
       MemorySize: 128
       Timeout: 10
       Events:
@@ -28,10 +28,58 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi   # Reference the API defined above
-            Path: /packages/{id}
+            Path: /package/{id}
             Method: get
             RequestParameters:
               method.request.path.id: true
+
+  PackageCreate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: src/handlers/PackageCreate
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi   # Reference the API defined above
+            Path: /package
+            Method: post
+
+  PackageDelete:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: src/handlers/PackageDelete
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/{id}
+            Method: delete
+
+  PackageUpdate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: src/handlers/PackageUpdate
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/{id}
+            Method: put
 
 Outputs:
   ApiUrl:
