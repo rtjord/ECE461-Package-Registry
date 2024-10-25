@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM template for Lambda functions and API Gateway
+
+Resources:
+  # Define the API Gateway
+Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Test
+      # DefinitionBody: 
+      #   Fn::Transform:
+      #     Name: AWS::Include
+      #     Parameters:
+      #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
+
+  GetPackageByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/packageById.handler
+      Runtime: nodejs18.x
+      CodeUri: src/handlers/packageById   # Ensure this points only to the necessary code
+      MemorySize: 128
+      Timeout: 10
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi   # Reference the API defined above
+            Path: /packages/{id}
+            Method: get
+            RequestParameters:
+              method.request.path.id: true
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Test/packages/{id}"
