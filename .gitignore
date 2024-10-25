@@ -1,2 +1,11 @@
 .env
 *.zip
+
+# amplify
+node_modules
+.amplify
+amplify_outputs*
+amplifyconfiguration*
+node_modules/
+
+.aws-sam
