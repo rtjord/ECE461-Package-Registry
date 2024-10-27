@@ -33,7 +33,7 @@ export default function PackageDetail({ params }: PackageDetailProps) {
     try {
       // TODO: Implement package upload functionality
       console.log('Upload package:', params.packageName);
-    } catch (err) {
+    } catch  {
       setError('Failed to upload package. Please try again.');
     }
   };
@@ -42,7 +42,7 @@ export default function PackageDetail({ params }: PackageDetailProps) {
     try {
       // TODO: Implement package update functionality
       console.log('Update package:', params.packageName);
-    } catch (err) {
+    } catch {
       setError('Failed to update package. Please try again.');
     }
   };
@@ -51,7 +51,7 @@ export default function PackageDetail({ params }: PackageDetailProps) {
     try {
       // TODO: Implement rating check functionality
       console.log('Check rating for:', params.packageName);
-    } catch (err) {
+    } catch  {
       setError('Failed to check package rating. Please try again.');
     }
   };
@@ -60,7 +60,7 @@ export default function PackageDetail({ params }: PackageDetailProps) {
     try {
       // TODO: Implement package download functionality
       console.log('Download package:', params.packageName);
-    } catch (err) {
+    } catch {
       setError('Failed to download package. Please try again.');
     }
   };
@@ -83,7 +83,7 @@ export default function PackageDetail({ params }: PackageDetailProps) {
           githubUrl: `https://github.com/example/${params.packageName}`,
         };
         setPackageData(dummyData);
-      } catch (err) {
+      } catch {
         setError('Failed to load package data. Please try again.');
       } finally {
         setIsLoading(false);
