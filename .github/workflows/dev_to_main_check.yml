@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Check PR Base Branch
         run: |
-          if [ "${{ github.event.pull_request.base.ref }}" != "dev" ]; then
+          if [ "${{ github.event.pull_request.head.ref }}" != "dev" ]; then
             echo "Pull requests to main are only allowed from dev branch."
             exit 1
           fi
