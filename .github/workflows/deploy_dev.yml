@@ -1,4 +1,4 @@
-name: Deploy Backend to Dev
+name: Deploy Backend to Dev Environment
 
 on:
   push:
