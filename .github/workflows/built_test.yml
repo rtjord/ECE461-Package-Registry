@@ -1,5 +1,9 @@
-name: build-test
-on: push
+name: Build and Test Frontend and Backend
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
 
 permissions:
   contents: read
