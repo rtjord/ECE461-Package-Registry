@@ -1,0 +1,17 @@
+name: Enforce Dev to Main PRs
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  restrict-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR Base Branch
+        run: |
+          if [ "${{ github.event.pull_request.base.ref }}" != "dev" ]; then
+            echo "Pull requests to main are only allowed from dev branch."
+            exit 1
+          fi
