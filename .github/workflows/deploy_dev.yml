@@ -1,7 +1,9 @@
+name: Deploy Backend to Dev
+
 on:
-    push:
-      branches:
-        - main
+  push:
+    branches:
+      - dev
 
 permissions:
       id-token: write   # This is required for requesting the JWT
