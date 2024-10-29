@@ -3,7 +3,16 @@ import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event) => {
+interface PathParameters {
+    id: string;
+}
+
+interface Event {
+    pathParameters: PathParameters;
+    headers: { [key: string]: string };
+}
+
+export const handler = async (event: Event) => {
     try {
         // Extract packageName and version from pathParameters (format: /package/{id})
         const { id } = event.pathParameters;
@@ -52,7 +61,7 @@ export const handler = async (event) => {
 
         // Extract metadata and other relevant fields
         const { s3Key, url } = result.Item;
-        let fileUrl = s3Key ? `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}` : null;
+        const fileUrl = s3Key ? `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}` : null;
 
         // Build the response body to match the YAML spec
         const responseBody = {
@@ -62,8 +71,8 @@ export const handler = async (event) => {
                 ID: `${packageName}-${version}`,
             },
             data: {
-                Content: fileUrl ? fileUrl : null,
-                URL: url ? url : null,
+                Content: fileUrl,
+                URL: url || null,
             },
         };
 
@@ -76,9 +85,9 @@ export const handler = async (event) => {
             },
             body: JSON.stringify(responseBody),
         };
-    } catch (error) {
+    } catch (error: any) {
         // Log the error and return a 500 Internal Server Error
-        console.log("Error:", error);
+        console.error("Error:", error);
 
         return {
             statusCode: 500, // Internal Server Error

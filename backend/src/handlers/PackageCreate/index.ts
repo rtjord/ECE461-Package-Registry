@@ -1,29 +1,15 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event) => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        // Check for X-Authorization header
-        // const authHeader = event.headers['X-Authorization'];
-        // if (!authHeader) {
-        //     return {
-        //         statusCode: 403, // Forbidden
-        //         headers: {
-        //             'Access-Control-Allow-Origin': '*',
-        //             'Content-Type': 'application/json',
-        //         },
-        //         body: JSON.stringify({
-        //             message: "Missing Authentication Token.",
-        //         }),
-        //     };
-        // }
-
         // Parse the request body
-        const requestBody = JSON.parse(event.body);
+        const requestBody = JSON.parse(event.body || '{}');
 
         // Extract metadata and data from request body
         const { metadata, data } = requestBody;
@@ -42,8 +28,8 @@ export const handler = async (event) => {
             };
         }
 
-        const packageName = metadata.Name;
-        const version = metadata.Version;
+        const packageName: string = metadata.Name;
+        const version: string = metadata.Version;
 
         // Ensure either Content or URL is provided, but not both
         if (!data.Content && !data.URL) {
@@ -80,8 +66,8 @@ export const handler = async (event) => {
                 version: version,
             },
         };
-
         const existingPackage = await dynamoDBClient.send(new GetCommand(getParams));
+
         if (existingPackage.Item) {
             return {
                 statusCode: 409, // Conflict
@@ -96,14 +82,14 @@ export const handler = async (event) => {
         }
 
         // Upload content to S3 if provided, otherwise use the URL
-        let s3Key = null;
-        let fileUrl = null;
+        let s3Key: string | null = null;
+        let fileUrl: string | null = null;
 
         if (data.Content) {
             const fileContent = Buffer.from(data.Content, 'base64');
             s3Key = `uploads/${packageName}-${version}.zip`;
             const s3Params = {
-                Bucket: process.env.S3_BUCKET_NAME,
+                Bucket: process.env.S3_BUCKET_NAME!,
                 Key: s3Key,
                 Body: fileContent,
                 ContentType: 'application/zip',
@@ -151,7 +137,7 @@ export const handler = async (event) => {
             }),
         };
 
-    } catch (error) {
+    } catch (error: any) {
         // Handle any errors during the process
         console.error("Error during POST package:", error);
 

@@ -1,24 +1,10 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, DeleteCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event) => {
+export const handler = async (event: { pathParameters: { id: string }; headers: { [key: string]: string } }) => {
     try {
-        // Check for X-Authorization header
-        // const authHeader = event.headers['X-Authorization'];
-        // if (!authHeader) {
-        //     return {
-        //         statusCode: 403, // Forbidden
-        //         headers: {
-        //             'Access-Control-Allow-Origin': '*',
-        //             'Content-Type': 'application/json',
-        //         },
-        //         body: JSON.stringify({
-        //             message: "Missing Authentication Token.",
-        //         }),
-        //     };
-        // }
 
         // Extract packageName and version from pathParameters (format: /package/{id})
         const { id } = event.pathParameters;
@@ -95,7 +81,7 @@ export const handler = async (event) => {
             },
             body: JSON.stringify({
                 message: "Failed to delete package.",
-                error: error.message,
+                error: (error as Error).message,
             }),
         };
     }
