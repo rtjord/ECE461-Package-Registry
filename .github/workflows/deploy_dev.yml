@@ -19,5 +19,5 @@ jobs:
           with:
             role-to-assume: arn:aws:iam::122610496633:role/GitHubDeployRole
             aws-region: us-east-2
-        - run: cd backend && sam build --use-container --template-file template.yml
+        - run: cd backend && npm run build && sam build --use-container --template-file template.yml
         - run: cd backend && sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --template-file template.yml

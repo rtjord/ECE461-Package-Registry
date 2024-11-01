@@ -9,3 +9,4 @@ amplifyconfiguration*
 node_modules/
 
 .aws-sam
+coverage/

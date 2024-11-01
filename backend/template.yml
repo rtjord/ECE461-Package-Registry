@@ -20,7 +20,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: src/handlers/PackageRetrieve   # Ensure this points only to the necessary code
+      CodeUri: dist/handlers/PackageRetrieve   # Ensure this points only to the necessary code
       MemorySize: 128
       Timeout: 10
       Events:
@@ -38,7 +38,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: src/handlers/PackageCreate
+      CodeUri: dist/handlers/PackageCreate
       MemorySize: 128
       Timeout: 3
       Events:
@@ -54,7 +54,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: src/handlers/PackageDelete
+      CodeUri: dist/handlers/PackageDelete
       MemorySize: 128
       Timeout: 3
       Events:
@@ -70,7 +70,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: src/handlers/PackageUpdate
+      CodeUri: dist/handlers/PackageUpdate
       MemorySize: 128
       Timeout: 3
       Events:
@@ -81,7 +81,23 @@ Resources:
             Path: /package/{id}
             Method: put
 
+  GetTracks:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/GetTracks
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /tracks
+            Method: get
+
 Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Test/packages/{id}"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/dev/"
