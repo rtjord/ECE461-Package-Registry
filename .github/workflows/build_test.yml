@@ -35,7 +35,7 @@ jobs:
             ${{ runner.os }}-frontend-node-
 
       - name: Install dependencies (Frontend)
-        working-directory: frontend  # Change to the frontend directory
+        working-directory: frontend
         run: npm install
 
       - name: Cache Next.js build
