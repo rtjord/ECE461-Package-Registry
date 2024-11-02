@@ -137,7 +137,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             }),
         };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Handle any errors during the process
         console.error("Error during POST package:", error);
 
@@ -149,7 +149,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             },
             body: JSON.stringify({
                 message: 'Failed to upload package.',
-                error: error.message,
+                error: (error instanceof Error) ? error.message : 'Unknown error',
             }),
         };
     }

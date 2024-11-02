@@ -20,7 +20,7 @@ export class urlAnalysis {
             return [0, cleanedUrl];
         } else if (npmPattern.test(url)) {
             try {
-                let repoUrl = await this.getRepositoryUrl(url);
+                const repoUrl = await this.getRepositoryUrl(url);
                 return [0, repoUrl || ''];  // Ensure we return an empty string if repoUrl is null
             } catch (error) {
                 this.logger.logDebug('Error fetching repository URL:', error);
