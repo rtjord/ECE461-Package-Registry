@@ -10,25 +10,42 @@ permissions:
   contents: read    # This is required for actions/checkout
 
 jobs:
-    deploy-dev:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v3
+  deploy-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-        - name: Setup Sam CLI
-          uses: aws-actions/setup-sam@v2
+      - name: Setup Sam CLI
+        uses: aws-actions/setup-sam@v2
 
-        - name: Build
-          working-directory: backend
-          run: tsc && sam build --use-container
-          
-        - name: Configure AWS Credentials for Development Account
-          uses: aws-actions/configure-aws-credentials@v1.7.0
-          with:
-            role-to-assume: arn:aws:iam::122610496633:role/GitHubDeployRole
-            aws-region: us-east-2
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
 
-        - name: Deploy to Development
-          working-directory: backend
-          run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides Stage=dev
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: backend/node_modules
+          key: ${{ runner.os }}-backend-node-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-node-
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Build
+        working-directory: backend
+        run: npm run build && sam build --use-container
+        
+      - name: Configure AWS Credentials for Development Account
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::122610496633:role/GitHubDeployRole
+          aws-region: us-east-2
+
+      - name: Deploy to Development
+        working-directory: backend
+        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides Stage=dev

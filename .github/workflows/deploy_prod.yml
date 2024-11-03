@@ -19,9 +19,26 @@ jobs:
         - name: Setup Sam CLI
           uses: aws-actions/setup-sam@v2
 
+        - name: Set up Node.js
+          uses: actions/setup-node@v3
+          with:
+            node-version: '18.x'
+  
+        - name: Cache Node.js modules
+          uses: actions/cache@v3
+          with:
+            path: backend/node_modules
+            key: ${{ runner.os }}-backend-node-${{ hashFiles('backend/package-lock.json') }}
+            restore-keys: |
+              ${{ runner.os }}-backend-node-
+
+        - name: Install dependencies
+          working-directory: backend
+          run: npm install
+
         - name: Build
           working-directory: backend
-          run: tsc && sam build --use-container
+          run: npm run build && sam build --use-container
 
         - name: Configure AWS Credentials for Production Account
           uses: aws-actions/configure-aws-credentials@v1.7.0
