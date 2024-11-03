@@ -1,4 +1,4 @@
-name: Build and Test Frontend and Backend
+name: Build and Test Frontend
 
 on:
   pull_request:
@@ -9,9 +9,6 @@ on:
 permissions:
   contents: read
   actions: read
-  repository-projects: read
-  issues: read
-  pull-requests: read
 
 jobs:
   build-test:
@@ -26,7 +23,7 @@ jobs:
         with:
           node-version: '18.x'
 
-      - name: Cache Node.js modules (Frontend)
+      - name: Cache Node.js modules
         uses: actions/cache@v3
         with:
           path: frontend/node_modules
@@ -34,9 +31,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-frontend-node-
 
-      - name: Install dependencies (Frontend)
+      - name: Install dependencies
         working-directory: frontend
         run: npm install
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
 
       - name: Cache Next.js build
         uses: actions/cache@v4
@@ -48,26 +49,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('frontend/package-lock.json') }}-
 
-      - name: Build the Frontend
-        working-directory: frontend  # Change to the frontend directory
+      - name: Build
+        working-directory: frontend
         run: npm run build
-
-      - name: Cache Node.js modules (Backend)
-        uses: actions/cache@v3
-        with:
-          path: backend/node_modules
-          key: ${{ runner.os }}-backend-node-${{ hashFiles('backend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-backend-node-
-
-      - name: Install dependencies (Backend)
-        working-directory: backend  # Change to the backend directory
-        run: npm install
-
-      - name: Run Backend Tests
-        working-directory: backend  # Change to the backend directory
-        run: npm run test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LOG_FILE: test.log
-          LOG_LEVEL: 2

@@ -1,0 +1,51 @@
+name: Build and Test Frontend and Backend
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+permissions:
+  contents: read
+  actions: read
+  repository-projects: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: backend/node_modules
+          key: ${{ runner.os }}-backend-node-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-node-
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm install
+      
+      - name: Lint Backend
+        working-directory: backend
+        run: npm run lint
+
+      - name: Run Backend Tests
+        working-directory: backend
+        run: npm run test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOG_FILE: test.log
+          LOG_LEVEL: 2
