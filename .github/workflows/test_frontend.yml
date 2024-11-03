@@ -11,7 +11,7 @@ permissions:
   actions: read
 
 jobs:
-  build-test:
+  test-frontend:
     runs-on: ubuntu-latest
 
     steps:
