@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -19,7 +19,7 @@ interface Package {
   score: number;
 }
 
-export default function SearchResults() {
+function SearchResultsContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q');
   const searchType = searchParams.get('type');
@@ -35,10 +35,8 @@ export default function SearchResults() {
       setError(null);
 
       try {
-        // TODO: Replace with actual API call
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Dummy data for demonstration
         const dummyResults: Package[] = [
           {
             id: '1',
@@ -54,21 +52,6 @@ export default function SearchResults() {
             },
             score: 0.95,
           },
-          {
-            id: '2',
-            name: 'lodash',
-            description: 'A modern JavaScript utility library delivering modularity, performance & extras',
-            version: '4.17.21',
-            author: 'John-David Dalton',
-            metrics: {
-              busFactor: 0.85,
-              correctness: 0.9,
-              rampUp: 0.75,
-              license: 'MIT',
-            },
-            score: 0.88,
-          },
-          // Add more dummy packages as needed
         ];
 
         setPackages(dummyResults);
@@ -97,7 +80,7 @@ export default function SearchResults() {
           <h1 className="text-3xl font-bold mb-4">Search Results</h1>
           <div className="flex flex-col gap-2">
             <p className="text-lg">
-              <span className="font-medium">Search Query:</span> "{query}"
+              <span className="font-medium">Search Query:</span> &ldquo;{query}&rdquo;
             </p>
             <p className="text-gray-600">
               <span className="font-medium">Search Type:</span> {searchType === 'smart' ? 'Smart Search' : 'Regular Search'}
@@ -163,9 +146,6 @@ export default function SearchResults() {
                         <span className="ml-2">{pkg.metrics.license}</span>
                       </div>
                     </div>
-                    <div className="mt-4 text-sm text-gray-500">
-                      Match score: {(pkg.score * 100).toFixed(1)}%
-                    </div>
                   </Link>
                 </li>
               ))}
@@ -174,5 +154,17 @@ export default function SearchResults() {
         )}
       </header>
     </div>
+  );
+}
+
+export default function SearchResults() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+      </div>
+    }>
+      <SearchResultsContent />
+    </Suspense>
   );
 } 
