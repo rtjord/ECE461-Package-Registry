@@ -15,6 +15,29 @@ Resources:
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
 
+  PacakgeMetaDataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: PacakgeMetaData
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id           # Primary key attribute
+          AttributeType: S            # 'S' stands for String
+        - AttributeName: name
+          AttributeType: S
+        - AttributeName: version
+          AttributeType: N              # 'N' for Number
+        - AttributeName: ZipFilePath
+          AttributeType: S
+        - AttributeName: StandaloneCost
+          AttributeType: N
+
+      KeySchema:
+        - AttributeName: id           # Partition key
+          KeyType: HASH               # HASH indicates it's the partition key
+        - AttributeName: version
+          KeyType: RANGE                # Sort key
+
   PackageRetrieve:
     Type: AWS::Serverless::Function
     Properties:
