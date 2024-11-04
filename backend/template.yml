@@ -8,7 +8,7 @@ Resources:
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: dev
+      StageName: !Ref Stage
       # DefinitionBody: 
       #   Fn::Transform:
       #     Name: AWS::Include
@@ -101,3 +101,12 @@ Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/dev/"
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    Description: Stage name

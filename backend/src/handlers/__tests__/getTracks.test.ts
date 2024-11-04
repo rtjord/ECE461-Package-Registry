@@ -1,4 +1,4 @@
-import { handler } from '../handlers/GetTracks';
+import { handler } from '../GetTracks';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 
 describe('Lambda Handler Tests', () => {
@@ -14,7 +14,7 @@ describe('Lambda Handler Tests', () => {
       queryStringParameters: null,
       multiValueQueryStringParameters: null,
       stageVariables: null,
-      requestContext: {} as any,
+      requestContext: {} as APIGatewayProxyEvent['requestContext'],
       resource: ''
     };
 
@@ -40,7 +40,7 @@ describe('Lambda Handler Tests', () => {
       queryStringParameters: null,
       multiValueQueryStringParameters: null,
       stageVariables: null,
-      requestContext: {} as any,
+      requestContext: {} as APIGatewayProxyEvent['requestContext'],
       resource: ''
     };
 

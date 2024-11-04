@@ -30,7 +30,7 @@ export class logger {
             // Attempt to create the file by writing an empty string to it
             try {
                 fs.writeFileSync(logFilePath, '', { flag: 'w' });
-            } catch (err) {
+            } catch {
                 // If the file can't be created, create the directory and try again
                 this.makeLogDir(logFilePath);
             }
@@ -48,13 +48,13 @@ export class logger {
             this.logMessage(LogLevel.SILENT, message);
         }
     }
-    logDebug(message: string, error?: any) {
+    logDebug(message: string, error?: unknown) {
         if (this.logLevel >= LogLevel.DEBUG) {
             this.logMessage(LogLevel.DEBUG, message, error);
         }
     }
 
-    private logMessage(level: LogLevel, message: string, error?: any) {
+    private logMessage(level: LogLevel, message: string, error?: unknown) {
         const now = new Date();
         const dateTime = now.toLocaleDateString() + ' | ' + now.toLocaleTimeString([], { hour12: false });
         let logEntry = `${dateTime} - ${LogLevel[level]} - ${message}`;

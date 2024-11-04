@@ -6,7 +6,7 @@ import { getEnvVars } from '../tools/getEnvVars';
 // Mock Data for Testing
 const url = "https://github.com/phillips302/ECE461";
 
-let fakeRepoData: repoData = {
+const fakeRepoData: repoData = {
     repoName: '',
     repoUrl: url,
     repoOwner: '',
@@ -35,7 +35,7 @@ let fakeRepoData: repoData = {
     }
 };
 
-let fakeWrongRepoData: repoData = {
+const fakeWrongRepoData: repoData = {
     repoName: '',
     repoUrl: "https://pypi.org/",
     repoOwner: '',
