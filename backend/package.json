@@ -24,6 +24,7 @@
     "typescript-eslint": "^8.12.2"
   },
   "dependencies": {
+    "@aws-sdk/types": "^3.679.0",
     "aws-lambda": "^1.0.7",
     "aws-sdk": "^2.1691.0",
     "axios": "^1.7.7",
