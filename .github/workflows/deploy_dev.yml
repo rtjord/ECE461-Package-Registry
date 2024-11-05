@@ -3,7 +3,6 @@ name: Deploy Backend to Development Environment
 on:
   push:
     branches:
-      - prod-env
       - dev
 
 permissions:
