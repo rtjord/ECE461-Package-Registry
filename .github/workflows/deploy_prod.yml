@@ -43,7 +43,7 @@ jobs:
         - name: Configure AWS Credentials for Production Account
           uses: aws-actions/configure-aws-credentials@v1.7.0
           with:
-            role-to-assume: arn:aws:iam::864899856155:oidc-provider/token.actions.githubusercontent.com
+            role-to-assume: arn:aws:iam::864899856155:role/GitHubDeployRole
             aws-region: us-east-2
 
         - name: Deploy to Production
