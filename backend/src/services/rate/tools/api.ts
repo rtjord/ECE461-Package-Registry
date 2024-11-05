@@ -19,7 +19,7 @@ export class npmAnalysis {
                 await fs.access(dir);
                 this.logger.logInfo(`Repository already exists in directory: ${dir}`);
                 return;
-            } catch (err) {
+            } catch {
                 this.logger.logDebug(`Directory does not exist, proceeding to clone...`);
             }
 
@@ -32,7 +32,7 @@ export class npmAnalysis {
                 singleBranch: true,
             });
             this.logger.logInfo(`Repository ${url} cloned in directory ${dir}.`);
-        } catch (err) {
+        } catch {
             this.logger.logDebug(`Error cloning repository for ${url} in ${dir}.`);
         }
     }
@@ -70,7 +70,7 @@ export class npmAnalysis {
                 npmData.documentation.hasExamples = /[Ee]xample/i.test(readmeContent);
                 npmData.documentation.hasDocumentation = /[Dd]ocumentation/i.test(readmeContent) || /[Dd]ocs/i.test(readmeContent);
             }
-        } catch (err) {
+        } catch {
             this.logger.logDebug(`Error retrieving the README content for ${npmData.repoUrl} in ${dir}`);
         }
     } 
@@ -87,7 +87,7 @@ export class npmAnalysis {
             } else {
                 this.logger.logDebug(`No commits found in the repository ${npmData.repoUrl} in dir ${dir}`);
             }
-        } catch (err) {
+        } catch {
             this.logger.logDebug(`Error retrieving the last commit in ${dir} for ${npmData.repoUrl} from lastCommitDate`);
         }
     }
@@ -97,7 +97,7 @@ export class npmAnalysis {
         try {
             await fs.rm(dir, { recursive: true, force: true });
             this.logger.logDebug(`Repository in ${dir} deleted`);
-        } catch (err) {
+        } catch {
             this.logger.logDebug(`Failed to delete repository in ${dir}:`);
         }
     }
@@ -113,7 +113,7 @@ export class npmAnalysis {
     async runTasks(url: string, dest: number): Promise<npmData> {
         const repoDir = './dist/repoDir'+dest.toString();
         this.logger.logDebug(`Running npm tasks in ${repoDir}...`);
-        let npmData: npmData = {
+        const npmData: npmData = {
             repoUrl: url,
             lastCommitDate: '',
             documentation: {
@@ -173,7 +173,7 @@ export class gitAnalysis {
         try {
             const response = await this.axiosInstance.get('/repos/Tridentinus/dummyPackage');
             isValid = response.status === 200;
-        } catch (error) {
+        } catch {
             isValid = false;
         }
         this.logger.logInfo(`Token is valid: ${isValid}`);
@@ -183,7 +183,7 @@ export class gitAnalysis {
     async checkConnection(url: string): Promise<boolean> {
         try {
             // Make a simple request to GitHub to check the rate limit endpoint
-            const response = await this.axiosInstance.get(url);
+            await this.axiosInstance.get(url);
             this.logger.logInfo('Connection successful: status 200');
             return true;
         } catch (error) {
@@ -373,20 +373,22 @@ export class gitAnalysis {
         this.logger.logDebug(`Fetching lines of code for ${gitData.repoName}...`);
 
         // Helper for determining if it's a file or directory
-        const processDirorFile = async (file: any): Promise<number> => {
+        const processDirorFile = async (file: { type: string; download_url?: string; url?: string }): Promise<number> => {
             let result = 0;
             if (file.type === 'file') {
                 try {
-                    const fileResponse = await this.axiosInstance.get(file.download_url);
-                    if (typeof fileResponse.data === 'string') {
-                        result += fileResponse.data.split('\n').length;
+                    if (file.download_url) {
+                        const fileResponse = await this.axiosInstance.get(file.download_url);
+                        if (typeof fileResponse.data === 'string') {
+                            result += fileResponse.data.split('\n').length;
+                        }
                     }
                     return result;
                 } catch (error) {
                     this.logger.logDebug(`Error fetching file content for ${gitData.repoName}: `, error);
                     return result;
                 }
-            } else if (file.type === "dir") {
+            } else if (file.type === "dir" && file.url) {
                 try {
                     const directoryResponse = await this.axiosInstance.get(file.url); // Fetch directory contents
                     const directoryFiles = directoryResponse.data;
@@ -438,7 +440,7 @@ export class gitAnalysis {
     }
 
     async runTasks(url: string): Promise<gitData> { 
-        let gitData: gitData = {
+        const gitData: gitData = {
             repoName: '',
             repoUrl: url,
             repoOwner: '',

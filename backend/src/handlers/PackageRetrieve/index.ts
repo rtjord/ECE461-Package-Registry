@@ -85,10 +85,7 @@ export const handler = async (event: Event) => {
             },
             body: JSON.stringify(responseBody),
         };
-    } catch (error: any) {
-        // Log the error and return a 500 Internal Server Error
-        console.error("Error:", error);
-
+    } catch (error: unknown) {
         return {
             statusCode: 500, // Internal Server Error
             headers: {
@@ -97,7 +94,7 @@ export const handler = async (event: Event) => {
             },
             body: JSON.stringify({
                 message: "Failed to retrieve package.",
-                error: error.message,
+                error: (error instanceof Error) ? error.message : 'Unknown error',
             }),
         };
     }
