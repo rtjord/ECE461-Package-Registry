@@ -51,6 +51,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Construct the response based on whether dependencies should be included
         const response: PackageCostResponse = {};
+        
         const packageItem = packageData.Item as { standaloneCost: number; dependenciesCost?: number };
         if (includeDependencies && packageItem.dependenciesCost !== undefined) {
             response[packageId] = {
