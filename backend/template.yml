@@ -2,8 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: AWS SAM template for Lambda functions and API Gateway
 
-Resources:
-  # Define the API Gateway
+
 Resources:
   MyApi:
     Type: AWS::Serverless::Api
@@ -14,6 +13,28 @@ Resources:
       #     Name: AWS::Include
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
+
+  PackageMetaDataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "package-metadata"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: packageName
+          AttributeType: S
+        - AttributeName: version
+          AttributeType: S
+      KeySchema:
+        - AttributeName: packageName
+          KeyType: HASH
+        - AttributeName: version
+          KeyType: RANGE
+
+  PackageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: "package-files"
+      AccessControl: Private
 
   PackageRetrieve:
     Type: AWS::Serverless::Function
@@ -96,6 +117,25 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /tracks
             Method: get
+  
+  GetCost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/GetCost
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/{id}/cost
+            Method: get
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetaDataTable
 
 Outputs:
   ApiUrl:
