@@ -45,6 +45,33 @@ Resources:
     Properties:
       BucketName: "package-files"
       AccessControl: Private
+  
+  RegistryReset:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/RegistryReset
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path : /reset
+            Method: delete
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: "package-files"
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref PackageMetaDataTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref PackageHistoryTable
+        - S3WritePolicy:
+            BucketName: !Ref PackageBucket
+  
   PackageByNameGet:
     Type: AWS::Serverless::Function
     Properties:
@@ -62,6 +89,9 @@ Resources:
             Method: get
             RequestParameters:
               method.request.path.name: true
+  
+  
+  
   PackageRetrieve:
     Type: AWS::Serverless::Function
     Properties:
