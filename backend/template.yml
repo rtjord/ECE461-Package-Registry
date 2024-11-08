@@ -133,6 +133,9 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}/cost
             Method: get
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetaDataTable
 
 Outputs:
   ApiUrl:
