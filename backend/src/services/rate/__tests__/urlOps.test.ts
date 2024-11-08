@@ -89,12 +89,12 @@ describe('urlAnalysis', () => {
                             handler(); // End event
                         }
                     })
-                } as any;
+                } as unknown;
                 callback(res);
                 return { on: jest.fn() }; // Simulate request.on('error')
             });
     
-            const analysis = new urlAnalysis({} as any);
+            const analysis = new urlAnalysis(mockEnvVars);
             const result = await analysis.getRepositoryUrl(mockUrl);
             expect(result).toBe('https://github.com/expressjs/express');
         });

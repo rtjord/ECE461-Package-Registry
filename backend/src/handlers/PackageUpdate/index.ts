@@ -1,33 +1,39 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event) => {
-    try {
-        // Check for X-Authorization header
-        // const authHeader = event.headers['X-Authorization'];
-        // if (!authHeader) {
-        //     return {
-        //         statusCode: 403, // Forbidden
-        //         headers: {
-        //             'Access-Control-Allow-Origin': '*',
-        //             'Content-Type': 'application/json',
-        //         },
-        //         body: JSON.stringify({
-        //             message: "Missing Authorization.",
-        //         }),
-        //     };
-        // }
+interface PathParameters {
+    id: string;
+}
 
+interface RequestBody {
+    metadata: {
+        Name: string;
+        Version: string;
+    };
+    data: {
+        Content?: string;
+        URL?: string;
+    };
+}
+
+interface Event {
+    pathParameters: PathParameters;
+    body: string;
+    headers: { [key: string]: string };
+}
+
+export const handler = async (event: Event) => {
+    try {
         // Extract packageName and version from the path (assuming package id is passed in the path)
         const { id } = event.pathParameters;
         const [packageName, version] = id.split(':');
 
         // Parse request body
-        const requestBody = JSON.parse(event.body);
+        const requestBody: RequestBody = JSON.parse(event.body);
         const { metadata, data } = requestBody;
 
         // Validate required fields in the request body
@@ -59,8 +65,8 @@ export const handler = async (event) => {
             };
         }
 
-        let s3Key = null;
-        let fileUrl = null;
+        let s3Key: string | null = null;
+        let fileUrl: string | null = null;
 
         if (data.Content) {
             // If Content is provided, decode the base64-encoded file content
@@ -69,7 +75,7 @@ export const handler = async (event) => {
             // Upload file to S3 using packageName and version in the S3 key
             s3Key = `uploads/${packageName}-${version}.zip`;
             const s3Params = {
-                Bucket: process.env.S3_BUCKET_NAME,
+                Bucket: process.env.S3_BUCKET_NAME as string,
                 Key: s3Key,
                 Body: fileContent,
                 ContentType: 'application/zip',
@@ -97,7 +103,7 @@ export const handler = async (event) => {
                 ':url': fileUrl, // Either URL or S3 URL
                 ':s3Key': s3Key, // S3 key if uploaded, null otherwise
             },
-            ReturnValues: 'UPDATED_NEW',
+            ReturnValues: 'UPDATED_NEW' as const,
         };
 
         await dynamoDBClient.send(new UpdateCommand(updateParams));
@@ -122,7 +128,7 @@ export const handler = async (event) => {
             },
             body: JSON.stringify({
                 message: 'Failed to update package.',
-                error: error.message,
+                error: (error as Error).message,
             }),
         };
     }

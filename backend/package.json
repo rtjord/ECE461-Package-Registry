@@ -7,18 +7,29 @@
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
     "test": "npx jest --coverage",
-    "run": "node dist/index.js"
+    "lint": "npx eslint"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@aws-sdk/types": "^3.679.0",
+    "@eslint/js": "^9.14.0",
+    "@types/aws-lambda": "^8.10.145",
     "@types/jest": "^29.5.13",
+    "eslint": "^9.14.0",
+    "globals": "^15.11.0",
     "jest": "^29.7.0",
     "rimraf": "^5.0.10",
     "ts-jest": "^29.2.5",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.12.2"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.682.0",
+    "@aws-sdk/client-s3": "^3.685.0",
+    "@aws-sdk/lib-dynamodb": "^3.685.0",
+    "aws-lambda": "^1.0.7",
+    "aws-sdk": "^2.1691.0",
     "axios": "^1.7.7",
     "bluebird": "^3.7.2",
     "commander": "^12.1.0",

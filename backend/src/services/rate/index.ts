@@ -58,14 +58,14 @@ program
     
                 (stdout.split('\n')).forEach(element => {
                     if (element.includes("All files")){
-                        let coverageArray = element.split('|');
+                        const coverageArray = element.split('|');
                         coverage = parseInt(coverageArray[coverageArray.length - 2]).toString().trim();
                     }
                 });
     
                 stderr.split('\n').forEach(element => {
                     if (element.includes("Tests:")){
-                        let testMatches = element.match(/(\d+) passed, (\d+) total/);
+                        const testMatches = element.match(/(\d+) passed, (\d+) total/);
                         if(testMatches) {
                             passedTests = testMatches[1];
                             totalTests = testMatches[2];
