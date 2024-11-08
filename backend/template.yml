@@ -101,23 +101,6 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: put
-
-  GetTracks:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: index.handler
-      Runtime: nodejs18.x
-      CodeUri: dist/handlers/GetTracks
-      MemorySize: 128
-      Timeout: 3
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /tracks
-            Method: get
-  
   GetCost:
     Type: AWS::Serverless::Function
     Properties:
@@ -136,6 +119,41 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetaDataTable
+            
+  PackageByRegEx:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackageByRegEx
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/byRegEx
+            Method: post
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetaDataTable
+
+  GetTracks:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/GetTracks
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /tracks
+            Method: get
 
 Outputs:
   ApiUrl:
