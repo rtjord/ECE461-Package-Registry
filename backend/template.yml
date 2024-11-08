@@ -104,7 +104,7 @@ Resources:
         ApiEvent:
           Type: Api
           Properties:
-            RestApiId: !Ref MyApi   # Reference the API defined above
+            RestArpiId: !Ref MyApi   # Reference the API defined above
             Path: /package/{id}
             Method: get
             RequestParameters:
