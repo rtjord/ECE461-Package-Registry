@@ -45,7 +45,23 @@ Resources:
     Properties:
       BucketName: "package-files"
       AccessControl: Private
-
+  PackageByNameGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackageByNameGet
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/byName/{name}
+            Method: get
+            RequestParameters:
+              method.request.path.name: true
   PackageRetrieve:
     Type: AWS::Serverless::Function
     Properties:

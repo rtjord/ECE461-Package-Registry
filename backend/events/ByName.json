@@ -1,0 +1,11 @@
+ 
+  {
+    "pathParameters": {
+      "name": "example1"
+    },
+    "httpMethod": "GET",
+    "requestContext": {
+      "resourcePath": "/package/byName/{name}",
+      "httpMethod": "GET"
+    }
+}
