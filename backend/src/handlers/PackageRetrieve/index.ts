@@ -34,8 +34,8 @@ export const handler = async (event:any) => {
         }
 
         const { s3Key, url } = result.Item;
-        let fileUrl = null;
         let base64Content = null;
+        let fileUrl = null;
 
         if (s3Key) {
             try {
@@ -50,6 +50,7 @@ export const handler = async (event:any) => {
                     base64Content = fileBuffer.toString('base64');
                     fileUrl = `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
                 } else {
+                    fileUrl = `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
                     throw new Error('S3 object body is not an async iterable or is undefined');
                 }
             } catch (error) {
