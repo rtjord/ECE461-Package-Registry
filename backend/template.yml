@@ -34,7 +34,7 @@ Resources:
     Properties:
       TableName: "PackageHistory"
       BillingMode: PAY_PER_REQUEST
-      AttributeDefinitons:
+      AttributeDefinitions:
         - AttributeName: packageName
           AttributeType: S
       KeySchema:
