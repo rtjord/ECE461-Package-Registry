@@ -26,8 +26,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
 
     const params = {
-        TableName: 'package-metadata',
-        ProjectionExpression: 'Name, Version, PackageID', // Retrieve these attributes
+        TableName: 'PackageTable', // Name of the DynamoDB table
+        ProjectionExpression: 'PackageName, Version, ID', // Retrieve these attributes
     };
     
     console.log('Scanning the table for packages with the provided regular expression...'); // Log a message to indicate that the table is being scanned for packages
@@ -35,9 +35,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const packages = result.Items ? result.Items.map(item => unmarshall(item)) : [];
 
     // Filter the packages based on the provided regular expression to find matching package names
-    const matchingPackages = packages.filter((pkg) => new RegExp(RegEx, 'i').test(pkg.packageName));
+    const matchingPackages = packages.filter((pkg) => new RegExp(RegEx, 'i').test(pkg.Name));
+    const packageMetadataList: PackageMetadata[] = matchingPackages.map((pkg) => ({ Name: pkg.PackageName, Version: pkg.Version, ID: pkg.ID }));
 
-    // Check if there are no matching packages; if none are found, return a 404 response
+    // If there are no matching packages, return a 404 response
     if (matchingPackages.length === 0) {
       return {
         statusCode: 404,
@@ -48,7 +49,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Return a 200 response with the list of matching packages
     return {
       statusCode: 200,
-      body: JSON.stringify(matchingPackages),
+      body: JSON.stringify(packageMetadataList),
     };
   } catch (error) {
     console.error('Error processing request:', error); // Log any errors that occur during the request processing for debugging purposes

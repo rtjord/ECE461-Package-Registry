@@ -14,25 +14,27 @@ Resources:
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
 
-  PackageTable:
+  PackageMetaDataTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: PackageTable
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: Name
+        - AttributeName: PackageName
           AttributeType: S
         - AttributeName: Version
           AttributeType: S
+        - AttributeName: ID
+          AttributeType: S
       KeySchema:
-        - AttributeName: Name
+        - AttributeName: PackageName
           KeyType: HASH # Partition Key
         - AttributeName: Version
           KeyType: RANGE # Sort Key
       GlobalSecondaryIndexes:
-        - IndexName: PackageIDIndex
+        - IndexName: IDIndex
           KeySchema:
-            - AttributeName: PackageID
+            - AttributeName: ID
               KeyType: HASH
           Projection:
             ProjectionType: ALL
@@ -55,12 +57,12 @@ Resources:
       TableName: PackageHistoryTable
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: PackageID
+        - AttributeName: ID
           AttributeType: S
         - AttributeName: Date
           AttributeType: S
       KeySchema:
-        - AttributeName: PackageID
+        - AttributeName: ID
           KeyType: HASH # Partition key
         - AttributeName: Date
           KeyType: RANGE # Sort key
@@ -71,10 +73,10 @@ Resources:
       TableName: PackageRatingTable
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: PackageID
+        - AttributeName: ID
           AttributeType: S
       KeySchema:
-        - AttributeName: PackageID
+        - AttributeName: ID
           KeyType: HASH # Partition key
 
   PackageBucket:
@@ -100,6 +102,9 @@ Resources:
             Method: get
             RequestParameters:
               method.request.path.id: true
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetaDataTable
 
   PackageCreate:
     Type: AWS::Serverless::Function
@@ -148,6 +153,7 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: put
+
   GetCost:
     Type: AWS::Serverless::Function
     Properties:
