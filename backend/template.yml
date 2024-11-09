@@ -33,7 +33,7 @@ Resources:
   PackageBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: "package-files"
+      BucketName: "package-files-${AWS::AccountId}"
       AccessControl: Private
 
   PackageRetrieve:
