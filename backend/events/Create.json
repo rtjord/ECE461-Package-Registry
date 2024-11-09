@@ -1,0 +1,12 @@
+{
+    "body": "{\"metadata\":{\"Name\":\"Underscore\",\"Version\":\"1.0.0\"},\"data\":{\"Content\":\"<base64_encoded_content>\",\"PackageRating\":{\"RampUp\":0.7,\"Correctness\":0.8,\"BusFactor\":0.9,\"ResponsiveMaintainer\":0.85,\"LicenseScore\":0.95,\"GoodPinningPractice\":0.8,\"PullRequest\":0.9,\"NetScore\":0.85}},\"user\":{\"name\":\"John Doe\",\"isAdmin\":true}}",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "requestContext": {
+      "httpMethod": "POST",
+      "path": "/package"
+    }
+  }
+  
+  
