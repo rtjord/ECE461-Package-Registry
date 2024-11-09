@@ -1,0 +1,10 @@
+{
+    "pathParameters": {
+      "id": "underscore:1.0.0"
+    },
+    "requestContext": {
+      "httpMethod": "DELETE",
+      "path": "/package/underscore:1.0.0"
+    }
+  }
+  
