@@ -1,6 +1,8 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { getPackageById } from '../../utils';
+import { APIGatewayProxyEvent } from 'aws-lambda';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -21,18 +23,25 @@ interface RequestBody {
     };
 }
 
-interface Event {
-    pathParameters: PathParameters;
-    body: string;
-    headers: { [key: string]: string };
-}
 
-export const handler = async (event: Event) => {
+export const handler = async (event: APIGatewayProxyEvent) => {
     try {
         // Extract packageName and version from the path (assuming package id is passed in the path)
-        const { id } = event.pathParameters;
-        const [packageName, version] = id.split(':');
-
+        const id = event.pathParameters?.id;
+        
+        if (!id || !event.body) { 
+            return {
+                statusCode: 400, // Bad Request
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: "Missing ID.",
+                }),
+            };
+        }
+        
         // Parse request body
         const requestBody: RequestBody = JSON.parse(event.body);
         const { metadata, data } = requestBody;
@@ -47,24 +56,18 @@ export const handler = async (event: Event) => {
             };
         }
 
-        // Check if the package exists
-        const getParams = {
-            TableName: 'PackageMetaData',
-            Key: {
-                packageName: packageName,
-                version: version,
-            },
-        };
-
-        const existingPackage = await dynamoDBClient.send(new GetCommand(getParams));
-        if (!existingPackage.Item) {
+        const existingPackage = await getPackageById(id);
+        if (!existingPackage) {
             return {
                 statusCode: 404,
                 body: JSON.stringify({
-                    message: `Package ${packageName} version ${version} not found.`,
+                    message: `Package not found.`,
                 }),
             };
         }
+
+        const packageName = metadata.Name;
+        const version = metadata.Version;
 
         let s3Key: string | null = null;
         let fileUrl: string | null = null;

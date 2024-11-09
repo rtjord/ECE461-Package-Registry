@@ -1,31 +1,36 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'; // Ensure this line is present
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
 // Initialize DynamoDB client
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event:any) => {
+export const handler = async (event: any) => {
     try {
-        const {name} = event.pathParameters;
+        const { name } = event.pathParameters;
 
         if (!name) {
             return {
                 statusCode: 400,
                 headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Package name is ${name}.` }),
+                body: JSON.stringify({ message: 'Package name is required.' }),
             };
         }
 
-        const getParams = {
+        const queryParams = {
             TableName: 'PackageHistory',
-            Key: {
-                PackageName: name,
+            IndexName: 'PackageNameIndex',  // GSI index name on PackageName
+            KeyConditionExpression: '#pkgName = :nameValue',
+            ExpressionAttributeNames: {
+                '#pkgName': 'PackageName',
+            },
+            ExpressionAttributeValues: {
+                ':nameValue': name,
             },
         };
 
-        const result = await dynamoDBClient.send(new GetCommand(getParams));
+        const result = await dynamoDBClient.send(new QueryCommand(queryParams));
 
-        if (!result.Item || !result.Item.history) {
+        if (!result.Items || result.Items.length === 0) {
             return {
                 statusCode: 404,
                 headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
@@ -36,7 +41,7 @@ export const handler = async (event:any) => {
         return {
             statusCode: 200,
             headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-            body: JSON.stringify(result.Item.history),
+            body: JSON.stringify(result.Items),
         };
     } catch (error) {
         console.error('Error fetching package history:', error);

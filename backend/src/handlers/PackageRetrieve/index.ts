@@ -1,39 +1,37 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-
+import { getPackageById } from '../../utils';
+import { APIGatewayProxyEvent } from 'aws-lambda';
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event:any) => {
+export const handler = async (event: APIGatewayProxyEvent) => {
     try {
-        const { id } = event.pathParameters;
-        const [packageName, version] = id.split(':');
+        const id = event.pathParameters?.id;
 
-        if (!packageName || !version) {
+        if (!id) {
             return {
                 statusCode: 400,
                 headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: "Both packageName and version are required." }),
             };
         }
+        
+        const existingPackage = await getPackageById(id);
 
-        const dynamoDBParams = {
-            TableName: 'PackageMetaData',
-            Key: { packageName, version },
-        };
-
-        const result = await dynamoDBClient.send(new GetCommand(dynamoDBParams));
-
-        if (!result.Item) {
+        if (!existingPackage) {
             return {
                 statusCode: 404,
                 headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Package ${packageName} version ${version} not found.` }),
+                body: JSON.stringify({ message: `Package not found.` }),
             };
         }
 
-        const { s3Key, url } = result.Item;
+        const packageName = existingPackage.PackageName;
+        const version = existingPackage.Version;
+        const s3Key = existingPackage.s3Key;
+        const url = existingPackage.URL;
         let base64Content = null;
         let fileUrl = null;
         if (s3Key) {

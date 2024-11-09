@@ -81,3 +81,14 @@ export type EnumerateOffset = string; // Offset for pagination, e.g., "1"
 export interface PackageRegEx {
   RegEx: string; // Regular expression over package names and READMEs
 }
+
+export interface PackageTableRow {
+  PackageName: PackageName;
+  Version: SemverRange;
+  ID: PackageID;
+  URL?: string; // Package URL
+  s3Key?: string; // S3 key for package
+  debloat?: boolean; // Remove unnecessary bloat
+  JSProgram?: string; // JavaScript program for sensitive modules
+  standaloneCost: number; // Standalone cost, excluding dependencies
+}

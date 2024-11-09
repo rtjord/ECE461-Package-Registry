@@ -20,22 +20,22 @@ Resources:
       TableName: PackageTable
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: PackageName
-          AttributeType: S
-        - AttributeName: Version
-          AttributeType: S
         - AttributeName: ID
           AttributeType: S
-      KeySchema:
         - AttributeName: PackageName
-          KeyType: HASH # Partition Key
+          AttributeType: S
         - AttributeName: Version
-          KeyType: RANGE # Sort Key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ID
+          KeyType: HASH  # Partition Key
       GlobalSecondaryIndexes:
-        - IndexName: IDIndex
+        - IndexName: PackageNameVersionIndex
           KeySchema:
-            - AttributeName: ID
-              KeyType: HASH
+            - AttributeName: PackageName
+              KeyType: HASH  # Partition Key for the GSI
+            - AttributeName: Version
+              KeyType: RANGE  # Sort Key for the GSI
           Projection:
             ProjectionType: ALL
 

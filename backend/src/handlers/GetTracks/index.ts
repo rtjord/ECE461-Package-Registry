@@ -1,6 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
     // Assuming the data is retrieved from some service or database

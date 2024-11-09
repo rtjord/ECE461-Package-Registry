@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { PackageTableRow } from '../../interfaces';
 
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
@@ -21,20 +22,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, "There is missing field(s) in the PackageID");
         }
 
-        // Split the id to extract packageName and version
-        const [packageName, version] = packageId.split(':');
-        if (!packageName || !version) {
-            return createErrorResponse(404, "Package does not exist.");
-        }
-
         // Retrieve the dependency query parameter
         const includeDependencies = event.queryStringParameters?.dependency === 'true';
 
         // Fetch the package data from DynamoDB
-        const packageData = await fetchPackageData(packageName, version);
+        const packageData = await getPackageById(packageId);
         if (!packageData) {
             return createErrorResponse(404, "Package does not exist.");
         }
+        
         // Construct the response
         const response = constructResponse(packageId, packageData, includeDependencies);
         
@@ -65,19 +61,24 @@ const createSuccessResponse = (response: PackageCostResponse): APIGatewayProxyRe
     };
 };
 
-// Function to fetch package data from DynamoDB
-const fetchPackageData = async (packageName: string, version: string) => {
-    const dynamoDBParams = {
-        TableName: 'package-metadata',
+async function getPackageById(packageId: string) {
+    const params = {
+        TableName: "PackageTable",         // Your table name
         Key: {
-            packageName: packageName,
-            version: version,
-        },
+            ID: packageId                  // Primary key attribute
+        }
     };
 
-    const result = await dynamoDBClient.send(new GetCommand(dynamoDBParams));
-    return result.Item as { standaloneCost: number; dependenciesCost?: number } | undefined;
-};
+    const command = new GetCommand(params);
+    const result = await dynamoDBClient.send(command);
+
+    // Check if the item was found
+    if (!result.Item) {
+        return null;
+    }
+    return result.Item as PackageTableRow;
+}
+
 
 // Function to construct the response
 const constructResponse = (packageId: string, packageItem: { standaloneCost: number; dependenciesCost?: number }, includeDependencies: boolean): PackageCostResponse => {

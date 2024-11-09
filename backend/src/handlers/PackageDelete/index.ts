@@ -1,19 +1,19 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand, GetCommand, QueryCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { PackageTableRow } from '../../interfaces';
+import { getPackageById } from '../../utils';
 
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 const BATCH_SIZE = 25;
 
-export const handler = async (event: { pathParameters: { id: string }; headers: { [key: string]: string } }) => {
+export const handler = async (event: APIGatewayProxyEvent) => {
     try {
         // Extract packageName and version from pathParameters (format: /package/{id})
-        const { id } = event.pathParameters;
-
-        // Split the id to extract packageName and version
-        const [packageName, version] = id.split(':');
+        const id = event.pathParameters?.id;
 
         // Validate the packageName and version
-        if (!packageName || !version) {
+        if (!id) {
             return {
                 statusCode: 400, // Bad Request
                 headers: {
@@ -21,22 +21,13 @@ export const handler = async (event: { pathParameters: { id: string }; headers: 
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: "Both packageName and version are required.",
+                    message: "Missing ID.",
                 }),
             };
         }
 
-        // Check if the package exists before attempting to delete it
-        const getParams = {
-            TableName: 'PackageMetaData',
-            Key: {
-                packageName: packageName,
-                version: version,
-            },
-        };
-
-        const existingPackage = await dynamoDBClient.send(new GetCommand(getParams));
-        if (!existingPackage.Item) {
+        const existingPackage = await getPackageById(id);
+        if (!existingPackage) {
             return {
                 statusCode: 404, // Not Found
                 headers: {
@@ -44,11 +35,13 @@ export const handler = async (event: { pathParameters: { id: string }; headers: 
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: `Package ${packageName} version ${version} not found.`,
+                    message: `Package not found.`,
                 }),
             };
         }
 
+        const packageName = existingPackage.PackageName;
+        const version = existingPackage.Version;
         // Proceed to delete the package from PackageMetaData table
         const deleteParams = {
             TableName: 'PackageMetaData',

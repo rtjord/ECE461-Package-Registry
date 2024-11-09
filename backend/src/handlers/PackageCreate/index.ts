@@ -1,11 +1,17 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { v5 as uuidv5 } from 'uuid';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+
+function generatePackageUUID(packageName: string, version: string): string {
+    const namespace = '12345678-1234-5678-1234-567812345678';  // Example namespace UUID
+    return uuidv5(`${packageName}:${version}`, namespace);
+}
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
@@ -70,35 +76,37 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        if (data.PackageRating) {
-            const nonLatencyFields = [
-                'RampUp',
-                'Correctness',
-                'BusFactor',
-                'ResponsiveMaintainer',
-                'LicenseScore',
-                'GoodPinningPractice',
-                'PullRequest',
-                'NetScore'
-            ];
+        // if (data.PackageRating) {
+        //     const nonLatencyFields = [
+        //         'RampUp',
+        //         'Correctness',
+        //         'BusFactor',
+        //         'ResponsiveMaintainer',
+        //         'LicenseScore',
+        //         'GoodPinningPractice',
+        //         'PullRequest',
+        //         'NetScore'
+        //     ];
 
-            for (const field of nonLatencyFields) {
-                if (data.PackageRating[field] === undefined || data.PackageRating[field] < 0.5) {
-                    return {
-                        statusCode: 424,
-                        headers: {
-                            'Access-Control-Allow-Origin': '*',
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ message: `Package is not uploaded due to the disqualified rating. The field '${field}' has a value below 0.5 or is missing.` }),
-                    };
-                }
-            }
-        }
+        //     for (const field of nonLatencyFields) {
+        //         if (data.PackageRating[field] === undefined || data.PackageRating[field] < 0.5) {
+        //             return {
+        //                 statusCode: 424,
+        //                 headers: {
+        //                     'Access-Control-Allow-Origin': '*',
+        //                     'Content-Type': 'application/json',
+        //                 },
+        //                 body: JSON.stringify({ message: `Package is not uploaded due to the disqualified rating. The field '${field}' has a value below 0.5 or is missing.` }),
+        //             };
+        //         }
+        //     }
+        // }
         let fileUrl: string | null = null;
         let s3Key = null;
+        let fileSizeInMB = 0;
         if (data.Content) {
             const fileContent = Buffer.from(data.Content, 'base64');
+            fileSizeInMB = fileContent.length / (1024 * 1024);
             s3Key = `uploads/${packageName}-${version}.zip`;
             const s3Params = {
                 Bucket: process.env.S3_BUCKET_NAME,
@@ -112,18 +120,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             fileUrl = data.URL;
         }
 
+        const packageUUID = generatePackageUUID(packageName, version);
         const dynamoDBParams = {
-            TableName: 'PackageMetaData',
+            TableName: 'PackageTable',
             Item: {
-                packageName: packageName,
-                version: version,
-                id: `${packageName}-${version}`,
-                url: fileUrl,
+                PackageName: packageName,
+                Version: version,
+                ID: packageUUID,
+                URL: fileUrl,
                 s3Key: s3Key ? s3Key : null,
-                dependencies: data.dependencies || [],
-                PackageRating: data.PackageRating || null,
-                JSProgram: data.JSProgram || null,
                 debloat: data.debloat || null,
+                JSProgram: data.JSProgram || null,
+                standaloneCost: fileSizeInMB,
             },
         };
 
@@ -136,7 +144,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             PackageMetadata: {
                 Name: packageName,
                 Version: version,
-                ID: `${packageName}-${version}`,
+                ID: packageUUID,
             },
             Action: 'CREATE',
         };
@@ -164,7 +172,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 metadata: {
                     Name: packageName,
                     Version: version,
-                    ID: `${packageName}-${version}`,
+                    ID: packageUUID,
                 },
                 data: {
                     Content: fileUrl,
