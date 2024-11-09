@@ -27,7 +27,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     const params = {
         TableName: 'package-metadata',
-        ProjectionExpression: 'packageName, version', // Retrieve these attributes
+        ProjectionExpression: 'Name, Version, PackageID', // Retrieve these attributes
     };
     
     console.log('Scanning the table for packages with the provided regular expression...'); // Log a message to indicate that the table is being scanned for packages

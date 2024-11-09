@@ -14,21 +14,68 @@ Resources:
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
 
-  PackageMetaDataTable:
+  PackageTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: "package-metadata"
+      TableName: PackageTable
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: packageName
+        - AttributeName: Name
           AttributeType: S
-        - AttributeName: version
+        - AttributeName: Version
           AttributeType: S
       KeySchema:
-        - AttributeName: packageName
-          KeyType: HASH
-        - AttributeName: version
-          KeyType: RANGE
+        - AttributeName: Name
+          KeyType: HASH # Partition Key
+        - AttributeName: Version
+          KeyType: RANGE # Sort Key
+      GlobalSecondaryIndexes:
+        - IndexName: PackageIDIndex
+          KeySchema:
+            - AttributeName: PackageID
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+  
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: UserTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: name
+          KeyType: HASH # Partition key
+
+  PackageHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: PackageHistoryTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PackageID
+          AttributeType: S
+        - AttributeName: Date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PackageID
+          KeyType: HASH # Partition key
+        - AttributeName: Date
+          KeyType: RANGE # Sort key
+
+  PackageRatingTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: PackageRatingTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PackageID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PackageID
+          KeyType: HASH # Partition key
 
   PackageBucket:
     Type: AWS::S3::Bucket
