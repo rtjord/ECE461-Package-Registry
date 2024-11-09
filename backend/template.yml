@@ -133,7 +133,7 @@ Resources:
 
       Environment:
         Variables:
-          S3_BUCKET_NAME: "package-files-dev"
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -168,7 +168,7 @@ Resources:
             Method: put
       Environment:
         Variables:
-          S3_BUCKET_NAME: "package-files-dev"
+          S3_BUCKET_NAME: !sub "package-files-${Stage}"
 
   GetTracks:
     Type: AWS::Serverless::Function
