@@ -9,12 +9,10 @@ const dynamoDb = new DynamoDB({});
 // Define the Lambda handler function that processes incoming API Gateway requests
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
-    console.log('Received event:', event); // Log the incoming event for debugging purposes
 
     // Parse the request body or default to an empty object if it's undefined
     const parsedBody = event.body && typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
-    console.log('Parsed request body:', parsedBody); // Log the parsed request body for debugging purposes
     // Check if the body has a valid RegEx field
     if (!parsedBody.RegEx) {
         return {
@@ -30,7 +28,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         ProjectionExpression: 'PackageName, Version, ID', // Retrieve these attributes
     };
     
-    console.log('Scanning the table for packages with the provided regular expression...'); // Log a message to indicate that the table is being scanned for packages
     const result = await dynamoDb.scan(params);
     const packages = result.Items ? result.Items.map(item => unmarshall(item)) : [];
 

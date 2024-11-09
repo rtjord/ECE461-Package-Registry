@@ -38,18 +38,6 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-  
-  UserTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: UserTable
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: name
-          AttributeType: S
-      KeySchema:
-        - AttributeName: name
-          KeyType: HASH # Partition key
 
   PackageHistoryTable:
     Type: AWS::DynamoDB::Table
@@ -79,25 +67,81 @@ Resources:
         - AttributeName: ID
           KeyType: HASH # Partition key
 
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: UserTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: name
+          KeyType: HASH
+
   PackageBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "package-files-${Stage}"
       AccessControl: Private
-
+  
+  RegistryReset:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/RegistryReset
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path : /reset
+            Method: delete
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref PackageMetaDataTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref PackageHistoryTable
+        - S3WritePolicy:
+            BucketName: !Ref PackageBucket
+  
+  PackageByNameGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackageByNameGet
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/byName/{name}
+            Method: get
+            RequestParameters:
+              method.request.path.name: true
+  
   PackageRetrieve:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: dist/handlers/PackageRetrieve   # Ensure this points only to the necessary code
+      CodeUri: dist/handlers/PackageRetrieve
       MemorySize: 128
       Timeout: 10
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            RestApiId: !Ref MyApi   # Reference the API defined above
+            RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: get
             RequestParameters:
@@ -121,6 +165,14 @@ Resources:
             RestApiId: !Ref MyApi   # Reference the API defined above
             Path: /package
             Method: post
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetaDataTable
+        - DynamoDBWritePolicy:
+            TableName: !Ref PackageHistoryTable
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -153,6 +205,9 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: put
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
   GetCost:
     Type: AWS::Serverless::Function

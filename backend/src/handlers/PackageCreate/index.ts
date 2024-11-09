@@ -1,38 +1,15 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        // Parse the request body
-        const requestBody = JSON.parse(event.body || '{}');
-
-        // Extract metadata and data from request body
-        const { metadata, data } = requestBody;
-
-        // Validate required fields
-        if (!metadata || !metadata.Name || !metadata.Version || !data) {
-            return {
-                statusCode: 400, // Bad Request
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: 'Missing required fields in the request body: metadata and data.',
-                }),
-            };
-        }
-
-        const packageName: string = metadata.Name;
-        const version: string = metadata.Version;
-
-        // Ensure either Content or URL is provided, but not both
-        if (!data.Content && !data.URL) {
+        if (!event.body) {
             return {
                 statusCode: 400,
                 headers: {
@@ -40,25 +17,39 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: 'Either Content or URL must be provided.',
+                    message: 'Request body is missing.',
                 }),
             };
         }
 
-        if (data.Content && data.URL) {
+        const requestBody = JSON.parse(event.body);
+        const { metadata, data, user } = requestBody;
+
+        if (!metadata || !metadata.Name || !metadata.Version || !data || !user) {
             return {
-                statusCode: 400, // Bad Request
+                statusCode: 400,
                 headers: {
                     'Access-Control-Allow-Origin': '*',
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    message: 'Both Content and URL cannot be provided at the same time.',
-                }),
+                body: JSON.stringify({ message: 'Missing required fields in the request body.' }),
             };
         }
 
-        // Check if the package already exists
+        const packageName = metadata.Name;
+        const version = metadata.Version;
+
+        if ((!data.Content && !data.URL) || (data.Content && data.URL)) {
+            return {
+                statusCode: 400,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: 'Exactly one of Content or URL must be provided.' }),
+            };
+        }
+
         const getParams = {
             TableName: 'PackageMetaData',
             Key: {
@@ -66,30 +57,51 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 version: version,
             },
         };
-        const existingPackage = await dynamoDBClient.send(new GetCommand(getParams));
 
+        const existingPackage = await dynamoDBClient.send(new GetCommand(getParams));
         if (existingPackage.Item) {
             return {
-                statusCode: 409, // Conflict
+                statusCode: 409,
                 headers: {
                     'Access-Control-Allow-Origin': '*',
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    message: 'Package already exists.',
-                }),
+                body: JSON.stringify({ message: 'Package already exists.' }),
             };
         }
 
-        // Upload content to S3 if provided, otherwise use the URL
-        let s3Key: string | null = null;
-        let fileUrl: string | null = null;
+        if (data.PackageRating) {
+            const nonLatencyFields = [
+                'RampUp',
+                'Correctness',
+                'BusFactor',
+                'ResponsiveMaintainer',
+                'LicenseScore',
+                'GoodPinningPractice',
+                'PullRequest',
+                'NetScore'
+            ];
 
+            for (const field of nonLatencyFields) {
+                if (data.PackageRating[field] === undefined || data.PackageRating[field] < 0.5) {
+                    return {
+                        statusCode: 424,
+                        headers: {
+                            'Access-Control-Allow-Origin': '*',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: `Package is not uploaded due to the disqualified rating. The field '${field}' has a value below 0.5 or is missing.` }),
+                    };
+                }
+            }
+        }
+        let fileUrl: string | null = null;
+        let s3Key = null;
         if (data.Content) {
             const fileContent = Buffer.from(data.Content, 'base64');
             s3Key = `uploads/${packageName}-${version}.zip`;
             const s3Params = {
-                Bucket: process.env.S3_BUCKET_NAME!,
+                Bucket: process.env.S3_BUCKET_NAME,
                 Key: s3Key,
                 Body: fileContent,
                 ContentType: 'application/zip',
@@ -100,26 +112,49 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             fileUrl = data.URL;
         }
 
-        // Store metadata in DynamoDB
         const dynamoDBParams = {
             TableName: 'PackageMetaData',
             Item: {
                 packageName: packageName,
                 version: version,
-                id: `${packageName}-${version}`,  // Use packageName and version to generate ID
-                uploadDate: Date.now(),
+                id: `${packageName}-${version}`,
+                url: fileUrl,
                 s3Key: s3Key ? s3Key : null,
-                url: data.URL ? data.URL : null,
-                dependencies: [],  // Placeholder for future use
-                busFactor: null,   // Placeholder for future use
+                dependencies: data.dependencies || [],
+                PackageRating: data.PackageRating || null,
+                JSProgram: data.JSProgram || null,
+                debloat: data.debloat || null,
             },
         };
 
         await dynamoDBClient.send(new PutCommand(dynamoDBParams));
 
-        // Return success with the package metadata and file URL or URL
+        // Append the event to the history array for the given package
+        const historyEntry = {
+            User: user,
+            Date: new Date().toISOString(),
+            PackageMetadata: {
+                Name: packageName,
+                Version: version,
+                ID: `${packageName}-${version}`,
+            },
+            Action: 'CREATE',
+        };
+
+        const historyUpdateParams = {
+            TableName: 'PackageHistory',
+            Key: { PackageName: packageName },
+            UpdateExpression: 'SET history = list_append(if_not_exists(history, :emptyList), :newEvent)',
+            ExpressionAttributeValues: {
+                ':newEvent': [historyEntry],
+                ':emptyList': [],
+            },
+        };
+
+        await dynamoDBClient.send(new UpdateCommand(historyUpdateParams));
+
         return {
-            statusCode: 201, // Created
+            statusCode: 201,
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
@@ -133,24 +168,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 },
                 data: {
                     Content: fileUrl,
+                    JSProgram: data.JSProgram || null,
                 },
             }),
         };
 
-    } catch (error: unknown) {
-        // Handle any errors during the process
+    } catch (error) {
         console.error("Error during POST package:", error);
-
         return {
-            statusCode: 500, // Internal Server Error
+            statusCode: 500,
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: 'Failed to upload package.',
-                error: (error instanceof Error) ? error.message : 'Unknown error',
-            }),
+            body: JSON.stringify({ message: 'Failed to upload package.', error: (error as Error).message }),
         };
     }
 };
