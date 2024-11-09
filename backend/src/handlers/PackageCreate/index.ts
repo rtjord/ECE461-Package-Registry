@@ -5,7 +5,9 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } from '@
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event:any) => {
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         if (!event.body) {
             return {
@@ -93,9 +95,8 @@ export const handler = async (event:any) => {
                 }
             }
         }
-
+        let fileUrl: string | null = null;
         let s3Key = null;
-        let fileUrl = null;
         if (data.Content) {
             const fileContent = Buffer.from(data.Content, 'base64');
             s3Key = `uploads/${packageName}-${version}.zip`;
@@ -117,9 +118,8 @@ export const handler = async (event:any) => {
                 packageName: packageName,
                 version: version,
                 id: `${packageName}-${version}`,
-                uploadDate: Date.now(),
+                url: fileUrl,
                 s3Key: s3Key ? s3Key : null,
-                url: data.URL ? data.URL : null,
                 dependencies: data.dependencies || [],
                 PackageRating: data.PackageRating || null,
                 JSProgram: data.JSProgram || null,
