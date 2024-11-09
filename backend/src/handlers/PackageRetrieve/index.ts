@@ -36,7 +36,6 @@ export const handler = async (event:any) => {
         const { s3Key, url } = result.Item;
         let base64Content = null;
         let fileUrl = null;
-
         if (s3Key) {
             try {
                 const s3Object = await s3.getObject({ Bucket: process.env.S3_BUCKET_NAME, Key: s3Key });
@@ -54,6 +53,7 @@ export const handler = async (event:any) => {
                     throw new Error('S3 object body is not an async iterable or is undefined');
                 }
             } catch (error) {
+                fileUrl = null;
                 console.error('Error fetching S3 object:', error);
                 // Handle the error appropriately, possibly returning an error response
             }
