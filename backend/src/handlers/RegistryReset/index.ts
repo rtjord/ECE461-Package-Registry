@@ -104,7 +104,7 @@ const clearS3Bucket = async () => {
 };
 
 
-export const handler = async (event:any) => {
+export const handler = async () => {
     try {
         // const authToken = event.headers['X-Authorization'];
 
