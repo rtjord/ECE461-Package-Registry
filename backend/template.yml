@@ -43,7 +43,7 @@ Resources:
   PackageBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: "package-files"
+      BucketName: !Sub "package-files-${Stage}"
       AccessControl: Private
   
   RegistryReset:
