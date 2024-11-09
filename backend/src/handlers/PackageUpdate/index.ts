@@ -13,6 +13,7 @@ interface RequestBody {
     metadata: {
         Name: string;
         Version: string;
+        JSProgram?: string;
     };
     data: {
         Content?: string;
@@ -95,19 +96,37 @@ export const handler = async (event: Event) => {
                 packageName: packageName,
                 version: version,
             },
-            UpdateExpression: 'SET #url = :url, s3Key = :s3Key',
+            UpdateExpression: 'SET #url = :url, s3Key = :s3Key, #jsProgram = :jsProgram',
             ExpressionAttributeNames: {
-                '#url': 'url', // Escape reserved keyword
+                '#url': 'url',
+                '#jsProgram': 'JSProgram',
             },
             ExpressionAttributeValues: {
-                ':url': fileUrl, // Either URL or S3 URL
-                ':s3Key': s3Key, // S3 key if uploaded, null otherwise
+                ':url': fileUrl,
+                ':s3Key': s3Key,
+                ':jsProgram': metadata.JSProgram || null,
             },
             ReturnValues: 'UPDATED_NEW' as const,
         };
 
         await dynamoDBClient.send(new UpdateCommand(updateParams));
-
+        const historyParams = {
+            TableName: 'PackageHistory',
+            Key: { PackageName: packageName },
+            UpdateExpression: 'SET #history = list_append(if_not_exists(#history, :emptyList), :newEvent)',
+            ExpressionAttributeNames: { '#history': 'history' },
+            ExpressionAttributeValues: {
+                ':emptyList': [],
+                ':newEvent': [{
+                    User: { name: 'PlaceholderUser', isAdmin: true }, // Replace with actual user data
+                    Date: new Date().toISOString(),
+                    PackageMetadata: { Name: packageName, Version: version, ID: `${packageName}-${version}` },
+                    Action: 'UPDATE',
+                }],
+            },
+        };
+        await dynamoDBClient.send(new UpdateCommand(historyParams));
+        
         return {
             statusCode: 200, // Success
             headers: {

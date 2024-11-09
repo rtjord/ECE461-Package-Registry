@@ -133,7 +133,7 @@ Resources:
 
       Environment:
         Variables:
-          S3_BUCKET_NAME: "package-files"
+          S3_BUCKET_NAME: "package-files-dev"
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -166,6 +166,9 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: put
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: "package-files-dev"
 
   GetTracks:
     Type: AWS::Serverless::Function
