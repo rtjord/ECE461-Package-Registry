@@ -40,6 +40,7 @@ Resources:
       KeySchema:
         - AttributeName: packageName
           KeyType: HASH
+          
   PackageBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -63,7 +64,7 @@ Resources:
             Method: delete
       Environment:
         Variables:
-          S3_BUCKET_NAME: "package-files"
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref PackageMetaDataTable
@@ -90,21 +91,19 @@ Resources:
             RequestParameters:
               method.request.path.name: true
   
-  
-  
   PackageRetrieve:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: dist/handlers/PackageRetrieve   # Ensure this points only to the necessary code
+      CodeUri: dist/handlers/PackageRetrieve
       MemorySize: 128
       Timeout: 10
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            RestApiId: !Ref MyApi   # Reference the API defined above
+            RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: get
             RequestParameters:
@@ -130,7 +129,6 @@ Resources:
             TableName: !Ref PackageMetaDataTable
         - DynamoDBWritePolicy:
             TableName: !Ref PackageHistoryTable
-
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
@@ -168,7 +166,7 @@ Resources:
             Method: put
       Environment:
         Variables:
-          S3_BUCKET_NAME: !sub "package-files-${Stage}"
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
   GetTracks:
     Type: AWS::Serverless::Function
