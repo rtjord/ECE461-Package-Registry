@@ -17,7 +17,7 @@ export const handler = async (event: APIGatewayEvent): Promise<APIGatewayProxyRe
 
         // Must use query to get all items with the same partition key
         const params = {
-            TableName: "PackageHistory",
+            TableName: "PackageHistoryTable",
             KeyConditionExpression: "#pkgName = :nameVal",
             ExpressionAttributeNames: {
                 "#pkgName": "PackageName",

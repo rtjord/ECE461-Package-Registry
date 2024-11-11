@@ -1,6 +1,6 @@
 {
   "pathParameters": {
-    "id": "test:1.0.0"
+    "id": "12345"
   },
   "queryStringParameters": {
     "dependency": "false"
