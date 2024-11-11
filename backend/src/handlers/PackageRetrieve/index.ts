@@ -53,7 +53,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Update PackageHistory table
         const historyParams = {
-            TableName: 'PackageHistory',
+            TableName: 'PackageHistoryTable',
             Key: { PackageName: packageName },
             UpdateExpression: 'SET #history = list_append(if_not_exists(#history, :emptyList), :newEvent)',
             ExpressionAttributeNames: {
