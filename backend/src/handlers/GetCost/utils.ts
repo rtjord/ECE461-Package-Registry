@@ -7,7 +7,7 @@ const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 export async function getPackageById(packageId: PackageID) {
     const params = {
-        TableName: "PackageTable",
+        TableName: "PackageMetadata",
         Key: {
             ID: packageId
         }

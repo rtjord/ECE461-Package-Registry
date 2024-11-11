@@ -1,15 +1,15 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { PackageTableRow } from "./interfaces";
+import { PackageID, PackageTableRow } from "./interfaces";
 import { APIGatewayProxyResult } from "aws-lambda";
 
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export async function getPackageById(packageId: string) {
+export async function getPackageById(packageId: PackageID) {
     const params = {
-        TableName: "PackageTable",         // Your table name
+        TableName: "PackageMetadata",
         Key: {
-            ID: packageId                  // Primary key attribute
+            ID: packageId
         }
     };
 

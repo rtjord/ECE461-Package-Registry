@@ -14,10 +14,10 @@ Resources:
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
 
-  PackageMetaDataTable:
+  PackageMetadataTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: PackageTable
+      TableName: PackageMetadata
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: ID
@@ -93,7 +93,7 @@ Resources:
           S3_BUCKET_NAME: !Ref PackageBucket
       Policies:
         - DynamoDBWritePolicy:
-            TableName: !Ref PackageMetaDataTable
+            TableName: !Ref PackageMetadataTable
         - DynamoDBWritePolicy:
             TableName: !Ref PackageHistoryTable
         - S3WritePolicy:
@@ -136,7 +136,7 @@ Resources:
               method.request.path.id: true
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetaDataTable
+            TableName: !Ref PackageMetadataTable
 
   PackageCreate:
     Type: AWS::Serverless::Function
@@ -155,7 +155,7 @@ Resources:
             Method: post
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetaDataTable
+            TableName: !Ref PackageMetadataTable
         - DynamoDBWritePolicy:
             TableName: !Ref PackageHistoryTable
       Environment:
@@ -214,7 +214,7 @@ Resources:
             Method: get
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetaDataTable
+            TableName: !Ref PackageMetadataTable
             
   PackageByRegEx:
     Type: AWS::Serverless::Function
@@ -233,7 +233,7 @@ Resources:
             Method: post
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetaDataTable
+            TableName: !Ref PackageMetadataTable
 
   GetTracks:
     Type: AWS::Serverless::Function

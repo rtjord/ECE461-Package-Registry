@@ -13,7 +13,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     // Parse the request body or default to an empty object if it's undefined
     const parsedBody = event.body && typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-
     // Check if the body has a valid RegEx field
     if (!parsedBody.RegEx) {
       return createErrorResponse(400, 'Missing or invalid RegEx field in the request body.');
@@ -22,13 +21,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
 
     const params = {
-        TableName: 'PackageTable',
+        TableName: 'PackageMetadata',
         ProjectionExpression: 'PackageName, Version, ID', // Retrieve these attributes
     };
     
     const result = await dynamoDb.scan(params);  // Scan the DynamoDB table to retrieve all items
+    console.log(result);
     const packages = result.Items ? result.Items.map(item => unmarshall(item)) : [];  // Unmarshall the DynamoDB items to JavaScript objects
-
+    console.log(packages);
     // Filter the packages based on the provided regular expression to find matching package names
     const matchingPackages = packages.filter((pkg) => new RegExp(RegEx, 'i').test(pkg.Name));
     const packageMetadataList: PackageMetadata[] = matchingPackages.map((pkg) => ({ Name: pkg.PackageName, Version: pkg.Version, ID: pkg.ID }));
@@ -44,7 +44,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       body: JSON.stringify(packageMetadataList),
     };
   } catch (error) {
-
+    console.log('Error', error);
     return createErrorResponse(500, 'An error occurred while processing the request.');
   }
 };
