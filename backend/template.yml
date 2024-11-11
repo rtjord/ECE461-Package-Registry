@@ -45,27 +45,15 @@ Resources:
       TableName: PackageHistoryTable
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: ID
+        - AttributeName: PackageName
           AttributeType: S
         - AttributeName: Date
           AttributeType: S
       KeySchema:
-        - AttributeName: ID
+        - AttributeName: PackageName
           KeyType: HASH # Partition key
         - AttributeName: Date
           KeyType: RANGE # Sort key
-
-  PackageRatingTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: PackageRatingTable
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: ID
-          AttributeType: S
-      KeySchema:
-        - AttributeName: ID
-          KeyType: HASH # Partition key
 
   UserTable:
     Type: AWS::DynamoDB::Table
@@ -84,7 +72,7 @@ Resources:
     Properties:
       BucketName: !Sub "package-files-${Stage}"
       AccessControl: Private
-  
+
   RegistryReset:
     Type: AWS::Serverless::Function
     Properties:
@@ -102,7 +90,7 @@ Resources:
             Method: delete
       Environment:
         Variables:
-          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          S3_BUCKET_NAME: !Ref PackageBucket
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref PackageMetaDataTable
@@ -172,7 +160,7 @@ Resources:
             TableName: !Ref PackageHistoryTable
       Environment:
         Variables:
-          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          S3_BUCKET_NAME: !Ref PackageBucket
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -207,7 +195,7 @@ Resources:
             Method: put
       Environment:
         Variables:
-          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          S3_BUCKET_NAME: !Ref PackageBucket
 
   GetCost:
     Type: AWS::Serverless::Function

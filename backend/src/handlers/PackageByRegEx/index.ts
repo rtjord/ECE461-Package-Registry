@@ -1,13 +1,14 @@
-import { APIGatewayProxyHandler } from 'aws-lambda'; // Import the AWS Lambda handler type to define the structure of the Lambda function
-import { DynamoDB } from '@aws-sdk/client-dynamodb'; // Import the DynamoDB client from AWS SDK to interact with DynamoDB
-import { unmarshall } from '@aws-sdk/util-dynamodb'; // Import the unmarshall utility to convert DynamoDB items to JavaScript objects
-import { PackageMetadata } from '../../interfaces'; // Import the PackageRegEx and PackageMetadata interfaces from the interfaces file
+import { DynamoDB } from '@aws-sdk/client-dynamodb';
+import { unmarshall } from '@aws-sdk/util-dynamodb';
+import { PackageMetadata } from './interfaces';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { createErrorResponse } from './utils';
 
 // Create a new instance of the DynamoDB client to interact with the database
 const dynamoDb = new DynamoDB({});
 
 // Define the Lambda handler function that processes incoming API Gateway requests
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
 
     // Parse the request body or default to an empty object if it's undefined
@@ -15,21 +16,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Check if the body has a valid RegEx field
     if (!parsedBody.RegEx) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ message: 'Missing or invalid RegEx field in the request body.' }),
-        };
+      return createErrorResponse(400, 'Missing or invalid RegEx field in the request body.');
     }
 
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
 
     const params = {
-        TableName: 'PackageTable', // Name of the DynamoDB table
+        TableName: 'PackageTable',
         ProjectionExpression: 'PackageName, Version, ID', // Retrieve these attributes
     };
     
-    const result = await dynamoDb.scan(params);
-    const packages = result.Items ? result.Items.map(item => unmarshall(item)) : [];
+    const result = await dynamoDb.scan(params);  // Scan the DynamoDB table to retrieve all items
+    const packages = result.Items ? result.Items.map(item => unmarshall(item)) : [];  // Unmarshall the DynamoDB items to JavaScript objects
 
     // Filter the packages based on the provided regular expression to find matching package names
     const matchingPackages = packages.filter((pkg) => new RegExp(RegEx, 'i').test(pkg.Name));
@@ -37,10 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // If there are no matching packages, return a 404 response
     if (matchingPackages.length === 0) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: 'No package found under this regex.' }),
-      };
+      return createErrorResponse(404, 'No packages found matching the provided regular expression.');
     }
 
     // Return a 200 response with the list of matching packages
@@ -49,11 +44,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       body: JSON.stringify(packageMetadataList),
     };
   } catch (error) {
-    console.error('Error processing request:', error); // Log any errors that occur during the request processing for debugging purposes
-    // Return a 500 response if an unexpected error occurs during the request processing
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'An error occurred while processing the request.' }),
-    };
+
+    return createErrorResponse(500, 'An error occurred while processing the request.');
   }
 };

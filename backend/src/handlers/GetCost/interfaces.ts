@@ -83,12 +83,13 @@ export interface PackageRegEx {
 }
 
 export interface PackageTableRow {
+  ID: PackageID;
   PackageName: PackageName;
   Version: SemverRange;
-  ID: PackageID;
   URL?: string; // Package URL
   s3Key?: string; // S3 key for package
   debloat?: boolean; // Remove unnecessary bloat
   JSProgram?: string; // JavaScript program for sensitive modules
   standaloneCost: number; // Standalone cost, excluding dependencies
+  dependenciesCost: number // Cost of all dependencies
 }

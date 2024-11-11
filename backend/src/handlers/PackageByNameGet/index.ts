@@ -1,55 +1,49 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { APIGatewayProxyResult, APIGatewayEvent } from 'aws-lambda';
+import { createErrorResponse } from './utils';
+import { PackageHistoryEntry } from './interfaces';
 
 // Initialize DynamoDB client
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event: any) => {
+export const handler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
     try {
-        const { name } = event.pathParameters;
+        const name = event.pathParameters?.name;
 
         if (!name) {
-            return {
-                statusCode: 400,
-                headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: 'Package name is required.' }),
-            };
+            return createErrorResponse(400, 'Package name is required.');
         }
 
-        const queryParams = {
-            TableName: 'PackageHistory',
-            IndexName: 'PackageNameIndex',  // GSI index name on PackageName
-            KeyConditionExpression: '#pkgName = :nameValue',
+        // Must use query to get all items with the same partition key
+        const params = {
+            TableName: "PackageHistory",
+            KeyConditionExpression: "#pkgName = :nameVal",
             ExpressionAttributeNames: {
-                '#pkgName': 'PackageName',
+                "#pkgName": "PackageName",
             },
             ExpressionAttributeValues: {
-                ':nameValue': name,
+                ":nameVal": name,
             },
         };
 
-        const result = await dynamoDBClient.send(new QueryCommand(queryParams));
+        const command = new QueryCommand(params);
+        const result = await dynamoDBClient.send(command);
 
+        // Check if any items were found
         if (!result.Items || result.Items.length === 0) {
-            return {
-                statusCode: 404,
-                headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `No history found for package: ${name}` }),
-            };
+            return createErrorResponse(404, `No history found for package: ${name}`);
         }
+
+        const packageHistory = result.Items as PackageHistoryEntry[];
 
         return {
             statusCode: 200,
             headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-            body: JSON.stringify(result.Items),
+            body: JSON.stringify(packageHistory),
         };
     } catch (error) {
         console.error('Error fetching package history:', error);
-
-        return {
-            statusCode: 500,
-            headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: 'Failed to fetch package history.', error: (error as Error).message }),
-        };
+        return createErrorResponse(500, 'Failed to fetch package history.');
     }
 };

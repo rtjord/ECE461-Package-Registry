@@ -1,31 +1,25 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { getPackageById } from '../../utils';
-import { APIGatewayProxyEvent } from 'aws-lambda';
+import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { createErrorResponse, getPackageById } from './utils';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { create } from 'ts-node';
+
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event: APIGatewayProxyEvent) => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         const id = event.pathParameters?.id;
 
         if (!id) {
-            return {
-                statusCode: 400,
-                headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: "Both packageName and version are required." }),
-            };
+            return createErrorResponse(400, "Both packageName and version are required.");
         }
         
         const existingPackage = await getPackageById(id);
 
         if (!existingPackage) {
-            return {
-                statusCode: 404,
-                headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Package not found.` }),
-            };
+            return createErrorResponse(404, "Package not found.");
         }
 
         const packageName = existingPackage.PackageName;
@@ -103,11 +97,6 @@ export const handler = async (event: APIGatewayProxyEvent) => {
         };
     } catch (error) {
         console.error("Error:", error);
-
-        return {
-            statusCode: 500,
-            headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: "Failed to retrieve package.", error: (error as Error).message }),
-        };
+        return createErrorResponse(500, "Failed to retrieve package.");
     }
 };
