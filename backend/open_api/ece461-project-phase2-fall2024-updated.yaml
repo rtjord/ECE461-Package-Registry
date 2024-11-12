@@ -313,8 +313,7 @@ paths:
                         process.exit(1)
                         }
                         
-          description: Success. Check the ID in the returned metadata for the official
-            ID.
+          description: Success. Check the ID in the returned metadata for the official ID.
         "400":
           description: There is missing field(s) in the PackageData or it is formed improperly (e.g. Content and URL ar both set)
         403:

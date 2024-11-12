@@ -1,13 +1,11 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { createErrorResponse, getPackageById } from './utils';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
-
-interface PathParameters {
-    id: string;
-}
 
 interface RequestBody {
     metadata: {
@@ -21,50 +19,32 @@ interface RequestBody {
     };
 }
 
-interface Event {
-    pathParameters: PathParameters;
-    body: string;
-    headers: { [key: string]: string };
-}
 
-export const handler = async (event: Event) => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         // Extract packageName and version from the path (assuming package id is passed in the path)
-        const { id } = event.pathParameters;
-        const [packageName, version] = id.split(':');
-
+        const id = event.pathParameters?.id;
+        
+        if (!id || !event.body) { 
+            return createErrorResponse(400, 'Missing ID or request body.');
+        }
+        
         // Parse request body
         const requestBody: RequestBody = JSON.parse(event.body);
         const { metadata, data } = requestBody;
 
         // Validate required fields in the request body
         if (!metadata || !metadata.Name || !metadata.Version || !data) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({
-                    message: 'Missing required fields in the request body: metadata and data.',
-                }),
-            };
+            return createErrorResponse(400, 'Missing required fields in the request body: metadata and data.');
         }
 
-        // Check if the package exists
-        const getParams = {
-            TableName: 'PackageMetaData',
-            Key: {
-                packageName: packageName,
-                version: version,
-            },
-        };
-
-        const existingPackage = await dynamoDBClient.send(new GetCommand(getParams));
-        if (!existingPackage.Item) {
-            return {
-                statusCode: 404,
-                body: JSON.stringify({
-                    message: `Package ${packageName} version ${version} not found.`,
-                }),
-            };
+        const existingPackage = await getPackageById(id);
+        if (!existingPackage) {
+            return createErrorResponse(404, 'Package not found.');
         }
+
+        const packageName = metadata.Name;
+        const version = metadata.Version;
 
         let s3Key: string | null = null;
         let fileUrl: string | null = null;
@@ -139,16 +119,6 @@ export const handler = async (event: Event) => {
             }),
         };
     } catch (error) {
-        return {
-            statusCode: 500, // Internal Server Error
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                message: 'Failed to update package.',
-                error: (error as Error).message,
-            }),
-        };
+        return createErrorResponse(500, 'Failed to update package.');
     }
 };

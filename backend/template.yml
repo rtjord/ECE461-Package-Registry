@@ -14,39 +14,65 @@ Resources:
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
 
-  PackageMetaDataTable:
+  PackageMetadataTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: "package-metadata"
+      TableName: PackageMetadata
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: packageName
+        - AttributeName: ID
           AttributeType: S
-        - AttributeName: version
+        - AttributeName: PackageName
+          AttributeType: S
+        - AttributeName: Version
           AttributeType: S
       KeySchema:
-        - AttributeName: packageName
-          KeyType: HASH
-        - AttributeName: version
-          KeyType: RANGE
+        - AttributeName: ID
+          KeyType: HASH  # Partition Key
+      GlobalSecondaryIndexes:
+        - IndexName: PackageNameVersionIndex
+          KeySchema:
+            - AttributeName: PackageName
+              KeyType: HASH  # Partition Key for the GSI
+            - AttributeName: Version
+              KeyType: RANGE  # Sort Key for the GSI
+          Projection:
+            ProjectionType: ALL
+
   PackageHistoryTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: "PackageHistory"
+      TableName: PackageHistoryTable
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: packageName
+        - AttributeName: PackageName
+          AttributeType: S
+        - AttributeName: Date
           AttributeType: S
       KeySchema:
-        - AttributeName: packageName
+        - AttributeName: PackageName
+          KeyType: HASH # Partition key
+        - AttributeName: Date
+          KeyType: RANGE # Sort key
+
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: UserTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: name
           KeyType: HASH
-          
+
   PackageBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "package-files-${Stage}"
       AccessControl: Private
-  
+
   RegistryReset:
     Type: AWS::Serverless::Function
     Properties:
@@ -64,10 +90,10 @@ Resources:
             Method: delete
       Environment:
         Variables:
-          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          S3_BUCKET_NAME: !Ref PackageBucket
       Policies:
         - DynamoDBWritePolicy:
-            TableName: !Ref PackageMetaDataTable
+            TableName: !Ref PackageMetadataTable
         - DynamoDBWritePolicy:
             TableName: !Ref PackageHistoryTable
         - S3WritePolicy:
@@ -108,6 +134,9 @@ Resources:
             Method: get
             RequestParameters:
               method.request.path.id: true
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetadataTable
 
   PackageCreate:
     Type: AWS::Serverless::Function
@@ -126,12 +155,12 @@ Resources:
             Method: post
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetaDataTable
+            TableName: !Ref PackageMetadataTable
         - DynamoDBWritePolicy:
             TableName: !Ref PackageHistoryTable
       Environment:
         Variables:
-          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          S3_BUCKET_NAME: !Ref PackageBucket
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -166,24 +195,8 @@ Resources:
             Method: put
       Environment:
         Variables:
-          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          S3_BUCKET_NAME: !Ref PackageBucket
 
-  GetTracks:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: index.handler
-      Runtime: nodejs18.x
-      CodeUri: dist/handlers/GetTracks
-      MemorySize: 128
-      Timeout: 3
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /tracks
-            Method: get
-  
   GetCost:
     Type: AWS::Serverless::Function
     Properties:
@@ -201,7 +214,42 @@ Resources:
             Method: get
       Policies:
         - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetaDataTable
+            TableName: !Ref PackageMetadataTable
+            
+  PackageByRegEx:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackageByRegEx
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/byRegEx
+            Method: post
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetadataTable
+
+  GetTracks:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/GetTracks
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /tracks
+            Method: get
 
 Outputs:
   ApiUrl:

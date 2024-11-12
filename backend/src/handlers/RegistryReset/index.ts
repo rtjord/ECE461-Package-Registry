@@ -1,6 +1,8 @@
 import { S3, ListObjectsV2Command , ListObjectsV2CommandOutput} from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { createErrorResponse } from './utils';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -104,19 +106,8 @@ const clearS3Bucket = async () => {
 };
 
 
-export const handler = async () => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        // const authToken = event.headers['X-Authorization'];
-
-        // Validate the authorization token
-        // if (!validateAuthToken(authToken)) {
-        //     return {
-        //         statusCode: 403,
-        //         body: JSON.stringify({
-        //             message: 'Authentication failed due to invalid or missing AuthenticationToken.'
-        //         })
-        //     };
-        // }
 
         // Clear S3 bucket
         const s3DeletedCount = await clearS3Bucket();
@@ -140,22 +131,6 @@ export const handler = async () => {
         };
     } catch (error) {
         console.error('Error in handler:', error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({
-                message: 'Failed to clear resources.',
-                error: (error as Error).message,
-                details: (error as Error) .stack
-            })
-        };
+        return createErrorResponse(500, 'Failed to clear resources.');
     }
 };
-
-// Mock function to validate X-Authorization token
-// const validateAuthToken = (authToken) => {
-//     // Replace with actual validation logic or call to an authentication service
-//     if (!authToken || authToken !== 'valid-admin-token') {
-//         return false;
-//     }
-//     return true;
-// };

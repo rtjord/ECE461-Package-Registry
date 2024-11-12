@@ -1,39 +1,31 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { createErrorResponse, getPackageById } from './utils';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { create } from 'ts-node';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-export const handler = async (event:any) => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        const { id } = event.pathParameters;
-        const [packageName, version] = id.split(':');
+        const id = event.pathParameters?.id;
 
-        if (!packageName || !version) {
-            return {
-                statusCode: 400,
-                headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: "Both packageName and version are required." }),
-            };
+        if (!id) {
+            return createErrorResponse(400, "Both packageName and version are required.");
+        }
+        
+        const existingPackage = await getPackageById(id);
+
+        if (!existingPackage) {
+            return createErrorResponse(404, "Package not found.");
         }
 
-        const dynamoDBParams = {
-            TableName: 'PackageMetaData',
-            Key: { packageName, version },
-        };
-
-        const result = await dynamoDBClient.send(new GetCommand(dynamoDBParams));
-
-        if (!result.Item) {
-            return {
-                statusCode: 404,
-                headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: `Package ${packageName} version ${version} not found.` }),
-            };
-        }
-
-        const { s3Key, url } = result.Item;
+        const packageName = existingPackage.PackageName;
+        const version = existingPackage.Version;
+        const s3Key = existingPackage.s3Key;
+        const url = existingPackage.URL;
         let base64Content = null;
         let fileUrl = null;
         if (s3Key) {
@@ -61,7 +53,7 @@ export const handler = async (event:any) => {
 
         // Update PackageHistory table
         const historyParams = {
-            TableName: 'PackageHistory',
+            TableName: 'PackageHistoryTable',
             Key: { PackageName: packageName },
             UpdateExpression: 'SET #history = list_append(if_not_exists(#history, :emptyList), :newEvent)',
             ExpressionAttributeNames: {
@@ -105,11 +97,6 @@ export const handler = async (event:any) => {
         };
     } catch (error) {
         console.error("Error:", error);
-
-        return {
-            statusCode: 500,
-            headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: "Failed to retrieve package.", error: (error as Error).message }),
-        };
+        return createErrorResponse(500, "Failed to retrieve package.");
     }
 };
