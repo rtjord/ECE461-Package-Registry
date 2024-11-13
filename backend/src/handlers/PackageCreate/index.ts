@@ -26,9 +26,21 @@ async function extractFilesFromZip(zipBuffer: Buffer) {
     const readmeFile = contents.file("README.md");
     const readmeContent = readmeFile ? await readmeFile.async("string") : null;
 
+
+    const gitConfigFile = contents.file(".git/config");
+    const gitConfigContent = gitConfigFile ? await gitConfigFile.async("string") : null;
+
+    let repoUrl: string | null = null;
+
+    if (gitConfigContent) {
+        const match = gitConfigContent.match(/url = (.+)/);
+        repoUrl = match ? match[1].trim() : null;
+    }
+
     return {
       packageJson: packageJsonContent,
       readme: readmeContent,
+      repoUrl: repoUrl,
     };
 }
 
@@ -114,11 +126,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         let version: string | null = null;
         let fileUrl: string | null = null;
         let fileSizeInMB = 0;
-
+        let repoUrl: string | null = null;
         if (requestBody.Content) {
             const fileContent = Buffer.from(requestBody.Content, 'base64');
-            const { packageJson, readme } = await extractFilesFromZip(fileContent);
-
+            const { packageJson, readme, repoUrl } = await extractFilesFromZip(fileContent);
+            const { packageJson } = await extractFilesFromZip(fileContent);
             if (!packageJson) {
                 return createErrorResponse(400, 'package.json not found in the uploaded zip file.');
             }
@@ -126,7 +138,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const metadata = extractMetadataFromPackageJson(packageJson);
             packageName = metadata.packageName;
             version = metadata.version;
-
             if (!packageName || !version) {
                 return createErrorResponse(400, 'Package name or version could not be determined.');
             }
@@ -135,6 +146,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             fileUrl = await uploadToS3(fileContent, packageName, version);
         } else if (requestBody.URL) {
             fileUrl = requestBody.URL;
+            repoUrl = null;
             // Logic to fetch packageName and version if needed from URL (e.g., cloning a repo)
         }
 
@@ -165,6 +177,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     Name: packageName,
                     Version: version,
                     ID: packageId,
+                    repoUrl: repoUrl,
                 },
                 data: {
                     Content: fileUrl,
