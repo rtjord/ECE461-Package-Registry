@@ -1,21 +1,20 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
 import { PackageData, PackageTableRow, User } from './interfaces';
 import { createHash } from 'crypto';
 import JSZip from "jszip";
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import archiver from 'archiver';
+import git from 'isomorphic-git';
+import http from 'isomorphic-git/http/node';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
-const execAsync = promisify(exec);
 
 // Generate a unique package ID based on the package name and version
 function generatePackageID(name: string, version: string): string {
@@ -64,15 +63,22 @@ async function uploadToS3(fileContent: Buffer, packageName: string, version: str
 // Clone GitHub repository and compress it to a zip file
 async function cloneAndZipRepository(repoUrl: string): Promise<Buffer> {
     const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'repo-'));
-    const repoName = path.basename(repoUrl, '.git');
-    const repoPath = path.join(tempDir, repoName);
+    const repoPath = path.join(tempDir, 'repo');
 
     try {
-        // Clone the GitHub repository
-        await execAsync(`git clone ${repoUrl} ${repoPath}`);
-
+        // Clone the GitHub repository using isomorphic-git
+        console.log(`Cloning repository from ${repoUrl} to ${repoPath}`);
+        await git.clone({
+            fs,
+            http,
+            dir: repoPath,
+            url: repoUrl,
+            singleBranch: true,
+            depth: 1,
+        });
+        console.log("Repository cloned successfully.");
         // Create a zip archive of the cloned repository
-        const zipPath = path.join(tempDir, `${repoName}.zip`);
+        const zipPath = path.join(tempDir, `repo.zip`);
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', {
             zlib: { level: 9 }, // Set the compression level
@@ -111,6 +117,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             fileContent = Buffer.from(requestBody.Content, 'base64');
         } else if (requestBody.URL) {
             // Clone the GitHub repository and zip it
+            console.log(`Cloning repository from ${requestBody.URL}`);
             fileContent = await cloneAndZipRepository(requestBody.URL);
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');

@@ -144,8 +144,8 @@ Resources:
       Handler: index.handler
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageCreate
-      MemorySize: 128
-      Timeout: 60
+      MemorySize: 512
+      Timeout: 120
       Events:
         ApiEvent:
           Type: Api
