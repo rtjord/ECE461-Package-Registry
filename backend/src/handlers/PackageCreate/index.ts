@@ -3,7 +3,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
-import { PackageData, PackageTableRow, PackageHistoryEntry } from './interfaces';
+import { PackageData, PackageTableRow, PackageHistoryEntry, User } from './interfaces';
 import { createHash } from 'crypto';
 import JSZip from "jszip";
 
@@ -65,7 +65,6 @@ async function uploadToS3(fileContent: Buffer, packageName: string, version: str
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        console.log("event: ", event);
         if (!event.body) {
             return createErrorResponse(400, 'Request body is missing.');
         }
@@ -94,7 +93,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const metadata = extractMetadataFromPackageJson(packageJson);
             packageName = metadata.packageName;
             version = metadata.version;
-            console.log(`Extracted metadata: ${packageName} - ${version}`);
             if (!packageName || !version) {
                 return createErrorResponse(400, 'Package name or version could not be determined.');
             }
@@ -108,7 +106,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
             // Upload the file to S3
             fileUrl = await uploadToS3(fileContent, packageName, version);
-            console.log(`Uploaded file to S3: ${fileUrl}`);
 
             // Calculate the file size in MB
             fileSizeInMB = fileContent.length / (1024 * 1024);
@@ -116,13 +113,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
             // Save the metadata to DynamoDB
             await savePackageMetadata(packageId, packageName, version, fileUrl, fileSizeInMB);
-            console.log('Saved metadata to DynamoDB.');
 
             // Log the package history
-            const user = "ece30861defaultadminuser";
+            const user: User = {
+                name: "ece30861defaultadminuser",
+                isAdmin: true,
+            };
+
             await updatePackageHistory(packageName, version, packageId, user, "CREATE");
             console.log('Logged package history.');
-
 
             return {
                 statusCode: 201,

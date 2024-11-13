@@ -1,6 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { PackageID, PackageTableRow } from "./interfaces";
+import { PackageID, PackageTableRow, User, PackageHistoryEntry } from "./interfaces";
 import { APIGatewayProxyResult } from "aws-lambda";
 
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -38,7 +38,7 @@ export async function savePackageMetadata(packageId: string, packageName: string
     await dynamoDBClient.send(new PutCommand(dynamoDBParams));
 }
 
-export async function updatePackageHistory(packageName: string, version: string, packageId: string, user: string, action: string) {
+export async function updatePackageHistory(packageName: string, version: string, packageId: string, user: User, action: string) {
     const date = new Date().toISOString();
     const dynamoDBParams = {
         TableName: "PackageHistoryTable",
