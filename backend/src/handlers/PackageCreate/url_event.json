@@ -1,6 +1,6 @@
 {
   "body": {
-    "URL": "https://github.com/facebook/react.git",
+    "URL": "https://github.com/thejoshwolfe/yazl",
     "JSProgram": "if (process.argv.length === 7) { console.log('Success'); process.exit(0); } else { console.log('Failed'); process.exit(1); }",
     "debloat": false
   },

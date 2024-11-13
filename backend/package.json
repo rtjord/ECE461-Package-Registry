@@ -18,6 +18,7 @@
     "@types/archiver": "^6.0.3",
     "@types/aws-lambda": "^8.10.145",
     "@types/jest": "^29.5.13",
+    "@types/yazl": "^2.4.5",
     "copy-webpack-plugin": "^12.0.2",
     "eslint": "^9.14.0",
     "globals": "^15.11.0",

@@ -12,6 +12,7 @@ import * as os from 'os';
 import archiver from 'archiver';
 import git from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
+import yazl from 'yazl';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -67,7 +68,6 @@ async function cloneAndZipRepository(repoUrl: string): Promise<Buffer> {
 
     try {
         // Clone the GitHub repository using isomorphic-git
-        console.log(`Cloning repository from ${repoUrl} to ${repoPath}`);
         await git.clone({
             fs,
             http,
@@ -76,23 +76,39 @@ async function cloneAndZipRepository(repoUrl: string): Promise<Buffer> {
             singleBranch: true,
             depth: 1,
         });
-        console.log("Repository cloned successfully.");
+
         // Create a zip archive of the cloned repository
-        const zipPath = path.join(tempDir, `repo.zip`);
-        const output = fs.createWriteStream(zipPath);
-        const archive = archiver('zip', {
-            zlib: { level: 9 }, // Set the compression level
-        });
-
-        archive.pipe(output);
-        archive.directory(repoPath, false);
-        await archive.finalize();
-
-        return fs.promises.readFile(zipPath);
+        return await zipDirectory(repoPath);
     } finally {
         // Clean up temporary files
         await fs.promises.rm(tempDir, { recursive: true, force: true });
     }
+}
+
+// Zip a directory and return a buffer of the zip file using yazl
+async function zipDirectory(directoryPath: string): Promise<Buffer> {
+    return new Promise<Buffer>((resolve, reject) => {
+        const zipFile = new yazl.ZipFile();
+        const filePaths = fs.readdirSync(directoryPath);
+
+        for (const filePath of filePaths) {
+            const fullPath = path.join(directoryPath, filePath);
+            const stat = fs.statSync(fullPath);
+
+            if (stat.isFile()) {
+                zipFile.addFile(fullPath, filePath);
+            } else if (stat.isDirectory()) {
+                zipFile.addEmptyDirectory(filePath);
+            }
+        }
+
+        const chunks: Buffer[] = [];
+        zipFile.outputStream.on('data', (chunk) => chunks.push(chunk));
+        zipFile.outputStream.on('end', () => resolve(Buffer.concat(chunks)));
+        zipFile.outputStream.on('error', (err) => reject(err));
+
+        zipFile.end();
+    });
 }
 
 // Main Lambda handler function
