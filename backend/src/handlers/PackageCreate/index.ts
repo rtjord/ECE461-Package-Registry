@@ -1,9 +1,9 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createErrorResponse, getPackageById } from './utils';
-import { PackageData, PackageTableRow } from './interfaces';
+import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
+import { PackageData, PackageTableRow, PackageHistoryEntry } from './interfaces';
 import { createHash } from 'crypto';
 import JSZip from "jszip";
 
@@ -20,17 +20,25 @@ async function extractFilesFromZip(zipBuffer: Buffer) {
     const zip = new JSZip();
     const contents = await zip.loadAsync(zipBuffer);
 
-    const packageJsonFile = contents.file("package.json");
-    const packageJsonContent = packageJsonFile ? await packageJsonFile.async("string") : null;
+    let packageJsonContent = null;
+    let readmeContent = null;
 
-    const readmeFile = contents.file("README.md");
-    const readmeContent = readmeFile ? await readmeFile.async("string") : null;
+    // Iterate through each file to find `package.json` and `README.md`
+    contents.forEach((relativePath, file) => {
+        if (relativePath.endsWith('/package.json')) {
+            packageJsonContent = file.async('string');
+        } else if (relativePath.toLowerCase().endsWith('/readme.md')) {
+            readmeContent = file.async('string');
+        }
+    });
 
+    // Wait for the async content retrieval if the files were found
     return {
-      packageJson: packageJsonContent,
-      readme: readmeContent,
+        packageJson: packageJsonContent ? await packageJsonContent : null,
+        readme: readmeContent ? await readmeContent : null,
     };
 }
+
 
 function extractMetadataFromPackageJson(packageJson: string) {
     const metadata = JSON.parse(packageJson);
@@ -42,8 +50,10 @@ function extractMetadataFromPackageJson(packageJson: string) {
 
 async function uploadToS3(fileContent: Buffer, packageName: string, version: string): Promise<string> {
     const s3Key = `uploads/${packageName}-${version}.zip`;
+    const bucketName = process.env.S3_BUCKET_NAME;
+    console.log("bucketName: ", bucketName);
     const s3Params = {
-        Bucket: process.env.S3_BUCKET_NAME!,
+        Bucket: bucketName,
         Key: s3Key,
         Body: fileContent,
         ContentType: 'application/zip',
@@ -53,59 +63,16 @@ async function uploadToS3(fileContent: Buffer, packageName: string, version: str
     return `https://${s3Params.Bucket}.s3.amazonaws.com/${s3Params.Key}`;
 }
 
-async function savePackageMetadataToDynamoDB(
-    packageId: string, packageName: string, version: string, fileUrl: string | null, fileSizeInMB: number
-) {
-    const dynamoDBParams = {
-        TableName: process.env.PACKAGE_TABLE_NAME!,
-        Item: {
-            PackageName: packageName,
-            Version: version,
-            ID: packageId,
-            URL: fileUrl,
-            s3Key: `uploads/${packageName}-${version}.zip`,
-            standaloneCost: fileSizeInMB,
-        },
-    };
-
-    await dynamoDBClient.send(new PutCommand(dynamoDBParams));
-}
-
-async function logPackageHistory(
-    packageName: string, version: string, packageId: string, user: string
-) {
-    const historyEntry = {
-        User: user,
-        Date: new Date().toISOString(),
-        PackageMetadata: {
-            Name: packageName,
-            Version: version,
-            ID: packageId,
-        },
-        Action: 'CREATE',
-    };
-
-    const historyUpdateParams = {
-        TableName: process.env.PACKAGE_HISTORY_TABLE_NAME!,
-        Key: { PackageName: packageName },
-        UpdateExpression: 'SET history = list_append(if_not_exists(history, :emptyList), :newEvent)',
-        ExpressionAttributeValues: {
-            ':newEvent': [historyEntry],
-            ':emptyList': [],
-        },
-    };
-
-    await dynamoDBClient.send(new UpdateCommand(historyUpdateParams));
-}
-
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        console.log("event: ", event);
         if (!event.body) {
             return createErrorResponse(400, 'Request body is missing.');
         }
 
-        const requestBody: PackageData = JSON.parse(event.body);
+        const requestBody = event.body && typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
+        // Validate the request body
         if ((!requestBody.Content && !requestBody.URL) || (requestBody.Content && requestBody.URL)) {
             return createErrorResponse(400, 'Exactly one of Content or URL must be provided.');
         }
@@ -115,6 +82,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         let fileUrl: string | null = null;
         let fileSizeInMB = 0;
 
+        // Check if the request body contains the file content
         if (requestBody.Content) {
             const fileContent = Buffer.from(requestBody.Content, 'base64');
             const { packageJson, readme } = await extractFilesFromZip(fileContent);
@@ -126,61 +94,60 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             const metadata = extractMetadataFromPackageJson(packageJson);
             packageName = metadata.packageName;
             version = metadata.version;
-
+            console.log(`Extracted metadata: ${packageName} - ${version}`);
             if (!packageName || !version) {
                 return createErrorResponse(400, 'Package name or version could not be determined.');
             }
 
-            fileSizeInMB = fileContent.length / (1024 * 1024);
+            const packageId = generatePackageID(packageName, version);
+            const existingPackage: PackageTableRow | null = await getPackageById(packageId);
+            if (existingPackage) {
+                return createErrorResponse(409, 'Package already exists.');
+            }
+
+
+            // Upload the file to S3
             fileUrl = await uploadToS3(fileContent, packageName, version);
-        } else if (requestBody.URL) {
-            fileUrl = requestBody.URL;
-            // Logic to fetch packageName and version if needed from URL (e.g., cloning a repo)
-        }
+            console.log(`Uploaded file to S3: ${fileUrl}`);
 
-        if (!packageName || !version) {
-            return createErrorResponse(400, 'Package name or version could not be determined.');
-        }
+            // Calculate the file size in MB
+            fileSizeInMB = fileContent.length / (1024 * 1024);
 
-        const packageId = generatePackageID(packageName, version);
-        const existingPackage: PackageTableRow | null = await getPackageById(packageId);
-        if (existingPackage) {
-            return createErrorResponse(409, 'Package already exists.');
-        }
 
-        await savePackageMetadataToDynamoDB(packageId, packageName, version, fileUrl, fileSizeInMB);
+            // Save the metadata to DynamoDB
+            await savePackageMetadata(packageId, packageName, version, fileUrl, fileSizeInMB);
+            console.log('Saved metadata to DynamoDB.');
 
-        const user = event.requestContext.authorizer?.principalId ?? "anonymous";
-        await logPackageHistory(packageName, version, packageId, user);
+            // Log the package history
+            const user = "ece30861defaultadminuser";
+            await updatePackageHistory(packageName, version, packageId, user, "CREATE");
+            console.log('Logged package history.');
 
-        return {
-            statusCode: 201,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                message: 'Package uploaded and metadata stored successfully.',
-                metadata: {
-                    Name: packageName,
-                    Version: version,
-                    ID: packageId,
+
+            return {
+                statusCode: 201,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/json',
                 },
-                data: {
-                    Content: fileUrl,
-                },
-            }),
-        };
+                body: JSON.stringify({
+                    message: 'Package uploaded and metadata stored successfully.',
+                    metadata: {
+                        Name: packageName,
+                        Version: version,
+                        ID: packageId,
+                    },
+                    data: {
+                        Content: fileUrl,
+                    },
+                }),
+            };
+        }
+
+        return createErrorResponse(400, 'Cannot handle URLs yet.');
 
     } catch (error) {
         console.error("Error during POST package:", error);
-        return {
-            statusCode: 500,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ message: 'Failed to upload package.', error: (error as Error).message }),
-        };
+        return createErrorResponse(500, 'Failed to upload package.');
     }
 };
