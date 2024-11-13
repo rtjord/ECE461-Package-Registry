@@ -180,6 +180,9 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: delete
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackageMetadataTable
 
   PackageUpdate:
     Type: AWS::Serverless::Function
