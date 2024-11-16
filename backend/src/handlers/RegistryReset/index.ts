@@ -12,6 +12,42 @@ import {
     ScanCommandOutput,
 } from "@aws-sdk/client-dynamodb";
 
+// Lambda handler
+export const handler: APIGatewayProxyHandler = async () => {
+    try {
+        // Inject clients
+        const dynamoDBClient = new DynamoDBClient();
+        const s3Client = new S3Client();
+
+        // Define table and bucket names
+        const table1 = "PackageMetadata"; // Table with ID as primary key
+        const table2 = "PackageHistoryTable"; // Table with partition and sort keys
+        const bucket = getEnvVariable("S3_BUCKET_NAME");
+
+        // Perform all operations concurrently
+        await Promise.all([
+            clearDynamoDBTable(dynamoDBClient, table1, (item) => ({ ID: item.ID })),
+            clearDynamoDBTable(dynamoDBClient, table2, (item) => ({
+                PackageName: item.PackageName,
+                Date: item.Date,
+            })),
+            emptyS3Bucket(s3Client, bucket),
+        ]);
+
+        console.log("All resources cleared successfully.");
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ message: "Tables and bucket cleared successfully." }),
+        };
+    } catch (error) {
+        console.error("Error clearing resources:", error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: "Failed to clear resources.", error: error }),
+        };
+    }
+};
+
 // Utility to validate required environment variables
 function getEnvVariable(key: string): string {
     const value = process.env[key];
@@ -94,39 +130,3 @@ async function emptyS3Bucket(
 
     console.log(`Bucket ${bucketName} emptied successfully.`);
 }
-
-// Lambda handler
-export const handler: APIGatewayProxyHandler = async () => {
-    try {
-        // Inject clients
-        const dynamoDBClient = new DynamoDBClient({ region: process.env.AWS_REGION });
-        const s3Client = new S3Client({ region: process.env.AWS_REGION });
-
-        // Define table and bucket names
-        const table1 = "PackageMetadata"; // Table with ID as primary key
-        const table2 = "PackageHistoryTable"; // Table with partition and sort keys
-        const bucket = getEnvVariable("S3_BUCKET_NAME");
-
-        // Perform all operations concurrently
-        await Promise.all([
-            clearDynamoDBTable(dynamoDBClient, table1, (item) => ({ ID: item.ID })),
-            clearDynamoDBTable(dynamoDBClient, table2, (item) => ({
-                PackageName: item.PackageName,
-                Date: item.Date,
-            })),
-            emptyS3Bucket(s3Client, bucket),
-        ]);
-
-        console.log("All resources cleared successfully.");
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ message: "Tables and bucket cleared successfully." }),
-        };
-    } catch (error) {
-        console.error("Error clearing resources:", error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ message: "Failed to clear resources.", error: error }),
-        };
-    }
-};
