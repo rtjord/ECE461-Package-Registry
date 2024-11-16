@@ -46,6 +46,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         };
     } catch (error) {
         console.error("Error during DELETE:", error); // Improved logging
-        return createErrorResponse(500, "Failed to delete package and associated history.");
+        return createErrorResponse(500, "Failed to delete package.");
     }
 };
