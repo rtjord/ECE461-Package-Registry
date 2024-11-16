@@ -12,155 +12,112 @@ import {
     ScanCommandOutput,
 } from "@aws-sdk/client-dynamodb";
 
-const dynamoDBClient = new DynamoDBClient({ region: process.env.AWS_REGION });
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
-
-// Function to clear a DynamoDB table with a single primary key (e.g., ID)
-async function clearDynamoDBTableByPrimaryKey(tableName: string, keyName: string): Promise<void> {
-    try {
-        console.log(`Starting to clear table: ${tableName} with primary key: ${keyName}`);
-        let lastEvaluatedKey: Record<string, any> | undefined = undefined;
-
-        do {
-            const scanResult: ScanCommandOutput = await dynamoDBClient.send(
-                new ScanCommand({
-                    TableName: tableName,
-                    ExclusiveStartKey: lastEvaluatedKey,
-                })
-            );
-
-            const items = scanResult.Items || [];
-            const keys = items.map((item) => ({
-                DeleteRequest: { Key: { [keyName]: item[keyName] } },
-            }));
-
-            if (keys.length > 0) {
-                console.log(`Deleting ${keys.length} items.`);
-                for (let i = 0; i < keys.length; i += 25) {
-                    const batch = keys.slice(i, i + 25);
-                    await dynamoDBClient.send(
-                        new BatchWriteItemCommand({
-                            RequestItems: {
-                                [tableName]: batch,
-                            },
-                        })
-                    );
-                }
-            }
-
-            lastEvaluatedKey = scanResult.LastEvaluatedKey;
-        } while (lastEvaluatedKey);
-
-        console.log(`Table ${tableName} has been cleared.`);
-    } catch (error) {
-        console.error(`Error clearing table ${tableName}:`, error);
-        throw new Error(`Failed to clear table: ${tableName}`);
+// Utility to validate required environment variables
+function getEnvVariable(key: string): string {
+    const value = process.env[key];
+    if (!value) {
+        throw new Error(`Environment variable ${key} is not set.`);
     }
+    return value;
 }
 
-// Function to clear a DynamoDB table with partition and sort keys
-async function clearDynamoDBTableByPartitionAndSortKey(
+// Reusable function to delete items from DynamoDB in batches
+async function deleteDynamoDBItems(
+    dynamoDBClient: DynamoDBClient,
     tableName: string,
-    partitionKey: string,
-    sortKey: string
+    keys: { DeleteRequest: { Key: Record<string, any> } }[]
 ): Promise<void> {
-    try {
-        console.log(`Starting to clear table: ${tableName} with keys: ${partitionKey} and ${sortKey}`);
-        let lastEvaluatedKey: Record<string, any> | undefined = undefined;
-
-        do {
-            const scanResult: ScanCommandOutput = await dynamoDBClient.send(
-                new ScanCommand({
-                    TableName: tableName,
-                    ExclusiveStartKey: lastEvaluatedKey,
-                })
-            );
-
-            const items = scanResult.Items || [];
-            const keys = items.map((item) => ({
-                DeleteRequest: { Key: { [partitionKey]: item[partitionKey], [sortKey]: item[sortKey] } },
-            }));
-
-            if (keys.length > 0) {
-                console.log(`Deleting ${keys.length} items.`);
-                for (let i = 0; i < keys.length; i += 25) {
-                    const batch = keys.slice(i, i + 25);
-                    await dynamoDBClient.send(
-                        new BatchWriteItemCommand({
-                            RequestItems: {
-                                [tableName]: batch,
-                            },
-                        })
-                    );
-                }
-            }
-
-            lastEvaluatedKey = scanResult.LastEvaluatedKey;
-        } while (lastEvaluatedKey);
-
-        console.log(`Table ${tableName} has been cleared.`);
-    } catch (error) {
-        console.error(`Error clearing table ${tableName}:`, error);
-        throw new Error(`Failed to clear table: ${tableName}`);
+    for (let i = 0; i < keys.length; i += 25) {
+        const batch = keys.slice(i, i + 25);
+        await dynamoDBClient.send(
+            new BatchWriteItemCommand({
+                RequestItems: { [tableName]: batch },
+            })
+        );
     }
 }
 
-// Function to clear an S3 bucket
-async function emptyS3Bucket(bucketName: string): Promise<void> {
-    try {
-        console.log(`Starting to empty bucket: ${bucketName}`);
+// Function to clear a DynamoDB table
+async function clearDynamoDBTable(
+    dynamoDBClient: DynamoDBClient,
+    tableName: string,
+    keyExtractor: (item: Record<string, any>) => Record<string, any>
+): Promise<void> {
+    console.log(`Clearing DynamoDB table: ${tableName}`);
+    let lastEvaluatedKey: Record<string, any> | undefined;
 
-        let continuationToken: string | undefined = undefined;
-        do {
-            const listObjects: ListObjectsV2CommandOutput = await s3Client.send(
-                new ListObjectsV2Command({ Bucket: bucketName, ContinuationToken: continuationToken })
+    do {
+        const scanResult: ScanCommandOutput = await dynamoDBClient.send(
+            new ScanCommand({ TableName: tableName, ExclusiveStartKey: lastEvaluatedKey })
+        );
+
+        const items = scanResult.Items || [];
+        const keys = items.map((item) => ({ DeleteRequest: { Key: keyExtractor(item) } }));
+
+        if (keys.length > 0) {
+            console.log(`Deleting ${keys.length} items from table: ${tableName}`);
+            await deleteDynamoDBItems(dynamoDBClient, tableName, keys);
+        }
+
+        lastEvaluatedKey = scanResult.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    console.log(`Table ${tableName} cleared successfully.`);
+}
+
+// Function to empty an S3 bucket
+async function emptyS3Bucket(
+    s3Client: S3Client,
+    bucketName: string
+): Promise<void> {
+    console.log(`Emptying S3 bucket: ${bucketName}`);
+    let continuationToken: string | undefined;
+
+    do {
+        const listObjects: ListObjectsV2CommandOutput = await s3Client.send(
+            new ListObjectsV2Command({ Bucket: bucketName, ContinuationToken: continuationToken })
+        );
+
+        const objects = listObjects.Contents?.map((object) => ({ Key: object.Key })) || [];
+        if (objects.length > 0) {
+            console.log(`Deleting ${objects.length} objects from bucket: ${bucketName}`);
+            await s3Client.send(
+                new DeleteObjectsCommand({
+                    Bucket: bucketName,
+                    Delete: { Objects: objects },
+                })
             );
+        }
 
-            const objects = listObjects.Contents?.map((object) => ({ Key: object.Key })) || [];
-            if (objects.length > 0) {
-                console.log(`Deleting ${objects.length} objects.`);
-                await s3Client.send(
-                    new DeleteObjectsCommand({
-                        Bucket: bucketName,
-                        Delete: { Objects: objects },
-                    })
-                );
-            }
+        continuationToken = listObjects.NextContinuationToken;
+    } while (continuationToken);
 
-            continuationToken = listObjects.NextContinuationToken;
-        } while (continuationToken);
-
-        console.log(`Bucket ${bucketName} has been emptied.`);
-    } catch (error) {
-        console.error(`Error emptying bucket ${bucketName}:`, error);
-        throw new Error(`Failed to empty bucket: ${bucketName}`);
-    }
+    console.log(`Bucket ${bucketName} emptied successfully.`);
 }
 
 // Lambda handler
 export const handler: APIGatewayProxyHandler = async () => {
     try {
+        // Inject clients
+        const dynamoDBClient = new DynamoDBClient({ region: process.env.AWS_REGION });
+        const s3Client = new S3Client({ region: process.env.AWS_REGION });
+
         // Define table and bucket names
-        const table1 = "PackageMetadata"; // Table with ID as the primary key
-        const table2 = "PackageHistoryTable"; // Table with partition key and sort key
-        const bucket = process.env.S3_BUCKET_NAME; // S3 bucket name
-        if (!bucket) {
-            throw new Error("S3_BUCKET_NAME environment variable is not set.");
-        }
+        const table1 = "PackageMetadata"; // Table with ID as primary key
+        const table2 = "PackageHistoryTable"; // Table with partition and sort keys
+        const bucket = getEnvVariable("S3_BUCKET_NAME");
 
-        // Clear the DynamoDB tables
-        console.log(`Clearing DynamoDB table: ${table1}`);
-        await clearDynamoDBTableByPrimaryKey(table1, "ID");
+        // Perform all operations concurrently
+        await Promise.all([
+            clearDynamoDBTable(dynamoDBClient, table1, (item) => ({ ID: item.ID })),
+            clearDynamoDBTable(dynamoDBClient, table2, (item) => ({
+                PackageName: item.PackageName,
+                Date: item.Date,
+            })),
+            emptyS3Bucket(s3Client, bucket),
+        ]);
 
-        console.log(`Clearing DynamoDB table: ${table2}`);
-        await clearDynamoDBTableByPartitionAndSortKey(table2, "PackageName", "Date");
-
-        // Empty the S3 bucket
-        console.log(`Emptying S3 bucket: ${bucket}`);
-        await emptyS3Bucket(bucket);
-
-        console.log("All resources have been cleared successfully.");
-
+        console.log("All resources cleared successfully.");
         return {
             statusCode: 200,
             body: JSON.stringify({ message: "Tables and bucket cleared successfully." }),
