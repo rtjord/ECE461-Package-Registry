@@ -1,6 +1,6 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
 import { PackageData, PackageTableRow, User } from './interfaces';
@@ -9,7 +9,6 @@ import JSZip from "jszip";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import archiver from 'archiver';
 import git from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
@@ -18,12 +17,12 @@ const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 // Generate a unique package ID based on the package name and version
-function generatePackageID(name: string, version: string): string {
+export function generatePackageID(name: string, version: string): string {
     return createHash('sha256').update(name + version).digest('base64url').slice(0, 20);
 }
 
 // Extract package.json and README.md from the uploaded zip file
-async function extractFilesFromZip(zipBuffer: Buffer) {
+export async function extractFilesFromZip(zipBuffer: Buffer) {
     const zip = await JSZip.loadAsync(zipBuffer);
 
     const packageJsonFile = zip.file(/package\.json$/i)[0];
@@ -36,7 +35,7 @@ async function extractFilesFromZip(zipBuffer: Buffer) {
 }
 
 // Extract metadata (name and version) from package.json content
-function extractMetadataFromPackageJson(packageJson: string) {
+export function extractMetadataFromPackageJson(packageJson: string) {
     const metadata = JSON.parse(packageJson);
     return {
         packageName: metadata.name ?? null,
@@ -139,7 +138,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
 
-        const { packageJson } = await extractFilesFromZip(fileContent);
+        const { packageJson, readme } = await extractFilesFromZip(fileContent);
 
         // Ensure package.json is present in the uploaded zip
         if (!packageJson) {
