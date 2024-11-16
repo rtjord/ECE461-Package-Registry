@@ -1,7 +1,8 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { PackageID, PackageTableRow, User, PackageHistoryEntry } from "./interfaces";
 import { APIGatewayProxyResult } from "aws-lambda";
+
 
 export async function getPackageById(dynamoDBClient: DynamoDBClient, packageId: PackageID) {
     const params = {
@@ -21,22 +22,25 @@ export async function getPackageById(dynamoDBClient: DynamoDBClient, packageId: 
     return result.Item as PackageTableRow;
 }
 
-export async function savePackageMetadata(dynamoDBClient: DynamoDBClient, packageId: string, packageName: string, version: string, fileUrl: string | null, fileSizeInMB: number) {
+export async function savePackageMetadata(dynamoDBClient: DynamoDBClient, packageId: string, packageName: string, version: string, url: string | undefined, JSProgram: string | undefined, standaloneCost: number) {
+    const row: PackageTableRow = {
+        ID: packageId,
+        PackageName: packageName,
+        Version: version,
+        URL: url,
+        s3Key: `uploads/${packageName}-${version}.zip`,
+        JSProgram: JSProgram,
+        standaloneCost: standaloneCost,
+    };
+    
     const dynamoDBParams = {
         TableName: "PackageMetadata",
-        Item: {
-            PackageName: packageName,
-            Version: version,
-            ID: packageId,
-            URL: fileUrl,
-            s3Key: `uploads/${packageName}-${version}.zip`,
-            standaloneCost: fileSizeInMB,
-        },
+        Item: row,
     };
     await dynamoDBClient.send(new PutCommand(dynamoDBParams));
 }
 
-export async function updatePackageHistory(dynamoDBClient: DynamoDBClient, packageName: string, version: string, packageId: string, user: User, action: string) {
+export async function updatePackageHistory(dynamoDBClient: DynamoDBClient, packageName: string, version: string, packageId: string, user: User, action: "CREATE" | "UPDATE" | "DOWNLOAD" | "RATE") {
     const date = new Date().toISOString();
     const dynamoDBParams = {
         TableName: "PackageHistoryTable",

@@ -57,6 +57,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             data: {
                 Content: s3Result.base64Content,
                 URL: url,
+                JSProgram: existingPackage.JSProgram,
             },
         };
 

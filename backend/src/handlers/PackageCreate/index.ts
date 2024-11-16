@@ -1,14 +1,14 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
-import { PackageData, PackageTableRow, User } from './interfaces';
+import { PackageData, PackageTableRow, User, Package } from './interfaces';
 import { createHash } from 'crypto';
 import JSZip from "jszip";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import git from 'isomorphic-git';
-import http from 'isomorphic-git/http/node';
+import http, { request } from 'isomorphic-git/http/node';
 import yazl from 'yazl';
 import axios from 'axios';
 
@@ -202,11 +202,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         // Upload the package zip to S3
-        const fileUrl = await uploadToS3(fileContent, packageName, version);
-        const fileSizeInMB = fileContent.length / (1024 * 1024);
+        const s3Key = await uploadToS3(fileContent, packageName, version);
+        const standaloneCost = fileContent.length / (1024 * 1024);
 
         // Save the package metadata to DynamoDB
-        await savePackageMetadata(packageId, packageName, version, fileUrl, fileSizeInMB);
+        await savePackageMetadata(packageId, packageName, version, requestBody.URL, requestBody.JSProgram, standaloneCost);
 
         // Log the package creation in the package history
         const user: User = {
@@ -216,23 +216,25 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         await updatePackageHistory(packageName, version, packageId, user, "CREATE");
 
+        const responseBody: Package = {
+            metadata: {
+                Name: packageName,
+                Version: version,
+                ID: packageId,
+            },
+            data: {
+                Content: fileContent.toString('base64'),
+                URL: requestBody.URL,
+                JSProgram: requestBody.JSProgram,
+            },
+        };
         return {
             statusCode: 201,
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: 'Package uploaded and metadata stored successfully.',
-                metadata: {
-                    Name: packageName,
-                    Version: version,
-                    ID: packageId,
-                },
-                data: {
-                    Content: fileUrl,
-                },
-            }),
+            body: JSON.stringify(responseBody),
         };
     } catch (error) {
         console.error("Error during POST package:", error);
