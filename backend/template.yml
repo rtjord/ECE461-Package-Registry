@@ -116,6 +116,9 @@ Resources:
             Method: get
             RequestParameters:
               method.request.path.name: true
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageHistoryTable
   
   PackageRetrieve:
     Type: AWS::Serverless::Function
@@ -177,6 +180,9 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: delete
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackageMetadataTable
 
   PackageUpdate:
     Type: AWS::Serverless::Function
