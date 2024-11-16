@@ -1,61 +1,62 @@
-import { S3, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { createErrorResponse, getPackageById } from './utils';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { createErrorResponse, getPackageById, updatePackageHistory } from './utils';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { PackageTableRow } from './interfaces';
+import { PackageTableRow, Package, User } from './interfaces';
 
-// Main handler with dependency injection
-export const handler = async (
-    event: APIGatewayProxyEvent,
-    dependencies: { s3Client: S3; dynamoDBClient: DynamoDBDocumentClient } = {
-        s3Client: new S3(),
-        dynamoDBClient: DynamoDBDocumentClient.from(new DynamoDBClient()),
-    }
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        const id = event.pathParameters?.id;
+        // Initialize clients
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+        const s3Client = new S3Client();
+
+        // Extract and validate the package ID
+        const id = getIdFromEvent(event);
         if (!id) {
-            return createErrorResponse(400, 'Package ID is required.');
+            return createErrorResponse(400, "Missing ID in path parameters.");
         }
 
-        const existingPackage = await getPackageById(id);
+        // Fetch package details from DynamoDB
+        const existingPackage: PackageTableRow | null = await getPackageById(dynamoDBClient, id);
         if (!existingPackage) {
             return createErrorResponse(404, 'Package not found.');
         }
 
-        const { PackageName: packageName, Version: version, s3Key, URL: url } = existingPackage;
-        const bucketName = process.env.S3_BUCKET_NAME;
-        if (!bucketName) {
-            throw new Error('S3_BUCKET_NAME environment variable is not set.');
+        const { ID: packageId, PackageName: packageName, Version: version, s3Key, URL: url } = existingPackage;
+        const bucketName = getEnvVariable('S3_BUCKET_NAME');
+
+        // Fetch S3 object content if S3 key exists
+        const s3Result = s3Key ? await getS3ObjectContent(s3Client, bucketName, s3Key) : { base64Content: null, fileUrl: null };
+        if (!s3Result.base64Content) {
+            return createErrorResponse(500, 'Failed to retrieve package content.');
         }
 
-        let base64Content: string | null = null;
-        let fileUrl: string | null = null;
+        const user: User = {
+            name: "ece30861defaultadminuser",
+            isAdmin: true,
+        };
 
-        if (s3Key) {
-            const s3Result = await getS3ObjectContent(dependencies.s3Client, bucketName, s3Key);
-            base64Content = s3Result.base64Content;
-            fileUrl = s3Result.fileUrl;
-        }
-
+        // Update package history in DynamoDB
         await updatePackageHistory(
-            dependencies.dynamoDBClient,
-            'PackageHistoryTable',
+            dynamoDBClient,
             packageName,
             version,
-            event.requestContext.authorizer?.claims || null
+            packageId,
+            user,
+            "DOWNLOAD"
         );
 
-        const responseBody = {
+        // Prepare the response
+        const responseBody: Package = {
             metadata: {
                 Name: packageName,
                 Version: version,
-                ID: `${packageName}-${version}`,
+                ID: packageId,
             },
             data: {
-                Content: base64Content,
-                URL: url || fileUrl,
+                Content: s3Result.base64Content,
+                URL: url,
             },
         };
 
@@ -71,36 +72,32 @@ export const handler = async (
 };
 
 // Extract ID from the event
-function getIdFromEvent(event: APIGatewayProxyEvent): string | undefined {
+function getIdFromEvent(event: APIGatewayProxyEvent): string {
     const id = event.pathParameters?.id;
     if (!id) {
-        console.error("Missing ID in event path parameters.");
+        throw new Error("Missing ID in path parameters.");
     }
     return id;
 }
 
-// Fetch package by ID from DynamoDB
-async function fetchPackageById(id: string): Promise<PackageTableRow | null> {
-    try {
-        return await getPackageById(id);
-    } catch (error) {
-        console.error(`Error fetching package by ID: ${id}`, error);
-        throw new Error("Error fetching package data.");
+// Validate environment variables
+function getEnvVariable(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Environment variable ${name} is not defined`);
     }
+    return value;
 }
 
-// Utility function to fetch S3 object content
+
+// Fetch S3 object content
 async function getS3ObjectContent(
-    s3Client: S3,
+    s3Client: S3Client,
     bucketName: string,
     key: string
 ): Promise<{ base64Content: string | null; fileUrl: string | null }> {
     try {
-        const s3Object: GetObjectCommandOutput = await s3Client.send(
-            new GetObjectCommand({ Bucket: bucketName, Key: key })
-        );
-
-        let base64Content: string | null = null;
+        const s3Object: GetObjectCommandOutput = await s3Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${key}`;
 
         if (s3Object.Body && typeof (s3Object.Body as any)[Symbol.asyncIterator] === 'function') {
@@ -109,47 +106,12 @@ async function getS3ObjectContent(
                 chunks.push(chunk);
             }
             const fileBuffer = Buffer.concat(chunks);
-            base64Content = fileBuffer.toString('base64');
+            return { base64Content: fileBuffer.toString('base64'), fileUrl };
         }
 
-        return { base64Content, fileUrl };
+        return { base64Content: null, fileUrl };
     } catch (error) {
         console.error('Error fetching S3 object:', error);
         return { base64Content: null, fileUrl: null };
-    }
-}
-
-// Utility function to update the DynamoDB table
-async function updatePackageHistory(
-    dynamoDBClient: DynamoDBDocumentClient,
-    tableName: string,
-    packageName: string,
-    version: string,
-    authorizerClaims: Record<string, any> | null
-): Promise<void> {
-    const historyParams = {
-        TableName: tableName,
-        Key: { PackageName: packageName },
-        UpdateExpression: 'SET #history = list_append(if_not_exists(#history, :emptyList), :newEvent)',
-        ExpressionAttributeNames: {
-            '#history': 'history',
-        },
-        ExpressionAttributeValues: {
-            ':emptyList': [],
-            ':newEvent': [
-                {
-                    User: authorizerClaims || { name: 'Unknown', isAdmin: false },
-                    Date: new Date().toISOString(),
-                    PackageMetadata: { Name: packageName, Version: version, ID: `${packageName}-${version}` },
-                    Action: 'DOWNLOAD',
-                },
-            ],
-        },
-    };
-
-    try {
-        await dynamoDBClient.send(new UpdateCommand(historyParams));
-    } catch (error) {
-        console.error('Failed to update package history:', error);
     }
 }
