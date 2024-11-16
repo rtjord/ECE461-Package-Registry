@@ -90,13 +90,13 @@ Resources:
             Method: delete
       Environment:
         Variables:
-          S3_BUCKET_NAME: !Ref PackageBucket
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
       Policies:
-        - DynamoDBWritePolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref PackageMetadataTable
-        - DynamoDBWritePolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref PackageHistoryTable
-        - S3WritePolicy:
+        - S3CrudPolicy:
             BucketName: !Ref PackageBucket
   
   PackageByNameGet:
@@ -183,6 +183,9 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PackageMetadataTable
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
   PackageUpdate:
     Type: AWS::Serverless::Function

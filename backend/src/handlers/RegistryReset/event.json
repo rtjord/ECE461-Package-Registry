@@ -1,0 +1,12 @@
+{
+  "httpMethod": "DELETE",
+  "path": "/reset",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "requestContext": {
+    "httpMethod": "DELETE",
+    "resourcePath": "/reset"
+  },
+  "body": null
+}
