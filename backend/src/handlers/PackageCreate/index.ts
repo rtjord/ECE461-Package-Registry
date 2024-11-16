@@ -10,8 +10,46 @@ import * as os from 'os';
 import git from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
+import axios from 'axios';
 
 const s3 = new S3();
+
+
+type NpmMetadata = {
+    repository?: {
+        url?: string;
+    };
+};
+
+/**
+ * Fetches the GitHub repository URL from an npm package and processes it.
+ * @param packageUrl - The URL of the npm package.
+ * @returns The processed GitHub repository URL or null if an error occurs.
+ */
+export async function getGitHubRepoUrlFromNpmPackage(packageUrl: string): Promise<string | null> {
+    try {
+        // Extract the package name from the URL
+        const packageName = packageUrl.split('/').slice(-1)[0];
+        if (!packageName) {
+            throw new Error("Invalid package URL. Unable to extract package name.");
+        }
+
+        // Fetch npm metadata
+        const response = await axios.get<NpmMetadata>(`https://registry.npmjs.org/${packageName}`);
+        const repoUrl = response.data.repository?.url;
+
+        if (!repoUrl) {
+            throw new Error("Repository URL not found in npm metadata.");
+        }
+
+        // Remove `git+` prefix if present
+        return repoUrl.startsWith("git+") ? repoUrl.slice(4) : repoUrl;
+
+    } catch (error) {
+        console.error("Error fetching GitHub repository URL:", error);
+        return null;
+    }
+}
 
 // Generate a unique package ID based on the package name and version
 export function generatePackageID(name: string, version: string): string {
@@ -128,9 +166,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             // Decode the uploaded file content
             fileContent = Buffer.from(requestBody.Content, 'base64');
         } else if (requestBody.URL) {
+            // Fetch the GitHub repository URL from the npm package
+            const repoUrl = await getGitHubRepoUrlFromNpmPackage(requestBody.URL);
+            if (!repoUrl) {
+                return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
+            }
             // Clone the GitHub repository and zip it
-            console.log(`Cloning repository from ${requestBody.URL}`);
-            fileContent = await cloneAndZipRepository(requestBody.URL);
+            console.log(`Cloning repository from ${repoUrl}`);
+            fileContent = await cloneAndZipRepository(repoUrl);
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
