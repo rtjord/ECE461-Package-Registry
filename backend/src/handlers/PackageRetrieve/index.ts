@@ -3,71 +3,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { createErrorResponse, getPackageById } from './utils';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-
-// Utility function to fetch S3 object content
-async function getS3ObjectContent(
-    s3Client: S3,
-    bucketName: string,
-    key: string
-): Promise<{ base64Content: string | null; fileUrl: string | null }> {
-    try {
-        const s3Object: GetObjectCommandOutput = await s3Client.send(
-            new GetObjectCommand({ Bucket: bucketName, Key: key })
-        );
-
-        let base64Content: string | null = null;
-        const fileUrl = `https://${bucketName}.s3.amazonaws.com/${key}`;
-
-        if (s3Object.Body && typeof (s3Object.Body as any)[Symbol.asyncIterator] === 'function') {
-            const chunks: Uint8Array[] = [];
-            for await (const chunk of s3Object.Body as any) {
-                chunks.push(chunk);
-            }
-            const fileBuffer = Buffer.concat(chunks);
-            base64Content = fileBuffer.toString('base64');
-        }
-
-        return { base64Content, fileUrl };
-    } catch (error) {
-        console.error('Error fetching S3 object:', error);
-        return { base64Content: null, fileUrl: null };
-    }
-}
-
-// Utility function to update the DynamoDB table
-async function updatePackageHistory(
-    dynamoDBClient: DynamoDBDocumentClient,
-    tableName: string,
-    packageName: string,
-    version: string,
-    authorizerClaims: Record<string, any> | null
-): Promise<void> {
-    const historyParams = {
-        TableName: tableName,
-        Key: { PackageName: packageName },
-        UpdateExpression: 'SET #history = list_append(if_not_exists(#history, :emptyList), :newEvent)',
-        ExpressionAttributeNames: {
-            '#history': 'history',
-        },
-        ExpressionAttributeValues: {
-            ':emptyList': [],
-            ':newEvent': [
-                {
-                    User: authorizerClaims || { name: 'Unknown', isAdmin: false },
-                    Date: new Date().toISOString(),
-                    PackageMetadata: { Name: packageName, Version: version, ID: `${packageName}-${version}` },
-                    Action: 'DOWNLOAD',
-                },
-            ],
-        },
-    };
-
-    try {
-        await dynamoDBClient.send(new UpdateCommand(historyParams));
-    } catch (error) {
-        console.error('Failed to update package history:', error);
-    }
-}
+import { PackageTableRow } from './interfaces';
 
 // Main handler with dependency injection
 export const handler = async (
@@ -133,3 +69,87 @@ export const handler = async (
         return createErrorResponse(500, 'Failed to retrieve package.');
     }
 };
+
+// Extract ID from the event
+function getIdFromEvent(event: APIGatewayProxyEvent): string | undefined {
+    const id = event.pathParameters?.id;
+    if (!id) {
+        console.error("Missing ID in event path parameters.");
+    }
+    return id;
+}
+
+// Fetch package by ID from DynamoDB
+async function fetchPackageById(id: string): Promise<PackageTableRow | null> {
+    try {
+        return await getPackageById(id);
+    } catch (error) {
+        console.error(`Error fetching package by ID: ${id}`, error);
+        throw new Error("Error fetching package data.");
+    }
+}
+
+// Utility function to fetch S3 object content
+async function getS3ObjectContent(
+    s3Client: S3,
+    bucketName: string,
+    key: string
+): Promise<{ base64Content: string | null; fileUrl: string | null }> {
+    try {
+        const s3Object: GetObjectCommandOutput = await s3Client.send(
+            new GetObjectCommand({ Bucket: bucketName, Key: key })
+        );
+
+        let base64Content: string | null = null;
+        const fileUrl = `https://${bucketName}.s3.amazonaws.com/${key}`;
+
+        if (s3Object.Body && typeof (s3Object.Body as any)[Symbol.asyncIterator] === 'function') {
+            const chunks: Uint8Array[] = [];
+            for await (const chunk of s3Object.Body as any) {
+                chunks.push(chunk);
+            }
+            const fileBuffer = Buffer.concat(chunks);
+            base64Content = fileBuffer.toString('base64');
+        }
+
+        return { base64Content, fileUrl };
+    } catch (error) {
+        console.error('Error fetching S3 object:', error);
+        return { base64Content: null, fileUrl: null };
+    }
+}
+
+// Utility function to update the DynamoDB table
+async function updatePackageHistory(
+    dynamoDBClient: DynamoDBDocumentClient,
+    tableName: string,
+    packageName: string,
+    version: string,
+    authorizerClaims: Record<string, any> | null
+): Promise<void> {
+    const historyParams = {
+        TableName: tableName,
+        Key: { PackageName: packageName },
+        UpdateExpression: 'SET #history = list_append(if_not_exists(#history, :emptyList), :newEvent)',
+        ExpressionAttributeNames: {
+            '#history': 'history',
+        },
+        ExpressionAttributeValues: {
+            ':emptyList': [],
+            ':newEvent': [
+                {
+                    User: authorizerClaims || { name: 'Unknown', isAdmin: false },
+                    Date: new Date().toISOString(),
+                    PackageMetadata: { Name: packageName, Version: version, ID: `${packageName}-${version}` },
+                    Action: 'DOWNLOAD',
+                },
+            ],
+        },
+    };
+
+    try {
+        await dynamoDBClient.send(new UpdateCommand(historyParams));
+    } catch (error) {
+        console.error('Failed to update package history:', error);
+    }
+}
