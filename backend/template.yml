@@ -116,6 +116,9 @@ Resources:
             Method: get
             RequestParameters:
               method.request.path.name: true
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageHistoryTable
   
   PackageRetrieve:
     Type: AWS::Serverless::Function
