@@ -1,0 +1,18 @@
+{
+  "body": {
+    "URL": "https://www.npmjs.com/package/yazl",
+    "JSProgram": "if (process.argv.length === 7) { console.log('Success'); process.exit(0); } else { console.log('Failed'); process.exit(1); }",
+    "debloat": false
+  },
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "pathParameters": null,
+  "queryStringParameters": null,
+  "requestContext": {
+    "requestId": "test-request-id",
+    "httpMethod": "POST",
+    "resourcePath": "/package"
+  }
+}

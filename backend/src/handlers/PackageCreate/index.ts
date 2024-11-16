@@ -1,22 +1,63 @@
 import { S3 } from '@aws-sdk/client-s3';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
 import { PackageData, PackageTableRow, User } from './interfaces';
 import { createHash } from 'crypto';
 import JSZip from "jszip";
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import git from 'isomorphic-git';
+import http from 'isomorphic-git/http/node';
+import yazl from 'yazl';
+import axios from 'axios';
 
 const s3 = new S3();
-const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+
+
+type NpmMetadata = {
+    repository?: {
+        url?: string;
+    };
+};
+
+/**
+ * Fetches the GitHub repository URL from an npm package and processes it.
+ * @param packageUrl - The URL of the npm package.
+ * @returns The processed GitHub repository URL or null if an error occurs.
+ */
+export async function getGitHubRepoUrlFromNpmPackage(packageUrl: string): Promise<string | null> {
+    try {
+        // Extract the package name from the URL
+        const packageName = packageUrl.split('/').slice(-1)[0];
+        if (!packageName) {
+            throw new Error("Invalid package URL. Unable to extract package name.");
+        }
+
+        // Fetch npm metadata
+        const response = await axios.get<NpmMetadata>(`https://registry.npmjs.org/${packageName}`);
+        const repoUrl = response.data.repository?.url;
+
+        if (!repoUrl) {
+            throw new Error("Repository URL not found in npm metadata.");
+        }
+
+        // Remove `git+` prefix if present
+        return repoUrl.startsWith("git+") ? repoUrl.slice(4) : repoUrl;
+
+    } catch (error) {
+        console.error("Error fetching GitHub repository URL:", error);
+        return null;
+    }
+}
 
 // Generate a unique package ID based on the package name and version
-function generatePackageID(name: string, version: string): string {
+export function generatePackageID(name: string, version: string): string {
     return createHash('sha256').update(name + version).digest('base64url').slice(0, 20);
 }
 
 // Extract package.json and README.md from the uploaded zip file
-async function extractFilesFromZip(zipBuffer: Buffer) {
+export async function extractFilesFromZip(zipBuffer: Buffer) {
     const zip = await JSZip.loadAsync(zipBuffer);
 
     const packageJsonFile = zip.file(/package\.json$/i)[0];
@@ -29,7 +70,7 @@ async function extractFilesFromZip(zipBuffer: Buffer) {
 }
 
 // Extract metadata (name and version) from package.json content
-function extractMetadataFromPackageJson(packageJson: string) {
+export function extractMetadataFromPackageJson(packageJson: string) {
     const metadata = JSON.parse(packageJson);
     return {
         packageName: metadata.name ?? null,
@@ -54,6 +95,56 @@ async function uploadToS3(fileContent: Buffer, packageName: string, version: str
     return `https://${bucketName}.s3.amazonaws.com/${s3Key}`;
 }
 
+// Clone GitHub repository and compress it to a zip file
+async function cloneAndZipRepository(repoUrl: string): Promise<Buffer> {
+    const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'repo-'));
+    const repoPath = path.join(tempDir, 'repo');
+
+    try {
+        // Clone the GitHub repository using isomorphic-git
+        await git.clone({
+            fs,
+            http,
+            dir: repoPath,
+            url: repoUrl,
+            singleBranch: true,
+            depth: 1,
+        });
+
+        // Create a zip archive of the cloned repository
+        return await zipDirectory(repoPath);
+    } finally {
+        // Clean up temporary files
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
+    }
+}
+
+// Zip a directory and return a buffer of the zip file using yazl
+async function zipDirectory(directoryPath: string): Promise<Buffer> {
+    return new Promise<Buffer>((resolve, reject) => {
+        const zipFile = new yazl.ZipFile();
+        const filePaths = fs.readdirSync(directoryPath);
+
+        for (const filePath of filePaths) {
+            const fullPath = path.join(directoryPath, filePath);
+            const stat = fs.statSync(fullPath);
+
+            if (stat.isFile()) {
+                zipFile.addFile(fullPath, filePath);
+            } else if (stat.isDirectory()) {
+                zipFile.addEmptyDirectory(filePath);
+            }
+        }
+
+        const chunks: Buffer[] = [];
+        zipFile.outputStream.on('data', (chunk) => chunks.push(chunk));
+        zipFile.outputStream.on('end', () => resolve(Buffer.concat(chunks)));
+        zipFile.outputStream.on('error', (err) => reject(err));
+
+        zipFile.end();
+    });
+}
+
 // Main Lambda handler function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
@@ -62,75 +153,87 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, 'Request body is missing.');
         }
 
-        const requestBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+        const requestBody: PackageData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
         // Validate that exactly one of Content or URL is provided
         if ((!requestBody.Content && !requestBody.URL) || (requestBody.Content && requestBody.URL)) {
             return createErrorResponse(400, 'Exactly one of Content or URL must be provided.');
         }
 
+        let fileContent: Buffer;
+
         if (requestBody.Content) {
             // Decode the uploaded file content
-            const fileContent = Buffer.from(requestBody.Content, 'base64');
-            const { packageJson } = await extractFilesFromZip(fileContent);
-
-            // Ensure package.json is present in the uploaded zip
-            if (!packageJson) {
-                return createErrorResponse(400, 'package.json not found in the uploaded zip file.');
+            fileContent = Buffer.from(requestBody.Content, 'base64');
+        } else if (requestBody.URL) {
+            // Fetch the GitHub repository URL from the npm package
+            const repoUrl = await getGitHubRepoUrlFromNpmPackage(requestBody.URL);
+            if (!repoUrl) {
+                return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
-
-            // Extract package metadata (name and version)
-            const { packageName, version } = extractMetadataFromPackageJson(packageJson);
-
-            if (!packageName || !version) {
-                return createErrorResponse(400, 'Package name or version could not be determined.');
-            }
-
-            // Generate a unique ID for the package
-            const packageId = generatePackageID(packageName, version);
-            const existingPackage = await getPackageById(packageId);
-
-            // Check if the package already exists
-            if (existingPackage) {
-                return createErrorResponse(409, 'Package already exists.');
-            }
-
-            // Upload the package zip to S3
-            const fileUrl = await uploadToS3(fileContent, packageName, version);
-            const fileSizeInMB = fileContent.length / (1024 * 1024);
-
-            // Save the package metadata to DynamoDB
-            await savePackageMetadata(packageId, packageName, version, fileUrl, fileSizeInMB);
-
-            // Log the package creation in the package history
-            const user: User = {
-                name: "ece30861defaultadminuser",
-                isAdmin: true,
-            };
-
-            await updatePackageHistory(packageName, version, packageId, user, "CREATE");
-
-            return {
-                statusCode: 201,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: 'Package uploaded and metadata stored successfully.',
-                    metadata: {
-                        Name: packageName,
-                        Version: version,
-                        ID: packageId,
-                    },
-                    data: {
-                        Content: fileUrl,
-                    },
-                }),
-            };
+            // Clone the GitHub repository and zip it
+            console.log(`Cloning repository from ${repoUrl}`);
+            fileContent = await cloneAndZipRepository(repoUrl);
+        } else {
+            return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
 
-        return createErrorResponse(400, 'Cannot handle URLs yet.');
+        const { packageJson, readme } = await extractFilesFromZip(fileContent);
+
+        // Ensure package.json is present in the uploaded zip
+        if (!packageJson) {
+            return createErrorResponse(400, 'package.json not found in the uploaded zip file.');
+        }
+
+        // Extract package metadata (name and version)
+        const { packageName, version } = extractMetadataFromPackageJson(packageJson);
+
+        if (!packageName || !version) {
+            return createErrorResponse(400, 'Package name or version could not be determined.');
+        }
+
+        // Generate a unique ID for the package
+        const packageId = generatePackageID(packageName, version);
+        const existingPackage: PackageTableRow | null = await getPackageById(packageId);
+
+        // Check if the package already exists
+        if (existingPackage) {
+            return createErrorResponse(409, 'Package already exists.');
+        }
+
+        // Upload the package zip to S3
+        const fileUrl = await uploadToS3(fileContent, packageName, version);
+        const fileSizeInMB = fileContent.length / (1024 * 1024);
+
+        // Save the package metadata to DynamoDB
+        await savePackageMetadata(packageId, packageName, version, fileUrl, fileSizeInMB);
+
+        // Log the package creation in the package history
+        const user: User = {
+            name: "ece30861defaultadminuser",
+            isAdmin: true,
+        };
+
+        await updatePackageHistory(packageName, version, packageId, user, "CREATE");
+
+        return {
+            statusCode: 201,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: 'Package uploaded and metadata stored successfully.',
+                metadata: {
+                    Name: packageName,
+                    Version: version,
+                    ID: packageId,
+                },
+                data: {
+                    Content: fileUrl,
+                },
+            }),
+        };
     } catch (error) {
         console.error("Error during POST package:", error);
         return createErrorResponse(500, 'Failed to upload package.');
