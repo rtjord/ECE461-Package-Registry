@@ -1,6 +1,4 @@
 import { S3 } from '@aws-sdk/client-s3';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
 import { PackageData, PackageTableRow, User } from './interfaces';
@@ -14,7 +12,6 @@ import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
 
 const s3 = new S3();
-const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 // Generate a unique package ID based on the package name and version
 export function generatePackageID(name: string, version: string): string {
@@ -118,7 +115,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, 'Request body is missing.');
         }
 
-        const requestBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+        const requestBody: PackageData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
         // Validate that exactly one of Content or URL is provided
         if ((!requestBody.Content && !requestBody.URL) || (requestBody.Content && requestBody.URL)) {
@@ -154,7 +151,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Generate a unique ID for the package
         const packageId = generatePackageID(packageName, version);
-        const existingPackage = await getPackageById(packageId);
+        const existingPackage: PackageTableRow | null = await getPackageById(packageId);
 
         // Check if the package already exists
         if (existingPackage) {
