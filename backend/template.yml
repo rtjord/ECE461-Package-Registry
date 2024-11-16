@@ -183,6 +183,9 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PackageMetadataTable
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
   PackageUpdate:
     Type: AWS::Serverless::Function
