@@ -1,0 +1,27 @@
+{
+    "resource": "/packages",
+    "path": "/packages",
+    "httpMethod": "POST",
+    "headers": {
+      "X-Authorization": "valid-token",
+      "Content-Type": "application/json"
+    },
+    "queryStringParameters": {
+      "offset": "0"
+    },
+    "body": "[{\"Name\": \"test-package\", \"Version\": \"1.0.0\"}]",
+    "isBase64Encoded": false,
+    "pathParameters": null,
+    "stageVariables": null,
+    "requestContext": {
+      "resourcePath": "/packages",
+      "httpMethod": "POST",
+      "requestTime": "16/Nov/2024:10:00:00 +0000",
+      "requestId": "example-request-id",
+      "identity": {
+        "sourceIp": "127.0.0.1",
+        "userAgent": "PostmanRuntime/7.28.4"
+      }
+    }
+  }
+  
