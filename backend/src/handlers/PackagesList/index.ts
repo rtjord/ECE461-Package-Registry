@@ -1,10 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DynamoDBClient, QueryCommand, QueryCommandInput } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand, QueryCommandInput, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { createErrorResponse, createSuccessResponse } from "./utils";
 import { PackageMetadata, PackageQuery } from "./interfaces";
-import semver from "semver"; // Ensure semver is installed
+import semver from "semver";
 
-const MAX_RESULTS = 50;
 const PAGE_SIZE = 50;
 
 
@@ -24,17 +23,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, "Invalid JSON in request body.");
         }
 
+        // check that each package query has a name. If there is a version, it must be a valid semver range
+        for (const query of packageQueries) {
+            if (!query.Name) {
+                return createErrorResponse(400, "Package name is required.");
+            }
+            if (query.Version && !semver.validRange(query.Version)) {
+                return createErrorResponse(400, `Invalid semver range: ${query.Version}`);
+            }
+        }
+
         // Parse offset from query parameters
         const offset = parseOffset(event.queryStringParameters?.offset);
 
-        console.log("Searching for packages with queries:", packageQueries);
         // Perform package search
         const { items, newOffset } = await searchPackages(dynamoDBClient, packageQueries, offset);
-
-        // Pagination: Ensure results do not exceed MAX_RESULTS
-        if (items.length > MAX_RESULTS) {
-            return createErrorResponse(413, "Too many packages returned.");
-        }
 
         // Prepare response with updated offset
         const responseHeaders = { offset: newOffset.toString() };
@@ -58,19 +61,26 @@ async function searchPackages(
     packageQueries: PackageQuery[],
     offset: number
 ): Promise<{ items: PackageMetadata[]; newOffset: number }> {
-    const allPackages: PackageMetadata[] = [];
+    let queryResults: PackageMetadata[] = [];  // List of 
+
+    // Fetch all packages if a single query is "*"
+    if (packageQueries.length === 1 && packageQueries[0].Name === "*") {
+        queryResults = await fetchAllPackages(dynamoDBClient);
+    }
 
     for (const query of packageQueries) {
-        const queryResults: PackageMetadata[] = await fetchPackagesForQuery(dynamoDBClient, query);
-        allPackages.push(...queryResults);
+        const packages: PackageMetadata[] = await fetchPackagesForQuery(dynamoDBClient, query);
+        queryResults.push(...packages);
     }
+
+    // remove duplicates
+    queryResults = queryResults.filter((item, index) => queryResults.findIndex(i => i.ID === item.ID) === index);
 
     // Pagination: Return only the next PAGE_SIZE results
-    if (offset >= allPackages.length) {
+    if (offset >= queryResults.length) {
         return { items: [], newOffset: offset };
     }
-
-    const items: PackageMetadata[] = allPackages.slice(offset, offset + PAGE_SIZE);
+    const items: PackageMetadata[] = queryResults.slice(offset, offset + PAGE_SIZE);
     const newOffset = offset + items.length;
     return { items, newOffset };
 }
@@ -108,4 +118,29 @@ function filterVersions(items: PackageMetadata[], versionRange: string): Package
     return items.filter((item) => {
         return semver.satisfies(item.Version, versionRange);
     });
+}
+
+async function fetchAllPackages(dynamoDBClient: DynamoDBClient): Promise<PackageMetadata[]> {
+    const params = {
+        TableName: "PackageMetadata",
+    };
+
+    let allPackages: any[] = [];
+    let lastEvaluatedKey: any = null;
+
+    do {
+        const result = await dynamoDBClient.send(
+            new ScanCommand({ ...params, ExclusiveStartKey: lastEvaluatedKey })
+        );
+        allPackages = [...allPackages, ...(result.Items || [])];
+        lastEvaluatedKey = result.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    const mappedItems: PackageMetadata[] = (allPackages).map(item => ({
+        Name: item.PackageName?.S || "",
+        Version: item.Version?.S || "",
+        ID: item.ID?.S || "",
+    }));
+
+    return mappedItems;
 }
