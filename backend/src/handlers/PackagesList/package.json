@@ -1,0 +1,10 @@
+{
+  "name": "packages-list",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@types/semver": "^7.5.8"
+  },
+  "dependencies": {
+    "semver": "^7.6.3"
+  }
+}

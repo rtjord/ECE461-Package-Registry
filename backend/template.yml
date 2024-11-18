@@ -73,6 +73,25 @@ Resources:
       BucketName: !Sub "package-files-${Stage}"
       AccessControl: Private
 
+  PackagesList:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackagesList
+      MemorySize: 256
+      Timeout: 60
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi   # Reference the API defined above
+            Path: /packages
+            Method: post
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetadataTable
+
   RegistryReset:
     Type: AWS::Serverless::Function
     Properties:
