@@ -23,17 +23,20 @@ export async function getPackageById(packageId: PackageID) {
     return result.Item as PackageTableRow;
 }
 
-export async function savePackageMetadata(packageId: string, packageName: string, version: string, fileUrl: string | null, fileSizeInMB: number) {
+export async function savePackageMetadata(packageId: string, packageName: string, version: string, url: string | undefined, JSProgram: string | undefined, standaloneCost: number) {
+    const row: PackageTableRow = {
+        ID: packageId,
+        PackageName: packageName,
+        Version: version,
+        URL: url,
+        s3Key: `uploads/${packageName}-${version}.zip`,
+        JSProgram: JSProgram,
+        standaloneCost: standaloneCost,
+    };
+    
     const dynamoDBParams = {
         TableName: "PackageMetadata",
-        Item: {
-            PackageName: packageName,
-            Version: version,
-            ID: packageId,
-            URL: fileUrl,
-            s3Key: `uploads/${packageName}-${version}.zip`,
-            standaloneCost: fileSizeInMB,
-        },
+        Item: row,
     };
     await dynamoDBClient.send(new PutCommand(dynamoDBParams));
 }

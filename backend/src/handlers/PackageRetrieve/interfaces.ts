@@ -88,7 +88,6 @@ export interface PackageTableRow {
   Version: SemverRange;
   URL?: string; // Package URL
   s3Key?: string; // S3 key for package
-  debloat?: boolean; // Remove unnecessary bloat
   JSProgram?: string; // JavaScript program for sensitive modules
   standaloneCost: number; // Standalone cost, excluding dependencies
 }

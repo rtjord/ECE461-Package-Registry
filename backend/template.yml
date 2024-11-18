@@ -140,6 +140,9 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetadataTable
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
   PackageCreate:
     Type: AWS::Serverless::Function
