@@ -126,6 +126,10 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetadataTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackageHistoryTable
+        - S3ReadPolicy:
+              BucketName: !Ref PackageBucket
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
