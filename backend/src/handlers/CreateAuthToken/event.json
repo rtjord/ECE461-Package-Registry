@@ -1,0 +1,33 @@
+{
+    "resource": "/authenticate",
+    "path": "/authenticate",
+    "httpMethod": "PUT",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Basic dXNlcm5hbWU6cGFzc3dvcmQ="
+    },
+    "body": {
+      "User": {
+        "name": "ece30861defaultadminuser",
+        "isAdmin": true
+      },
+      "Secret": {
+        "password": "correcthorsebatterystaple123(!__+@**(A'\"`;DROP TABLE packages;"
+      }
+    },
+    "isBase64Encoded": false,
+    "queryStringParameters": null,
+    "pathParameters": null,
+    "stageVariables": null,
+    "requestContext": {
+      "resourcePath": "/authenticate",
+      "httpMethod": "PUT",
+      "requestTime": "16/Nov/2024:12:00:00 +0000",
+      "requestId": "example-request-id",
+      "identity": {
+        "sourceIp": "127.0.0.1",
+        "userAgent": "PostmanRuntime/7.28.4"
+      }
+    }
+  }
+  
