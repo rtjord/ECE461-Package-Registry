@@ -1,6 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { PackageID, PackageTableRow, User, PackageHistoryEntry } from "./interfaces";
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { PackageID, PackageTableRow, User, PackageMetadata } from "./interfaces";
 import { APIGatewayProxyResult } from "aws-lambda";
 
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -23,20 +23,34 @@ export async function getPackageById(packageId: PackageID) {
     return result.Item as PackageTableRow;
 }
 
-export async function savePackageMetadata(packageId: string, packageName: string, version: string, url: string | undefined, JSProgram: string | undefined, standaloneCost: number) {
-    const row: PackageTableRow = {
-        ID: packageId,
-        PackageName: packageName,
-        Version: version,
-        URL: url,
-        s3Key: `uploads/${packageName}-${version}.zip`,
-        JSProgram: JSProgram,
-        standaloneCost: standaloneCost,
-    };
-    
+export async function getPackageByName(name: string): Promise<PackageMetadata[]> {
+    const tableName = "PackageMetadata";
+    const indexName = "PackageNameVersionIndex";
+  
+    try {
+      const result = await dynamoDBClient.send(
+        new QueryCommand({
+          TableName: tableName,
+          IndexName: indexName,
+          KeyConditionExpression: "PackageName = :packageName",
+          ExpressionAttributeValues: {
+            ":packageName": name,
+          },
+        })
+      );
+  
+      // If no items are found, return an empty array
+      return result.Items as PackageMetadata[] || [];
+    } catch (error) {
+      console.error("Error querying the DynamoDB table:", error);
+      throw new Error("Failed to retrieve packages.");
+    }
+  }
+  
+export async function savePackageMetadata(metadata: PackageTableRow) {
     const dynamoDBParams = {
         TableName: "PackageMetadata",
-        Item: row,
+        Item: metadata,
     };
     await dynamoDBClient.send(new PutCommand(dynamoDBParams));
 }

@@ -15,35 +15,39 @@ export const handler = async (event: APIGatewayEvent): Promise<APIGatewayProxyRe
             return createErrorResponse(400, 'Package name is required.');
         }
 
-        // Must use query to get all items with the same partition key
-        const params = {
-            TableName: "PackageHistoryTable",
-            KeyConditionExpression: "#pkgName = :nameVal",
-            ExpressionAttributeNames: {
-                "#pkgName": "PackageName",
-            },
-            ExpressionAttributeValues: {
-                ":nameVal": name,
-            },
-        };
-
-        const command = new QueryCommand(params);
-        const result = await dynamoDBClient.send(command);
+        const history: PackageHistoryEntry[] = await getPackageHistory(name);
 
         // Check if any items were found
-        if (!result.Items || result.Items.length === 0) {
+        if (history.length === 0) {
             return createErrorResponse(404, `No history found for package: ${name}`);
         }
-
-        const packageHistory = result.Items as PackageHistoryEntry[];
 
         return {
             statusCode: 200,
             headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-            body: JSON.stringify(packageHistory),
+            body: JSON.stringify(history),
         };
     } catch (error) {
         console.error('Error fetching package history:', error);
         return createErrorResponse(500, 'Failed to fetch package history.');
     }
 };
+
+export async function getPackageHistory(packageName: string): Promise<PackageHistoryEntry[]> {
+    const params = {
+        TableName: "PackageHistoryTable",
+        KeyConditionExpression: "#pkgName = :nameVal",
+        ExpressionAttributeNames: {
+            "#pkgName": "PackageName",
+        },
+        ExpressionAttributeValues: {
+            ":nameVal": packageName,
+        },
+    };
+
+    // Must use query to get all items with the same partition key
+    const command = new QueryCommand(params);
+    const result = await dynamoDBClient.send(command);
+
+    return result.Items as PackageHistoryEntry[];
+}
