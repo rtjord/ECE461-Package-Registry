@@ -41,20 +41,33 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, 'Exactly one of Content or URL must be provided.');
         }
 
+        const packageName = requestBody.Name;
+        let version = null;
+
+        // Check if any package with the same name already exists
+        const existingPackage: PackageMetadata[] = await getPackageByName(dynamoDBClient, packageName);
+        if (existingPackage.length > 0) {
+            return createErrorResponse(409, 'Package already exists.');
+        }
+
         // Convert the uploaded content/url to a buffer representing the zip file
         let fileContent: Buffer;
         if (requestBody.Content) {
             // Decode the uploaded file content
             fileContent = Buffer.from(requestBody.Content, 'base64');
         } else if (requestBody.URL) {
+            const { packageName: urlPackageName, version: urlVersion } = extractPackageInfoFromURL(requestBody.URL);
             // Fetch the GitHub repository URL from the npm package
-            const repoUrl = await getGitHubRepoUrlFromNpmPackage(requestBody.URL);
+            const repoUrl = await getGitHubRepoUrl(urlPackageName);
             if (!repoUrl) {
                 return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
             // Clone the GitHub repository and zip it
             console.log(`Cloning repository from ${repoUrl}`);
-            fileContent = await cloneAndZipRepository(repoUrl);
+            fileContent = await cloneAndZipRepository(repoUrl, urlVersion);
+            if (urlVersion) {
+                version = urlVersion;
+            }
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
@@ -62,28 +75,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Extract package.json and README.md from the zip file
         const { packageJson, readme } = await extractFilesFromZip(fileContent);
 
-        // Ensure package.json is present in the uploaded zip
-        if (!packageJson) {
-            return createErrorResponse(400, 'package.json not found in the uploaded zip file.');
+        // If the version is not provided, try to extract it from package.json
+        if (!version && packageJson) {
+            version = extractVersionFromPackageJson(packageJson);
         }
 
-        // Extract package metadata (name and version)
-        let { packageName, version } = extractMetadataFromPackageJson(packageJson);
-
-        if (!packageName) {
-            return createErrorResponse(400, 'Package name could not be determined.');
-        }
-
-        // If Content is provided or URL is provided without a version, set the version to 1.0.0
-        if (requestBody.Content || (requestBody.URL && !version)) {
-            version = '1.0.0'
-        }
-
-        // Check if any package with the same name already exists
-        const existingPackage: PackageMetadata[] = await getPackageByName(dynamoDBClient, packageName);
-        if (existingPackage.length > 0) {
-            return createErrorResponse(409, 'Package already exists.');
-        }
+        // If the version is still not provided, default to 1.0.0
+        version = version || '1.0.0';
 
         // Generate a unique ID for the package
         const packageId = generatePackageID(packageName, version);
@@ -139,19 +137,27 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 };
 
+function extractPackageInfoFromURL(url: string): { packageName: string; version: string | null } {
+    const regex = /https:\/\/www\.npmjs\.com\/package\/([^/]+)(?:\/v\/([\d.]+))?/;
+    const match = url.match(regex);
+
+    if (match) {
+        const packageName = match[1];
+        const version = match[2] || null;
+
+        return { packageName, version };
+    } else {
+        throw new Error("Invalid npm package URL");
+    }
+}
+
 /**
  * Fetches the GitHub repository URL from an npm package and processes it.
- * @param packageUrl - The URL of the npm package.
+ * @param packageName - The name of the npm package.
  * @returns The processed GitHub repository URL or null if an error occurs.
  */
-export async function getGitHubRepoUrlFromNpmPackage(packageUrl: string): Promise<string | null> {
+export async function getGitHubRepoUrl(packageName: string): Promise<string | null> {
     try {
-        // Extract the package name from the URL
-        const packageName = packageUrl.split('/').slice(-1)[0];
-        if (!packageName) {
-            throw new Error("Invalid package URL. Unable to extract package name.");
-        }
-
         // Fetch npm metadata
         const response = await axios.get<NpmMetadata>(`https://registry.npmjs.org/${packageName}`);
         const repoUrl = response.data.repository?.url;
@@ -188,12 +194,10 @@ export async function extractFilesFromZip(zipBuffer: Buffer) {
 }
 
 // Extract metadata (name and version) from package.json content
-export function extractMetadataFromPackageJson(packageJson: string) {
+export function extractVersionFromPackageJson(packageJson: string) {
     const metadata = JSON.parse(packageJson);
-    return {
-        packageName: metadata.name ?? null,
-        version: metadata.version ?? null,
-    };
+    const version = metadata.version ?? '1.0.0';
+    return version;
 }
 
 // Upload the zip file to S3 and return the file URL
@@ -214,7 +218,7 @@ async function uploadToS3(fileContent: Buffer, packageName: string, version: str
 }
 
 // Clone GitHub repository and compress it to a zip file
-async function cloneAndZipRepository(repoUrl: string): Promise<Buffer> {
+async function cloneAndZipRepository(repoUrl: string, version?: string | null): Promise<Buffer> {
     const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'repo-'));
     const repoPath = path.join(tempDir, 'repo');
 
@@ -227,6 +231,7 @@ async function cloneAndZipRepository(repoUrl: string): Promise<Buffer> {
             url: repoUrl,
             singleBranch: true,
             depth: 1,
+            ...(version && { ref: version }), // Checkout a specific version if provided
         });
 
         // Create a zip archive of the cloned repository

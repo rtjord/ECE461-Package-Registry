@@ -1,6 +1,6 @@
-import { getPackageById } from '../GetCost/utils';
+import { getPackageById } from '../PackageCreate/utils';
 import * as utils from '../PackageCreate/utils';
-import { handler, generatePackageID, extractFilesFromZip, extractMetadataFromPackageJson } from '../PackageCreate/index';
+import { handler, generatePackageID, extractFilesFromZip, extractVersionFromPackageJson } from '../PackageCreate/index';
 import { createErrorResponse } from '../PackageCreate/utils';
 import JSZip from 'jszip';
 import { Package, PackageTableRow } from '../PackageCreate/interfaces';
@@ -66,13 +66,13 @@ describe('extractMetadataFromPackageJson', () => {
             name: 'test-package',
             version: '1.0.0',
         });
-        const metadata = extractMetadataFromPackageJson(packageJson);
+        const metadata = extractVersionFromPackageJson(packageJson);
         expect(metadata).toEqual({ packageName: 'test-package', version: '1.0.0' });
     });
 
     it('should return null for name or version if missing', () => {
         const packageJson = JSON.stringify({});
-        const metadata = extractMetadataFromPackageJson(packageJson);
+        const metadata = extractVersionFromPackageJson(packageJson);
         expect(metadata).toEqual({ packageName: null, version: null });
     });
 });
