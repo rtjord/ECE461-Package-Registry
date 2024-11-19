@@ -1,6 +1,8 @@
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3 } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createErrorResponse, getPackageByName, updatePackageHistory, savePackageMetadata } from './utils';
+import { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } from './utils';
 import { PackageData, PackageTableRow, User, Package, PackageMetadata } from './interfaces';
 import { createHash } from 'crypto';
 import JSZip from "jszip";
@@ -25,6 +27,8 @@ type NpmMetadata = {
 // Main Lambda handler function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+
         // Ensure the request body is present
         if (!event.body) {
             return createErrorResponse(400, 'Request body is missing.');
@@ -76,7 +80,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         // Check if any package with the same name already exists
-        const existingPackage: PackageMetadata[] = await getPackageByName(packageName);
+        const existingPackage: PackageMetadata[] = await getPackageByName(dynamoDBClient, packageName);
         if (existingPackage.length > 0) {
             return createErrorResponse(409, 'Package already exists.');
         }
@@ -98,7 +102,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             JSProgram: requestBody.JSProgram,
             standaloneCost: standaloneCost,
         };
-        await savePackageMetadata(row);
+        await uploadPackageMetadata(dynamoDBClient, row);
 
         // Log the package creation in the package history
         const user: User = {
@@ -106,7 +110,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             isAdmin: true,
         };
 
-        await updatePackageHistory(packageName, version, packageId, user, "CREATE");
+        await updatePackageHistory(dynamoDBClient, packageName, version, packageId, user, "CREATE");
 
         const responseBody: Package = {
             metadata: {
@@ -115,6 +119,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 ID: packageId,
             },
             data: {
+                Name: packageName,
                 Content: fileContent.toString('base64'),
                 URL: requestBody.URL,
                 JSProgram: requestBody.JSProgram,

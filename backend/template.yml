@@ -148,7 +148,7 @@ Resources:
           Properties:
             RestApiId: !Ref MyApi
             Path: /package/{id}
-            Method: put
+            Method: post
       Environment:
         Variables:
           S3_BUCKET_NAME: !Ref PackageBucket

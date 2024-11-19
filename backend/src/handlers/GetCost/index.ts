@@ -1,10 +1,13 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getPackageById, createErrorResponse } from './utils';
 import { PackageTableRow, PackageCost } from './interfaces';
-
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+
         // Validate package ID from path parameters
         const packageId = event.pathParameters?.id;
         if (!packageId) {
@@ -15,7 +18,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const includeDependencies = event.queryStringParameters?.dependency === 'true';
 
         // Fetch the package data from DynamoDB
-        const packageData: PackageTableRow | null = await getPackageById(packageId);
+        const packageData: PackageTableRow | null = await getPackageById(dynamoDBClient, packageId);
         if (!packageData) {
             return createErrorResponse(404, "Package does not exist.");
         }
@@ -23,10 +26,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const response: PackageCost = {};
 
         // If we need to include dependencies, add the standalone cost and total cost
-        if (includeDependencies && packageData.dependenciesCost !== undefined) {
+        if (includeDependencies) {
             response[packageId] = {
                 standaloneCost: packageData.standaloneCost,
-                totalCost: packageData.standaloneCost + packageData.dependenciesCost,
+                totalCost: packageData.standaloneCost,
             };
         } else {  // Otherwise, only add the standalone cost
             response[packageId] = {
@@ -41,7 +44,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             headers: {
                 'Content-Type': 'application/json',
             },
-        };;
+        };
     } catch (error) {
         console.error("Error:", error);
         return createErrorResponse(500, "The package rating system choked on at least one of the metrics.");

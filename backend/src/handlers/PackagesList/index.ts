@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DynamoDBClient, QueryCommand, QueryCommandInput, ScanCommand } from "@aws-sdk/client-dynamodb";
-import { createErrorResponse, createSuccessResponse } from "./utils";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { createErrorResponse } from "./utils";
 import { PackageMetadata, PackageQuery } from "./interfaces";
 import semver from "semver";
 
@@ -9,7 +10,7 @@ const PAGE_SIZE = 50;
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        const dynamoDBClient = new DynamoDBClient();
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
         // Parse request body
         if (!event.body) {
@@ -55,6 +56,7 @@ export function parseOffset(offset?: string): number {
     }
     return parsed;
 }
+
 
 async function searchPackages(
     dynamoDBClient: DynamoDBClient,
@@ -107,7 +109,7 @@ async function fetchPackagesForQuery(
         ID: item.ID?.S || "",
     }));
 
-    if (query.Version) {    
+    if (query.Version) {
         return filterVersions(mappedItems, query.Version);
     }
     return mappedItems;
@@ -143,4 +145,16 @@ async function fetchAllPackages(dynamoDBClient: DynamoDBClient): Promise<Package
     }));
 
     return mappedItems;
+}
+
+function createSuccessResponse(
+    statusCode: number,
+    data: any,
+    headers: Record<string, string>
+): APIGatewayProxyResult {
+    return {
+        statusCode,
+        headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(data),
+    };
 }

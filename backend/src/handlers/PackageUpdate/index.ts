@@ -2,26 +2,15 @@ import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { createErrorResponse, getPackageById } from './utils';
+import { Package } from './interfaces';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-
-const s3 = new S3();
-const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
-
-interface RequestBody {
-    metadata: {
-        Name: string;
-        Version: string;
-        JSProgram?: string;
-    };
-    data: {
-        Content?: string;
-        URL?: string;
-    };
-}
 
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+        const s3 = new S3();
+
         // Extract packageName and version from the path (assuming package id is passed in the path)
         const id = event.pathParameters?.id;
         
@@ -30,7 +19,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
         
         // Parse request body
-        const requestBody: RequestBody = JSON.parse(event.body);
+        const requestBody: Package = JSON.parse(event.body);
         const { metadata, data } = requestBody;
 
         // Validate required fields in the request body
@@ -38,7 +27,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, 'Missing required fields in the request body: metadata and data.');
         }
 
-        const existingPackage = await getPackageById(id);
+        const existingPackage = await getPackageById(dynamoDBClient, id);
         if (!existingPackage) {
             return createErrorResponse(404, 'Package not found.');
         }
@@ -84,7 +73,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             ExpressionAttributeValues: {
                 ':url': fileUrl,
                 ':s3Key': s3Key,
-                ':jsProgram': metadata.JSProgram || null,
+                ':jsProgram': data.JSProgram || null,
             },
             ReturnValues: 'UPDATED_NEW' as const,
         };
@@ -118,7 +107,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 fileUrl: fileUrl,
             }),
         };
-    } catch (error) {
+    } catch {
         return createErrorResponse(500, 'Failed to update package.');
     }
 };
