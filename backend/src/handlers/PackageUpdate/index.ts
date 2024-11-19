@@ -2,7 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3 } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createErrorResponse, getPackageById, updatePackageHistory, uploadPackageMetadata } from './utils';
+import { createErrorResponse, getPackageById, getPackageByName, updatePackageHistory, uploadPackageMetadata } from './utils';
 import { PackageData, PackageTableRow, User, Package, PackageMetadata } from './interfaces';
 import { createHash } from 'crypto';
 import JSZip from "jszip";
@@ -52,17 +52,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(404, 'Package not found.');
         }
 
-        if (existingPackage.Version === metadata.Version) {
-            return createErrorResponse(409, 'Package version already exists.');
-        }
-
-        // Extract the old
-        const oldVersion = existingPackage.Version;
-        const newVersion = metadata.Version;
+        // Get all previous versions of the package
+        const previousVersions: PackageMetadata[] = await getPackageByName(dynamoDBClient, metadata.Name);
 
         // Check if the new version is valid
-        if (!isNewVersionValid(oldVersion, newVersion)) {
-            return createErrorResponse(400, 'Invalid new version number.');
+        for (const version of previousVersions) {
+            if (version.Version === metadata.Version) {
+                return createErrorResponse(409, 'Package version already exists.');
+            }
+            if (!isNewVersionValid(version.Version, metadata.Version)) {
+                return createErrorResponse(400, 'Invalid new version number.');
+            }
         }
 
         // Convert the uploaded content/url to a buffer representing the zip file
@@ -88,10 +88,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // const { packageJson, readme } = await extractFilesFromZip(fileContent);
 
         // Generate a unique ID for the package
-        const packageId = generatePackageID(data.Name, newVersion);
+        const packageId = generatePackageID(data.Name, metadata.Version);
 
         // Upload the package zip to S3
-        const s3Key = await uploadToS3(fileContent, data.Name, newVersion);
+        const s3Key = await uploadToS3(fileContent, data.Name, metadata.Version);
         const standaloneCost = fileContent.length / (1024 * 1024);
 
         // Save the package metadata to DynamoDB
@@ -112,12 +112,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             isAdmin: true,
         };
 
-        await updatePackageHistory(dynamoDBClient, metadata.Name, newVersion, packageId, user, "UPDATE");
+        await updatePackageHistory(dynamoDBClient, metadata.Name, metadata.Version, packageId, user, "UPDATE");
 
         const responseBody: Package = {
             metadata: {
                 Name: metadata.Name,
-                Version: newVersion,
+                Version: metadata.Version,
                 ID: packageId,
             },
             data: {
