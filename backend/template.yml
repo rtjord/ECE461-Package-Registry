@@ -4,6 +4,21 @@ Description: AWS SAM template for Lambda functions and API Gateway
 
 
 Resources:
+
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: DependenciesLayer
+      ContentUri: layers/dependencies/
+      CompatibleRuntimes:
+        - nodejs18.x
+  ServicesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: ServicesLayer
+      ContentUri: layers/services/
+      CompatibleRuntimes:
+        - nodejs18.x
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -81,6 +96,8 @@ Resources:
       CodeUri: dist/handlers/RegistryReset
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -107,6 +124,8 @@ Resources:
       CodeUri: dist/handlers/PackageByNameGet
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -149,6 +168,9 @@ Resources:
       CodeUri: dist/handlers/PackageCreate
       MemorySize: 512
       Timeout: 120
+      Layers:
+        - !Ref DependenciesLayer
+        - !Ref ServicesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -192,6 +214,9 @@ Resources:
       CodeUri: dist/handlers/PackageUpdate
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
+        - !Ref ServicesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -210,6 +235,8 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/GetCost
       MemorySize: 128
+      Layers:
+        - !Ref DependenciesLayer
       Timeout: 3
       Events:
         ApiEvent:
@@ -229,6 +256,8 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageByRegEx
       MemorySize: 128
+      Layers:
+        - !Ref DependenciesLayer
       Timeout: 3
       Events:
         ApiEvent:
@@ -246,6 +275,8 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
+      Layers:
+        - !Ref DependenciesLayer
       CodeUri: dist/handlers/GetTracks
       MemorySize: 128
       Timeout: 3

@@ -1,16 +1,20 @@
-import { S3 } from '@aws-sdk/client-s3';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { S3 } from '@dependencies/@aws-sdk/client-s3';
+import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
-import { PackageData, PackageTableRow, User } from './interfaces';
+import type { PackageData, PackageTableRow, User } from './interfaces';
 import { createHash } from 'crypto';
-import JSZip from "jszip";
+import JSZip from '@dependencies/jszip';
 import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import git from 'isomorphic-git';
-import http from 'isomorphic-git/http/node';
+
+
+import { join} from 'path';
+
+;import { tmpdir } from 'os';
+
+import git from '@dependencies/isomorphic-git';
+import http from '@dependencies/isomorphic-git/http/node';
 import yazl from 'yazl';
-import axios from 'axios';
+import axios from '@dependencies/axios';
 
 const s3 = new S3();
 
@@ -97,8 +101,8 @@ async function uploadToS3(fileContent: Buffer, packageName: string, version: str
 
 // Clone GitHub repository and compress it to a zip file
 async function cloneAndZipRepository(repoUrl: string): Promise<Buffer> {
-    const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'repo-'));
-    const repoPath = path.join(tempDir, 'repo');
+    const tempDir = await fs.promises.mkdtemp(join(tmpdir(), 'repo-'));
+    const repoPath = join(tempDir, 'repo');
 
     try {
         // Clone the GitHub repository using isomorphic-git
@@ -126,7 +130,7 @@ async function zipDirectory(directoryPath: string): Promise<Buffer> {
         const filePaths = fs.readdirSync(directoryPath);
 
         for (const filePath of filePaths) {
-            const fullPath = path.join(directoryPath, filePath);
+            const fullPath = join(directoryPath, filePath);
             const stat = fs.statSync(fullPath);
 
             if (stat.isFile()) {
@@ -205,7 +209,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const fileUrl = await uploadToS3(fileContent, packageName, version);
         const fileSizeInMB = fileContent.length / (1024 * 1024);
 
-        // Save the package metadata to DynamoDB
+        // Save the package metadata to dy
         await savePackageMetadata(packageId, packageName, version, fileUrl, fileSizeInMB);
 
         // Log the package creation in the package history

@@ -1,5 +1,5 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBClient } from '@dependencies/@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@dependencies/@aws-sdk/lib-dynamodb';
 import { PackageID, PackageTableRow, User, PackageHistoryEntry } from "./interfaces";
 import { APIGatewayProxyResult } from "aws-lambda";
 

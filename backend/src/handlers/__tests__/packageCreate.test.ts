@@ -2,7 +2,7 @@ import { getPackageById } from '../GetCost/utils';
 import * as utils from '../PackageCreate/utils';
 import { handler, generatePackageID, extractFilesFromZip, extractMetadataFromPackageJson } from '../PackageCreate/index';
 import { createErrorResponse } from '../PackageCreate/utils';
-import JSZip from 'jszip';
+import JSZip from '@dependencies/jszip';
 import { Package, PackageTableRow } from '../PackageCreate/interfaces';
 
 describe('generatePackageID', () => {

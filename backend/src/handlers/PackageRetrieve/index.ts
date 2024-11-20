@@ -1,9 +1,8 @@
-import { S3 } from '@aws-sdk/client-s3';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { S3 } from '@dependencies/@aws-sdk/client-s3';
+import { DynamoDBClient } from '@dependencies/@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand } from '@dependencies/@aws-sdk/lib-dynamodb';
 import { createErrorResponse, getPackageById } from './utils';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { create } from 'ts-node';
 
 const s3 = new S3();
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());

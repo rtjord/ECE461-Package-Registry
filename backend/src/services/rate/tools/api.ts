@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
-import * as git from 'isomorphic-git';
-import * as http from 'isomorphic-git/http/node';
-import axios, { AxiosInstance } from 'axios';
+import * as git from '@dependencies/isomorphic-git';
+import * as http from '@dependencies/isomorphic-git/http/node';
+import axios, { AxiosInstance } from '@dependencies/axios';
 import { gitData, npmData } from '../utils/interfaces';
 import { logger } from './logging';
 import { envVars } from '../utils/interfaces';
@@ -308,7 +308,7 @@ export class gitAnalysis {
                 // Update count and check for more pages
                 contributorsCount += response.data.length;
                 const linkHeader = response.headers['link'];
-                hasMorePages = linkHeader && linkHeader.includes('rel="next"');
+                hasMorePages = typeof linkHeader === 'string' && linkHeader.includes('rel="next"');
                 page++;
             }
     

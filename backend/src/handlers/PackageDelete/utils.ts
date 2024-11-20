@@ -1,7 +1,7 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBClient } from "@dependencies/@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand } from '@dependencies/@aws-sdk/lib-dynamodb';
 import { PackageID, PackageTableRow } from "./interfaces";
-import { APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyResult } from 'aws-lambda';
 
 const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
