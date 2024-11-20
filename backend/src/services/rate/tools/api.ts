@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
-import * as git from '@dependencies/isomorphic-git';
-import * as http from '@dependencies/isomorphic-git/http/node';
-import axios, { AxiosInstance } from '@dependencies/axios';
+import * as git from 'isomorphic-git';
+import * as http from 'isomorphic-git/http/node';
+import axios, { AxiosInstance } from 'axios';
 import { gitData, npmData } from '../utils/interfaces';
 import { logger } from './logging';
 import { envVars } from '../utils/interfaces';

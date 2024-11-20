@@ -5,20 +5,7 @@ Description: AWS SAM template for Lambda functions and API Gateway
 
 Resources:
 
-  DependenciesLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: DependenciesLayer
-      ContentUri: layers/dependencies/
-      CompatibleRuntimes:
-        - nodejs18.x
-  ServicesLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: ServicesLayer
-      ContentUri: layers/services/
-      CompatibleRuntimes:
-        - nodejs18.x
+
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -97,7 +84,7 @@ Resources:
       MemorySize: 128
       Timeout: 3
       Layers:
-        - !Ref DependenciesLayer
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
       Events:
         ApiEvent:
           Type: Api
@@ -125,7 +112,7 @@ Resources:
       MemorySize: 128
       Timeout: 3
       Layers:
-        - !Ref DependenciesLayer
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
       Events:
         ApiEvent:
           Type: Api
@@ -147,6 +134,8 @@ Resources:
       CodeUri: dist/handlers/PackageRetrieve
       MemorySize: 128
       Timeout: 10
+      Layers:
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
       Events:
         ApiEvent:
           Type: Api
@@ -169,8 +158,8 @@ Resources:
       MemorySize: 512
       Timeout: 120
       Layers:
-        - !Ref DependenciesLayer
-        - !Ref ServicesLayer
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+
       Events:
         ApiEvent:
           Type: Api
@@ -195,6 +184,8 @@ Resources:
       CodeUri: dist/handlers/PackageDelete
       MemorySize: 128
       Timeout: 3
+      Layers:
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
       Events:
         ApiEvent:
           Type: Api
@@ -215,8 +206,8 @@ Resources:
       MemorySize: 128
       Timeout: 3
       Layers:
-        - !Ref DependenciesLayer
-        - !Ref ServicesLayer
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+
       Events:
         ApiEvent:
           Type: Api
@@ -236,7 +227,8 @@ Resources:
       CodeUri: dist/handlers/GetCost
       MemorySize: 128
       Layers:
-        - !Ref DependenciesLayer
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+
       Timeout: 3
       Events:
         ApiEvent:
@@ -257,7 +249,7 @@ Resources:
       CodeUri: dist/handlers/PackageByRegEx
       MemorySize: 128
       Layers:
-        - !Ref DependenciesLayer
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
       Timeout: 3
       Events:
         ApiEvent:
@@ -276,7 +268,7 @@ Resources:
       Handler: index.handler
       Runtime: nodejs18.x
       Layers:
-        - !Ref DependenciesLayer
+          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
       CodeUri: dist/handlers/GetTracks
       MemorySize: 128
       Timeout: 3

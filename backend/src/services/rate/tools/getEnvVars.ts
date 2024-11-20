@@ -1,4 +1,4 @@
-import dotenv from '@services/dotenv';
+import dotenv from 'dotenv';
 
 export class getEnvVars {
     public logLevel: number;

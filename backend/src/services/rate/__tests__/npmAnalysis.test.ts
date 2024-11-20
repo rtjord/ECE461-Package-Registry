@@ -1,6 +1,6 @@
 import { npmAnalysis } from '../tools/api';
 import * as fs from 'fs/promises';
-import * as git from '@dependencies/isomorphic-git';
+import * as git from 'isomorphic-git';
 import { logger } from '../tools/logging';
 import { envVars, npmData } from '../utils/interfaces';
 

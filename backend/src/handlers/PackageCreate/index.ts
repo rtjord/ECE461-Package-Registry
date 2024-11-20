@@ -1,9 +1,9 @@
-import { S3 } from '@dependencies/@aws-sdk/client-s3';
+import { S3 } from '@aws-sdk/client-s3';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, updatePackageHistory, savePackageMetadata } from './utils';
 import type { PackageData, PackageTableRow, User } from './interfaces';
 import { createHash } from 'crypto';
-import JSZip from '@dependencies/jszip';
+import JSZip from 'jszip';
 import * as fs from 'fs';
 
 
@@ -11,10 +11,10 @@ import { join} from 'path';
 
 ;import { tmpdir } from 'os';
 
-import git from '@dependencies/isomorphic-git';
-import http from '@dependencies/isomorphic-git/http/node';
+import git from 'isomorphic-git';
+import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
-import axios from '@dependencies/axios';
+import axios from 'axios';
 
 const s3 = new S3();
 

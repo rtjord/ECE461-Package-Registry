@@ -1,6 +1,6 @@
-import { S3, ListObjectsV2Command , ListObjectsV2CommandOutput} from '@dependencies/@aws-sdk/client-s3';
-import { DynamoDBClient } from '@dependencies/@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand, BatchWriteCommand } from '@dependencies/@aws-sdk/lib-dynamodb';
+import { S3, ListObjectsV2Command , ListObjectsV2CommandOutput} from '@aws-sdk/client-s3';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse } from './utils';
 

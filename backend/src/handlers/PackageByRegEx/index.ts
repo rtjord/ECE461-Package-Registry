@@ -1,5 +1,5 @@
-import { DynamoDB } from '@dependencies/@aws-sdk/client-dynamodb';
-import { unmarshall } from '@dependencies/@aws-sdk/util-dynamodb';
+import { DynamoDB } from '@aws-sdk/client-dynamodb';
+import { unmarshall } from '@aws-sdk/util-dynamodb';
 import { PackageMetadata } from './interfaces';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse } from './utils';
