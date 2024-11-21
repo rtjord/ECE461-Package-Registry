@@ -12,7 +12,7 @@ Resources:
       #   Fn::Transform:
       #     Name: AWS::Include
       #     Parameters:
-      #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
+      #       Location: ./open_api/ece461_fall_2024_openapi_spec.yaml
 
   PackageMetadataTable:
     Type: AWS::DynamoDB::Table
@@ -152,6 +152,13 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackageMetadataTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackageHistoryTable
+        - S3CrudPolicy:
+            BucketName: !Ref PackageBucket
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -191,10 +198,12 @@ Resources:
             Path: /package
             Method: post
       Policies:
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref PackageMetadataTable
-        - DynamoDBWritePolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref PackageHistoryTable
+        - S3CrudPolicy:
+            BucketName: !Ref PackageBucket
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
@@ -204,7 +213,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: dist/handlers/GetCost
+      CodeUri: dist/handlers/PackageRate
       MemorySize: 128
       Timeout: 3
       Events:
@@ -212,7 +221,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /package/{id}/cost
+            Path: /package/{id}/rate
             Method: get
       Policies:
         - DynamoDBReadPolicy:
