@@ -74,6 +74,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Extract package.json and README.md from the zip file
         const { packageJson, readme } = await extractFilesFromZip(fileContent);
+        // upload readme to opensearch in the future
+        console.log(readme);
 
         // If the version is not provided, try to extract it from package.json
         if (!version && packageJson) {

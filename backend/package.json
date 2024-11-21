@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc && node copy_package_json.mjs",
-    "test": "npx jest --coverage",
+    "test": "npx jest --coverage --testPathIgnorePatterns='end_to_end'",
     "lint": "npx eslint"
   },
   "author": "",

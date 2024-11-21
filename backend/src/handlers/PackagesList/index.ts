@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DynamoDBClient, QueryCommand, QueryCommandInput, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { createErrorResponse } from "./utils";
-import { PackageMetadata, PackageQuery } from "./interfaces";
+import { PackageMetadata, PackageQuery, PackageTableRow } from "./interfaces";
 import semver from "semver";
 
 const PAGE_SIZE = 50;
@@ -127,11 +127,13 @@ async function fetchAllPackages(dynamoDBClient: DynamoDBClient): Promise<Package
         TableName: "PackageMetadata",
     };
 
-    let allPackages: any[] = [];
-    let lastEvaluatedKey: any = null;
+    let allPackages: PackageTableRow[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let lastEvaluatedKey: Record<string, any> | undefined = undefined;
 
     do {
-        const result = await dynamoDBClient.send(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result: { Items?: any[]; LastEvaluatedKey?: Record<string, any> } = await dynamoDBClient.send(
             new ScanCommand({ ...params, ExclusiveStartKey: lastEvaluatedKey })
         );
         allPackages = [...allPackages, ...(result.Items || [])];
@@ -139,9 +141,9 @@ async function fetchAllPackages(dynamoDBClient: DynamoDBClient): Promise<Package
     } while (lastEvaluatedKey);
 
     const mappedItems: PackageMetadata[] = (allPackages).map(item => ({
-        Name: item.PackageName?.S || "",
-        Version: item.Version?.S || "",
-        ID: item.ID?.S || "",
+        Name: item.PackageName || "",
+        Version: item.Version || "",
+        ID: item.ID || "",
     }));
 
     return mappedItems;
@@ -149,7 +151,7 @@ async function fetchAllPackages(dynamoDBClient: DynamoDBClient): Promise<Package
 
 function createSuccessResponse(
     statusCode: number,
-    data: any,
+    data: PackageMetadata[],
     headers: Record<string, string>
 ): APIGatewayProxyResult {
     return {
