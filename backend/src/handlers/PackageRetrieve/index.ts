@@ -55,6 +55,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 ID: packageId,
             },
             data: {
+                Name: packageName,
                 Content: s3Result.base64Content,
                 URL: url,
                 JSProgram: existingPackage.JSProgram,
@@ -101,8 +102,10 @@ async function getS3ObjectContent(
         const s3Object: GetObjectCommandOutput = await s3Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${key}`;
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (s3Object.Body && typeof (s3Object.Body as any)[Symbol.asyncIterator] === 'function') {
             const chunks: Uint8Array[] = [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             for await (const chunk of s3Object.Body as any) {
                 chunks.push(chunk);
             }

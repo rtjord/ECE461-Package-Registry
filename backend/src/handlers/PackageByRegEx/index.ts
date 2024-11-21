@@ -4,12 +4,11 @@ import { PackageMetadata } from './interfaces';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse } from './utils';
 
-// Create a new instance of the DynamoDB client to interact with the database
-const dynamoDb = new DynamoDB({});
-
 // Define the Lambda handler function that processes incoming API Gateway requests
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
+    // Create a new instance of the DynamoDB client to interact with the database
+    const dynamoDb = new DynamoDB({});
 
     // Parse the request body or default to an empty object if it's undefined
     const parsedBody = event.body && typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
@@ -21,10 +20,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
 
     const params = {
-        TableName: 'PackageMetadata',
-        ProjectionExpression: 'PackageName, Version, ID', // Retrieve these attributes
+      TableName: 'PackageMetadata',
+      ProjectionExpression: 'PackageName, Version, ID', // Retrieve these attributes
     };
-    
+
     const result = await dynamoDb.scan(params);  // Scan the DynamoDB table to retrieve all items
     console.log(result);
     const packages = result.Items ? result.Items.map(item => unmarshall(item)) : [];  // Unmarshall the DynamoDB items to JavaScript objects

@@ -1,7 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DynamoDBClient, QueryCommand, QueryCommandInput, ScanCommand } from "@aws-sdk/client-dynamodb";
-import { createErrorResponse, createSuccessResponse } from "./utils";
-import { PackageMetadata, PackageQuery } from "./interfaces";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { createErrorResponse } from "./utils";
+import { PackageMetadata, PackageQuery, PackageTableRow } from "./interfaces";
 import semver from "semver";
 
 const PAGE_SIZE = 50;
@@ -9,7 +10,7 @@ const PAGE_SIZE = 50;
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        const dynamoDBClient = new DynamoDBClient();
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
         // Parse request body
         if (!event.body) {
@@ -55,6 +56,7 @@ export function parseOffset(offset?: string): number {
     }
     return parsed;
 }
+
 
 async function searchPackages(
     dynamoDBClient: DynamoDBClient,
@@ -107,7 +109,7 @@ async function fetchPackagesForQuery(
         ID: item.ID?.S || "",
     }));
 
-    if (query.Version) {    
+    if (query.Version) {
         return filterVersions(mappedItems, query.Version);
     }
     return mappedItems;
@@ -125,11 +127,13 @@ async function fetchAllPackages(dynamoDBClient: DynamoDBClient): Promise<Package
         TableName: "PackageMetadata",
     };
 
-    let allPackages: any[] = [];
-    let lastEvaluatedKey: any = null;
+    let allPackages: PackageTableRow[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let lastEvaluatedKey: Record<string, any> | undefined = undefined;
 
     do {
-        const result = await dynamoDBClient.send(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result: { Items?: any[]; LastEvaluatedKey?: Record<string, any> } = await dynamoDBClient.send(
             new ScanCommand({ ...params, ExclusiveStartKey: lastEvaluatedKey })
         );
         allPackages = [...allPackages, ...(result.Items || [])];
@@ -137,10 +141,22 @@ async function fetchAllPackages(dynamoDBClient: DynamoDBClient): Promise<Package
     } while (lastEvaluatedKey);
 
     const mappedItems: PackageMetadata[] = (allPackages).map(item => ({
-        Name: item.PackageName?.S || "",
-        Version: item.Version?.S || "",
-        ID: item.ID?.S || "",
+        Name: item.PackageName || "",
+        Version: item.Version || "",
+        ID: item.ID || "",
     }));
 
     return mappedItems;
+}
+
+function createSuccessResponse(
+    statusCode: number,
+    data: PackageMetadata[],
+    headers: Record<string, string>
+): APIGatewayProxyResult {
+    return {
+        statusCode,
+        headers: { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(data),
+    };
 }

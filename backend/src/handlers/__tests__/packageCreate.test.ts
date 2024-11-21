@@ -1,9 +1,7 @@
-import { getPackageById } from '../GetCost/utils';
-import * as utils from '../PackageCreate/utils';
-import { handler, generatePackageID, extractFilesFromZip, extractMetadataFromPackageJson } from '../PackageCreate/index';
-import { createErrorResponse } from '../PackageCreate/utils';
+import { handler, generatePackageID, extractFilesFromZip } from '../PackageCreate/index';
+import { createErrorResponse } from '../../future_lambda_layer/utils';
+import { APIGatewayProxyEvent } from 'aws-lambda';
 import JSZip from 'jszip';
-import { Package, PackageTableRow } from '../PackageCreate/interfaces';
 
 describe('generatePackageID', () => {
     it('should generate an 20 character ID for the package', () => {
@@ -60,26 +58,10 @@ describe("extractFilesFromZip", () => {
     });
 });
 
-describe('extractMetadataFromPackageJson', () => {
-    it('should extract name and version from valid package.json', () => {
-        const packageJson = JSON.stringify({
-            name: 'test-package',
-            version: '1.0.0',
-        });
-        const metadata = extractMetadataFromPackageJson(packageJson);
-        expect(metadata).toEqual({ packageName: 'test-package', version: '1.0.0' });
-    });
-
-    it('should return null for name or version if missing', () => {
-        const packageJson = JSON.stringify({});
-        const metadata = extractMetadataFromPackageJson(packageJson);
-        expect(metadata).toEqual({ packageName: null, version: null });
-    });
-});
 
 describe('handler', () => {
     it('should return an error if no body is present', async () => {
-        const event = { body: null } as any;
+        const event = { body: null } as APIGatewayProxyEvent;
         const result = await handler(event);
         expect(result).toEqual(createErrorResponse(400, 'Request body is missing.'));
     });
@@ -87,22 +69,8 @@ describe('handler', () => {
     it('should return an error if both Content and URL are provided', async () => {
         const event = {
             body: JSON.stringify({ Content: 'fakeContent', URL: 'http://example.com' }),
-        } as any;
+        } as APIGatewayProxyEvent;
         const result = await handler(event);
         expect(result).toEqual(createErrorResponse(400, 'Exactly one of Content or URL must be provided.'));
-    });
-
-    it('should return an error if package.json is missing in the zip', async () => {
-        const mockZipBuffer = Buffer.from('test');
-        const event = {
-            body: JSON.stringify({ Content: mockZipBuffer.toString('base64') }),
-        } as any;
-
-        jest.spyOn(JSZip, 'loadAsync').mockResolvedValue({
-            file: jest.fn().mockReturnValue([]),
-        } as any);
-
-        const result = await handler(event);
-        expect(result).toEqual(createErrorResponse(400, 'package.json not found in the uploaded zip file.'));
     });
 });

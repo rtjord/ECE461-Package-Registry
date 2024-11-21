@@ -3,20 +3,19 @@ import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { S3, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { PackageTableRow } from './interfaces';
-import { createErrorResponse, getPackageById } from './utils';
-
-// Dependency injection for testability
-const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
-const s3Client = new S3();
+import { createErrorResponse, getPackageById, getEnvVariable } from './utils';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        const id = getIdFromEvent(event);
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+        const s3Client = new S3();
+
+        const id = event.pathParameters?.id;
         if (!id) {
             return createErrorResponse(400, "Missing ID in path parameters.");
         }
 
-        const existingPackage = await fetchPackageById(id);
+        const existingPackage: PackageTableRow | null = await getPackageById(dynamoDBClient, id);
         if (!existingPackage) {
             return createErrorResponse(404, `Package with ID ${id} not found.`);
         }
@@ -31,25 +30,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return createErrorResponse(500, "Internal server error occurred while deleting the package.");
     }
 };
-
-// Extract ID from the event
-function getIdFromEvent(event: APIGatewayProxyEvent): string | undefined {
-    const id = event.pathParameters?.id;
-    if (!id) {
-        console.error("Missing ID in event path parameters.");
-    }
-    return id;
-}
-
-// Fetch package by ID from DynamoDB
-async function fetchPackageById(id: string): Promise<PackageTableRow | null> {
-    try {
-        return await getPackageById(id);
-    } catch (error) {
-        console.error(`Error fetching package by ID: ${id}`, error);
-        throw new Error("Error fetching package data.");
-    }
-}
 
 // Delete package metadata from DynamoDB
 async function deletePackageFromDynamoDB(client: DynamoDBDocumentClient, id: string): Promise<void> {
@@ -88,15 +68,6 @@ async function deletePackageFromS3(client: S3, s3Key: string | undefined): Promi
     }
 }
 
-
-// Validate environment variables
-function getEnvVariable(name: string): string {
-    const value = process.env[name];
-    if (!value) {
-        throw new Error(`Environment variable ${name} is not defined`);
-    }
-    return value;
-}
 
 // Create success response
 function createSuccessResponse(packageName: string, version: string): APIGatewayProxyResult {

@@ -141,17 +141,17 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageUpdate
       MemorySize: 128
-      Timeout: 3
+      Timeout: 60
       Events:
         ApiEvent:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
             Path: /package/{id}
-            Method: put
+            Method: post
       Environment:
         Variables:
-          S3_BUCKET_NAME: !Ref PackageBucket
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
   PackageDelete:
     Type: AWS::Serverless::Function

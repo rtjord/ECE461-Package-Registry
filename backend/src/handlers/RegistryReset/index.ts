@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { APIGatewayProxyHandler } from "aws-lambda";
 import {
     S3Client,
@@ -11,12 +12,13 @@ import {
     BatchWriteItemCommand,
     ScanCommandOutput,
 } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 // Lambda handler
 export const handler: APIGatewayProxyHandler = async () => {
     try {
         // Inject clients
-        const dynamoDBClient = new DynamoDBClient();
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
         const s3Client = new S3Client();
 
         // Define table and bucket names

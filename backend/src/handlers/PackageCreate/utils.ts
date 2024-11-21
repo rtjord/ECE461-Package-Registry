@@ -1,11 +1,9 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { PackageID, PackageTableRow, User, PackageHistoryEntry } from "./interfaces";
 import { APIGatewayProxyResult } from "aws-lambda";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, QueryCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { PackageID, PackageHistoryEntry, PackageMetadata, User, PackageTableRow } from "./interfaces";
 
-const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
-
-export async function getPackageById(packageId: PackageID) {
+export async function getPackageById(dynamoDBClient: DynamoDBDocumentClient, packageId: PackageID) {
     const params = {
         TableName: "PackageMetadata",
         Key: {
@@ -23,25 +21,50 @@ export async function getPackageById(packageId: PackageID) {
     return result.Item as PackageTableRow;
 }
 
-export async function savePackageMetadata(packageId: string, packageName: string, version: string, url: string | undefined, JSProgram: string | undefined, standaloneCost: number) {
-    const row: PackageTableRow = {
-        ID: packageId,
-        PackageName: packageName,
-        Version: version,
-        URL: url,
-        s3Key: `uploads/${packageName}-${version}.zip`,
-        JSProgram: JSProgram,
-        standaloneCost: standaloneCost,
+export async function getPackageByName(dynamoDBClient: DynamoDBDocumentClient, name: string): Promise<PackageMetadata[]> {
+    const tableName = "PackageMetadata";
+    const indexName = "PackageNameVersionIndex";
+  
+    try {
+      const result = await dynamoDBClient.send(
+        new QueryCommand({
+          TableName: tableName,
+          IndexName: indexName,
+          KeyConditionExpression: "PackageName = :packageName",
+          ExpressionAttributeValues: {
+            ":packageName": name,
+          },
+        })
+      );
+  
+      // If no items are found, return an empty array
+      return result.Items as PackageMetadata[] || [];
+    } catch (error) {
+      console.error("Error querying the DynamoDB table:", error);
+      throw new Error("Failed to retrieve packages.");
+    }
+  }
+
+export async function getPackageHistory(dynamoDBClient: DynamoDBDocumentClient, packageName: string): Promise<PackageHistoryEntry[]> {
+    const params = {
+        TableName: "PackageHistoryTable",
+        KeyConditionExpression: "#pkgName = :nameVal",
+        ExpressionAttributeNames: {
+            "#pkgName": "PackageName",
+        },
+        ExpressionAttributeValues: {
+            ":nameVal": packageName,
+        },
     };
-    
-    const dynamoDBParams = {
-        TableName: "PackageMetadata",
-        Item: row,
-    };
-    await dynamoDBClient.send(new PutCommand(dynamoDBParams));
+
+    // Must use query to get all items with the same partition key
+    const command = new QueryCommand(params);
+    const result = await dynamoDBClient.send(command);
+
+    return result.Items as PackageHistoryEntry[];
 }
 
-export async function updatePackageHistory(packageName: string, version: string, packageId: string, user: User, action: string) {
+export async function updatePackageHistory(dynamoDBClient: DynamoDBDocumentClient, packageName: string, version: string, packageId: string, user: User, action: string) {
     const date = new Date().toISOString();
     const dynamoDBParams = {
         TableName: "PackageHistoryTable",
@@ -60,6 +83,15 @@ export async function updatePackageHistory(packageName: string, version: string,
     await dynamoDBClient.send(new PutCommand(dynamoDBParams));
 }
 
+
+export async function uploadPackageMetadata(dynamoDBClient: DynamoDBDocumentClient, metadata: PackageTableRow) {
+    const dynamoDBParams = {
+        TableName: "PackageMetadata",
+        Item: metadata,
+    };
+    await dynamoDBClient.send(new PutCommand(dynamoDBParams));
+}
+
 // Function to create a consistent error response
 export const createErrorResponse = (statusCode: number, message: string): APIGatewayProxyResult => {
     return {
@@ -68,3 +100,12 @@ export const createErrorResponse = (statusCode: number, message: string): APIGat
         body: JSON.stringify({ message }),
     };
 };
+
+// Validate environment variables
+export function getEnvVariable(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Environment variable ${name} is not defined`);
+    }
+    return value;
+}

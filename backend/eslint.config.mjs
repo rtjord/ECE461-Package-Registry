@@ -12,8 +12,8 @@ export default [
   {ignores: ["**/node_modules/**", "**/dist/**", "**/build/**"]},
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "off"
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": "error"
     }
   }
 ];
