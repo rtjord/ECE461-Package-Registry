@@ -38,18 +38,34 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const requestBody: Package = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
+        // In this metadata, the name of must match name of the old package
+        // the version must be a new version number
+        // the ID must be the same as the old package
         const metadata: PackageMetadata = requestBody.metadata;
         const data: PackageData = requestBody.data;
 
-        // Validate that exactly one of Content or URL is provided
+        // We can do these checks before querying the database
+
+        // Check that the ID in the request body matches the ID in the path
+        if (metadata.ID !== oldId) {
+            return createErrorResponse(400, 'ID in the request body does not match the ID in the path.');
+        }
+
+        // Check that exactly one of Content or URL is provided
         if ((!data.Content && !data.URL) || (data.Content && data.URL)) {
             return createErrorResponse(400, 'Exactly one of Content or URL must be provided.');
         }
+
+        // Now, start checking against the database
 
         // Check if any package with the give id already exists
         const existingPackage = await getPackageById(dynamoDBClient, oldId);
         if (!existingPackage) {
             return createErrorResponse(404, 'Package not found.');
+        }
+
+        if (metadata.Name !== existingPackage.PackageName) {
+            return createErrorResponse(400, 'Package name in the metadata does not match the existing package name.');
         }
 
         // Get all previous versions of the package
