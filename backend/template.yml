@@ -8,8 +8,6 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Stage
-      Auth:
-        DefaultAuthorizer: NONE
       # DefinitionBody: 
       #   Fn::Transform:
       #     Name: AWS::Include

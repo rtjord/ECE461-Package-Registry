@@ -14,7 +14,7 @@ describe("E2E Test for Authentication Endpoint", () => {
                 headers: { "Content-Type": "application/json" },
             });
 
-        } catch (error) {
+        } catch (error) {  // There should be an AxiosError because the status code is 501
             if (!axios.isAxiosError(error)) {
                 throw error;
             }

@@ -74,7 +74,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Check if the new version is valid
         for (const version of previousVersions) {
             if (version.Version === metadata.Version) {
-                return createErrorResponse(409, 'Package version already exists.');
+                return createErrorResponse(400, 'Package version already exists.');
             }
             if (!isNewVersionValid(version.Version, metadata.Version)) {
                 return createErrorResponse(400, 'Invalid new version number.');
@@ -144,7 +144,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             },
         };
         return {
-            statusCode: 201,
+            statusCode: 200,
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
