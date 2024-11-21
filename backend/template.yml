@@ -199,6 +199,25 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
+  PackageRate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/GetCost
+      MemorySize: 128
+      Timeout: 3
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/{id}/cost
+            Method: get
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetadataTable
+
   GetCost:
     Type: AWS::Serverless::Function
     Properties:
@@ -217,6 +236,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetadataTable
+
   CreateAuthToken:
     Type: AWS::Serverless::Function
     Properties:
