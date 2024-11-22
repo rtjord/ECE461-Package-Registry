@@ -2,7 +2,7 @@ import axios from "axios";
 import { baseUrl } from "./config";
 
 
-describe("E2E Test for Planned Tracks Endpoint", () => {
+describe("E2E Test for GetTracks Endpoint", () => {
   const endpoint = "/tracks"; // Adjust if needed based on your routing
 
   it("should return planned tracks successfully", async () => {

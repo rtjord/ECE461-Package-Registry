@@ -3,8 +3,6 @@ import { baseUrl } from "./config";
 
 
 describe("E2E Test for Authentication Endpoint", () => {
-    // Replace with the actual API Gateway URL where the Lambda function is deployed
-
     it("should return a 501 status with the expected message", async () => {
         const endpoint = "/authenticate"; // Adjust if needed based on your routing
         try {
