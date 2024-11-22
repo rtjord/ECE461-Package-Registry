@@ -10,6 +10,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Validate package ID from path parameters
         const packageId = event.pathParameters?.id;
+        console.log("PackageID:", packageId);
         if (!packageId) {
             return createErrorResponse(400, "There is missing field(s) in the PackageID");
         }
@@ -17,7 +18,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Fetch the package data from DynamoDB
         const packageData: PackageTableRow | null = await getPackageById(dynamoDBClient, packageId);
         if (!packageData) {
-            return createErrorResponse(404, "Package does not exist.");
+            return createErrorResponse(404, `Package does not exist.`);
         }
 
         const rating: PackageRating = packageData.Rating;

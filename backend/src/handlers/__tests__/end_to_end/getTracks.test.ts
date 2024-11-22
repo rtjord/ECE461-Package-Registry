@@ -1,8 +1,6 @@
 import axios from "axios";
+import { baseUrl } from "./config";
 
-
-// const baseUrl = "http://127.0.0.1:3000";
-const baseUrl = "https://9ojr9pts13.execute-api.us-east-2.amazonaws.com/dev";
 
 describe("E2E Test for Planned Tracks Endpoint", () => {
   const endpoint = "/tracks"; // Adjust if needed based on your routing

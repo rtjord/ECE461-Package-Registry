@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const baseUrl = "https://9ojr9pts13.execute-api.us-east-2.amazonaws.com/dev";
+import { baseUrl } from "./config";
 
 describe("E2E Test for Registry Reset Endpoint", () => {
     it("should return a 200 status", async () => {

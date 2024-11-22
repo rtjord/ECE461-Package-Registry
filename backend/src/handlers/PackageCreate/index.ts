@@ -3,7 +3,7 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3 } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } from './utils';
-import { PackageData, PackageTableRow, User, Package, PackageMetadata } from './interfaces';
+import { PackageData, PackageTableRow, User, Package, PackageMetadata, PackageRating } from './interfaces';
 import { createHash } from 'crypto';
 import JSZip from "jszip";
 import * as fs from 'fs';
@@ -52,6 +52,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Convert the uploaded content/url to a buffer representing the zip file
         let fileContent: Buffer;
+        let rating: PackageRating | null = null;
         if (requestBody.Content) {
             // Decode the uploaded file content
             fileContent = Buffer.from(requestBody.Content, 'base64');
@@ -67,6 +68,24 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             fileContent = await cloneAndZipRepository(repoUrl, urlVersion);
             if (urlVersion) {
                 version = urlVersion;
+            }
+            rating = {
+                RampUp: 1,
+                Correctness: 1,
+                BusFactor: 1,
+                ResponsiveMaintainer: 1,
+                LicenseScore: 1,
+                GoodPinningPractice: 1,
+                PullRequest: 1,
+                NetScore: 1,
+                RampUpLatency: 1,
+                CorrectnessLatency: 1,
+                BusFactorLatency: 1,
+                ResponsiveMaintainerLatency: 1,
+                LicenseScoreLatency: 1,
+                GoodPinningPracticeLatency: 1,
+                PullRequestLatency: 1,
+                NetScoreLatency: 1,
             }
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
@@ -101,6 +120,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             s3Key: s3Key,
             JSProgram: requestBody.JSProgram,
             standaloneCost: standaloneCost,
+            ...(rating && { Rating: rating }),
         };
         await uploadPackageMetadata(dynamoDBClient, row);
 

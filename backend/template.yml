@@ -1,18 +1,12 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: AWS SAM template for Lambda functions and API Gateway
-
 
 Resources:
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Stage
-      # DefinitionBody: 
-      #   Fn::Transform:
-      #     Name: AWS::Include
-      #     Parameters:
-      #       Location: ./open_api/ece461_fall_2024_openapi_spec.yaml
 
   PackageMetadataTable:
     Type: AWS::DynamoDB::Table
@@ -28,14 +22,14 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: ID
-          KeyType: HASH  # Partition Key
+          KeyType: HASH # Partition Key
       GlobalSecondaryIndexes:
         - IndexName: PackageNameVersionIndex
           KeySchema:
             - AttributeName: PackageName
-              KeyType: HASH  # Partition Key for the GSI
+              KeyType: HASH # Partition Key for the GSI
             - AttributeName: Version
-              KeyType: RANGE  # Sort Key for the GSI
+              KeyType: RANGE # Sort Key for the GSI
           Projection:
             ProjectionType: ALL
 
@@ -93,7 +87,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path : /reset
+            Path: /reset
             Method: delete
       Environment:
         Variables:
@@ -129,7 +123,7 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref PackageHistoryTable
         - S3ReadPolicy:
-              BucketName: !Ref PackageBucket
+            BucketName: !Ref PackageBucket
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"

@@ -1,8 +1,8 @@
 import axios from "axios";
 import { Package, PackageData, PackageMetadata } from "../../../future_lambda_layer/interfaces";
+import { baseUrl } from "./config";
 
-// const baseUrl = "http://127.0.0.1:3000";
-const baseUrl = "https://9ojr9pts13.execute-api.us-east-2.amazonaws.com/dev";
+
 const timeout = 30000;
 
 describe("E2E Test for Package Create Endpoint", () => {
