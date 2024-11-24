@@ -6,6 +6,7 @@
     "moduleResolution": "node",                     /* Specify how TypeScript looks up a file from a given module specifier. */
     "typeRoots": [
       "./layers/dependencies/nodejs/node_modules/@types",
+      "./node_modules/@types"
     ],
     "types": ["jest"],                                      /* Specify type package names to be included without being referenced in a source file. */
     "allowSyntheticDefaultImports": true,             /* Allow 'import x from y' when a module doesn't have a default export. */
