@@ -14,6 +14,18 @@ Resources:
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
 
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: DependenciesLayer
+      ContentUri: ./layers/dependencies
+      CompatibleRuntimes:
+        - nodejs14.x
+        - nodejs12.x
+        - nodejs10.x
+        - nodejs18.x
+
+
   PackageMetadataTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -69,6 +81,8 @@ Resources:
       CodeUri: dist/handlers/PackagesList
       MemorySize: 256
       Timeout: 60
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -88,6 +102,8 @@ Resources:
       CodeUri: dist/handlers/RegistryReset
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -114,6 +130,8 @@ Resources:
       CodeUri: dist/handlers/PackageRetrieve
       MemorySize: 128
       Timeout: 10
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -142,6 +160,8 @@ Resources:
       CodeUri: dist/handlers/PackageUpdate
       MemorySize: 128
       Timeout: 60
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -161,6 +181,8 @@ Resources:
       CodeUri: dist/handlers/PackageDelete
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -183,6 +205,8 @@ Resources:
       CodeUri: dist/handlers/PackageCreate
       MemorySize: 512
       Timeout: 120
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -207,6 +231,8 @@ Resources:
       CodeUri: dist/handlers/GetCost
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -225,6 +251,8 @@ Resources:
       CodeUri: dist/handlers/CreateAuthToken
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -241,6 +269,8 @@ Resources:
       CodeUri: dist/handlers/PackageByNameGet
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -262,6 +292,8 @@ Resources:
       CodeUri: dist/handlers/PackageByRegEx
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -281,6 +313,8 @@ Resources:
       CodeUri: dist/handlers/GetTracks
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
