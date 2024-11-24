@@ -16,6 +16,18 @@ Resources:
       #     Parameters:
       #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
 
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: DependenciesLayer
+      ContentUri: ./layers/dependencies
+      CompatibleRuntimes:
+        - nodejs14.x
+        - nodejs12.x
+        - nodejs10.x
+        - nodejs18.x
+
+      Description: A layer containing the dependencies for the project
   PackageMetadataTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -84,7 +96,7 @@ Resources:
       MemorySize: 128
       Timeout: 3
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer 
       Events:
         ApiEvent:
           Type: Api
@@ -112,7 +124,7 @@ Resources:
       MemorySize: 128
       Timeout: 3
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -135,7 +147,7 @@ Resources:
       MemorySize: 128
       Timeout: 10
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -158,7 +170,7 @@ Resources:
       MemorySize: 512
       Timeout: 120
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer
 
       Events:
         ApiEvent:
@@ -185,7 +197,7 @@ Resources:
       MemorySize: 128
       Timeout: 3
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -206,7 +218,7 @@ Resources:
       MemorySize: 128
       Timeout: 3
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer
 
       Events:
         ApiEvent:
@@ -227,7 +239,7 @@ Resources:
       CodeUri: dist/handlers/GetCost
       MemorySize: 128
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer
 
       Timeout: 3
       Events:
@@ -249,7 +261,7 @@ Resources:
       CodeUri: dist/handlers/PackageByRegEx
       MemorySize: 128
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer
       Timeout: 3
       Events:
         ApiEvent:
@@ -268,7 +280,7 @@ Resources:
       Handler: index.handler
       Runtime: nodejs18.x
       Layers:
-          - arn:aws:lambda:us-east-2:122610496633:layer:consolidation:2 
+          - !Ref DependenciesLayer
       CodeUri: dist/handlers/GetTracks
       MemorySize: 128
       Timeout: 3
