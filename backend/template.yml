@@ -293,7 +293,7 @@ Resources:
             Path: /package/byRegEx
             Method: post
       Policies:
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref PackageMetadataTable
 
   GetTracks:

@@ -1,1 +1,2 @@
-export const baseUrl = "https://opw1049eb1.execute-api.us-east-2.amazonaws.com/dev";
+export const baseUrl = "https://dev.teamfivepackages.com";
+// export const baseUrl = "http://127.0.0.1:3000";

@@ -1,5 +1,5 @@
 {
-  "body": "{\"RegEx\": \"^[a-zA-Z0-9_-]+$\"}",
+  "body": "{\"RegEx\": \"test-package|yazl\"}",
   "httpMethod": "POST",
   "headers": {
     "Content-Type": "application/json"
