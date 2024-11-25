@@ -1,6 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { S3 } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { createErrorResponse, getPackageById, getPackageByName, updatePackageHistory, uploadPackageMetadata } from './utils';
 import { PackageData, PackageTableRow, User, Package, PackageMetadata } from './interfaces';
@@ -14,7 +14,11 @@ import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
 import axios from 'axios';
 
-const s3 = new S3();
+const s3Client = new S3Client({
+    region: 'us-east-2',
+    useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
+    useAccelerateEndpoint: true, // Automatically use Transfer Acceleration
+});
 
 
 type NpmMetadata = {
@@ -221,19 +225,20 @@ export function extractVersionFromPackageJson(packageJson: string) {
     return version;
 }
 
-// Upload the zip file to S3 and return the file URL
 async function uploadToS3(fileContent: Buffer, packageName: string, version: string): Promise<string> {
     const s3Key = `uploads/${packageName}-${version}.zip`;
     const bucketName = process.env.S3_BUCKET_NAME;
 
     if (!bucketName) throw new Error('S3_BUCKET_NAME is not defined in environment variables');
 
-    await s3.putObject({
+    const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: s3Key,
         Body: fileContent,
         ContentType: 'application/zip',
     });
+
+    await s3Client.send(command);
 
     return s3Key;
 }
