@@ -12,7 +12,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const s3Client = new S3Client({
             region: 'us-east-2',
             useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
-            useAccelerateEndpoint: true, // Automatically use Transfer Acceleration
         });
 
         // Extract and validate the package ID
