@@ -236,7 +236,7 @@ async function uploadToS3(fileContent: Buffer, packageName: string, version: str
         ContentType: 'application/zip',
     });
 
-    return `https://${bucketName}.s3.amazonaws.com/${s3Key}`;
+    return s3Key;
 }
 
 // Clone GitHub repository and compress it to a zip file
