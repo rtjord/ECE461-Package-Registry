@@ -8,6 +8,30 @@ Resources:
     Properties:
       StageName: !Ref Stage
       EndpointConfiguration: REGIONAL
+  
+    MyOpenSearchDomain:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      DomainName: package-readmes # Replace with your domain name
+      EngineVersion: 'OpenSearch_2.17' # Replace with the desired OpenSearch version
+      ClusterConfig:
+        InstanceType: t3.small.search
+        InstanceCount: 1 # Replace with the number of instances you need
+      EBSOptions:
+        EBSEnabled: true
+        VolumeSize: 10 # Size in GiB
+        VolumeType: gp2
+      AccessPolicies:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "es:*"
+            Resource: "*"
+      EncryptionAtRestOptions:
+        Enabled: true
+      NodeToNodeEncryptionOptions:
+        Enabled: true
 
   PackageMetadataTable:
     Type: AWS::DynamoDB::Table

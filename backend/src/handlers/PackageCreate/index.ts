@@ -13,11 +13,14 @@ import git from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
 import axios from 'axios';
+import aws4 from 'aws4';
+import { defaultProvider } from '@aws-sdk/credential-provider-node';
 
 const s3Client = new S3Client({
     region: 'us-east-2',
     useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
 });
+
 
 type NpmMetadata = {
     repository?: {
@@ -95,8 +98,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Extract package.json and README.md from the zip file
         const { packageJson, readme } = await extractFilesFromZip(fileContent);
-        // upload readme to opensearch in the future
-        console.log(readme);
 
         // If the version is not provided, try to extract it from package.json
         if (!version && packageJson) {
@@ -108,6 +109,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Generate a unique ID for the package
         const packageId = generatePackageID(packageName, version);
+
+        // upload readme to opensearch in the future
+        console.log(readme);
+        // if (readme){
+        //     await uploadReadme('', 'readmes', readme, packageId);
+        // }
 
         // Upload the package zip to S3
         const s3Key = await uploadToS3(fileContent, packageName, version);
@@ -292,4 +299,51 @@ async function zipDirectory(directoryPath: string): Promise<Buffer> {
 
         zipFile.end();
     });
+}
+
+async function uploadReadme(
+  domainEndpoint: string,
+  indexName: string,
+  readmeContent: string,
+  id: string
+) {
+  try {
+    // Get AWS credentials
+    const credentials = await defaultProvider()();
+
+    // Prepare the OpenSearch request
+    const request = {
+      host: domainEndpoint.replace(/^https?:\/\//, ''), // Extract the hostname
+      method: 'PUT',
+      path: `/${indexName}/_doc/${id}`, // Document path in OpenSearch
+      service: 'es', // AWS service name for OpenSearch
+      body: JSON.stringify({
+        content: readmeContent,
+        timestamp: new Date().toISOString(),
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    // Sign the request using aws4
+    aws4.sign(request, credentials);
+
+    // Send the request using axios
+    const response = await axios({
+      method: request.method,
+      url: `https://${request.host}${request.path}`, // Construct full URL
+      headers: request.headers,
+      data: request.body, // Attach request body
+    });
+
+    console.log('Document indexed:', response.data);
+  } catch (error) {
+    // Error handling
+    const err = error as any;
+    console.error(
+      'Error indexing document:',
+      err.response?.data || err.message
+    );
+  }
 }
