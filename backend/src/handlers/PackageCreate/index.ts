@@ -21,9 +21,9 @@ type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
 
 
-// const servicesPath = process.env.SERVICES_PATH || 'services/rate';
-// // eslint-disable-next-line @typescript-eslint/no-require-imports
-// const { npmAnalysis } = require(`${servicesPath}/tools/api`);
+const servicesPath = process.env.SERVICES_PATH || 'services/lnbdmbdamns';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { npmAnalysis } = require(`${servicesPath}/tools/api`);
 
 
 
@@ -99,9 +99,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
-        // const npmResults = await npmAnalysis(packageName);
+        const npmResults = await npmAnalysis(packageName);
 
-        // console.log(npmResults);
+        console.log(npmResults);
         // Extract package.json and README.md from the zip file
         const { packageJson, readme } = await extractFilesFromZip(fileContent);
         // upload readme to opensearch in the future
