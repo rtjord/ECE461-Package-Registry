@@ -4,7 +4,8 @@ import { S3 } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const utilsPath = process.env.UTILS_PATH || 'common/utils';
- 
+import dotenv from 'dotenv';
+dotenv.config();
  
 // eslint-disable-next-line @typescript-eslint/no-require-imports 
 const { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(utilsPath);
