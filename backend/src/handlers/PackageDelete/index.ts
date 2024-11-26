@@ -11,7 +11,7 @@ const { createErrorResponse, getPackageById, getEnvVariable } = require(utilsPat
 
 const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
+// eslint-disable-next-line @typescript-eslint/no-require-imports @typescript-eslint/no-var-requires
 const interfaces = require(interfacesPath);
 
 type PackageTableRow = typeof interfaces.PackageTableRow;

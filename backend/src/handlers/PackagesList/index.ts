@@ -7,7 +7,7 @@ const utilsPath = process.env.UTILS_PATH || 'common/utils';
 const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
 // eslint-disable-next-line @typescript-eslint/no-require-imports 
 const { createErrorResponse } = require(utilsPath);
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 const interfaces = require(interfacesPath);
 type PackageQuery = typeof interfaces.PackageQuery;
 type PackageMetadata = typeof interfaces.PackageMetadata;

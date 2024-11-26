@@ -10,7 +10,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 const interfaces = require(interfacesPath);
 
 type PackageTableRow = typeof interfaces.PackageTableRow;
