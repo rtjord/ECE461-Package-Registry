@@ -22,7 +22,7 @@ type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
 
 
-const servicesPath = process.env.SERVICES_PATH || 'services/lnbdmbdamns';
+const servicesPath = process.env.SERVICES_PATH;// || 'services/lnbdmbdamns';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { npmAnalysis } = require(`${servicesPath}/tools/api`);
 
