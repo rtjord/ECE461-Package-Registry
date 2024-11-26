@@ -8,6 +8,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Stage
+      EndpointConfiguration: REGIONAL
       # DefinitionBody: 
       #   Fn::Transform:
       #     Name: AWS::Include

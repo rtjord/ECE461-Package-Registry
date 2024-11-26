@@ -9,7 +9,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     try {
         // Initialize clients
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
-        const s3Client = new S3Client();
+        const s3Client = new S3Client({
+            region: 'us-east-2',
+            useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
+        });
 
         // Extract and validate the package ID
         const id = getIdFromEvent(event);
