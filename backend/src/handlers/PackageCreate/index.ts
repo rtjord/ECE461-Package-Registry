@@ -2,8 +2,18 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3 } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } from './utils';
-import { PackageData, PackageTableRow, User, Package, PackageMetadata } from './interfaces';
+
+const utilsPath = process.env.UTILS_PATH || 'common/utils';
+const { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(utilsPath);
+
+const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
+const interfaces = require(interfacesPath);
+type PackageData = typeof interfaces.PackageData;
+type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
+type Package = typeof interfaces.Package;
+type PackageMetadata = typeof interfaces.PackageMetadata;
+
 import { createHash } from 'crypto';
 import JSZip from "jszip";
 import * as fs from 'fs';

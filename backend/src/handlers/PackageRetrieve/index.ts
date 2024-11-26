@@ -1,9 +1,18 @@
 import { S3Client, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { createErrorResponse, getPackageById, updatePackageHistory } from './utils';
+
+const utilsPath = process.env.UTILS_PATH || 'common/utils';
+const { createErrorResponse, getPackageById, updatePackageHistory } = require(utilsPath);
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { PackageTableRow, Package, User } from './interfaces';
+
+const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
+const interfaces = require(interfacesPath);
+
+type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
+type Package = typeof interfaces.Package;
+
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
