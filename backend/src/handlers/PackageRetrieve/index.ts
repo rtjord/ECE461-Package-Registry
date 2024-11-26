@@ -17,7 +17,7 @@ type PackageTableRow = typeof interfaces.PackageTableRow;
 type User = typeof interfaces.User;
 type Package = typeof interfaces.Package;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         // Initialize clients

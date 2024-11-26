@@ -30,7 +30,7 @@ import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
 import axios from 'axios';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 const s3 = new S3({
     region: 'us-east-2',
     useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'

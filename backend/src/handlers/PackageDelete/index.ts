@@ -19,7 +19,7 @@ type PackageTableRow = typeof interfaces.PackageTableRow;
 
 
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
