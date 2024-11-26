@@ -49,3 +49,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOG_FILE: test.log
           LOG_LEVEL: 2
+          UTILS_PATH: '../../common/utils'
+          INTERFACES_PATH: '../../common/interfaces'
+          SERVICES_PATH: '../../services/rate'
+          

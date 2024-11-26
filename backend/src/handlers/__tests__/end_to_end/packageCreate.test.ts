@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Package, PackageData, PackageMetadata } from "../../../future_lambda_layer/interfaces";
+import { Package, PackageData, PackageMetadata } from "../../../common/interfaces";
 
 const baseUrl = "http://127.0.0.1:3000";
 const timeout = 10000;

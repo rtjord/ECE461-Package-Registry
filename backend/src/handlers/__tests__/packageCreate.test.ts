@@ -1,5 +1,5 @@
 import { handler, generatePackageID, extractFilesFromZip } from '../PackageCreate/index';
-import { createErrorResponse } from '../../future_lambda_layer/utils';
+import { createErrorResponse } from '../../common/utils';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import JSZip from 'jszip';
 

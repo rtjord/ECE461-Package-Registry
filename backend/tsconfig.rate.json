@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+      "outDir": "./layers/dependencies/nodejs",
+      "rootDir": "./src"
+    },
+    "include": [
+      "./src/services/rate/**/*"
+    ]
+}

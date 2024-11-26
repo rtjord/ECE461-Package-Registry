@@ -1,5 +1,6 @@
 {
-  "pathParameters": {
-    "name": "test-package"
+    "pathParameters": {
+      "name": "test-package"
+    }
   }
-}
+  

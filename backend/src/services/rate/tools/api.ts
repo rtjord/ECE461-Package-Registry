@@ -308,7 +308,7 @@ export class gitAnalysis {
                 // Update count and check for more pages
                 contributorsCount += response.data.length;
                 const linkHeader = response.headers['link'];
-                hasMorePages = linkHeader && linkHeader.includes('rel="next"');
+                hasMorePages = typeof linkHeader === 'string' && linkHeader.includes('rel="next"');
                 page++;
             }
     
