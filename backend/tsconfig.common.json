@@ -2,7 +2,7 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
       "outDir": "./layers/dependencies/nodejs",
-      "rootDir": "./src/common"
+      "rootDir": "./src"
     },
     "include": [
       "./src/common/**/*"
