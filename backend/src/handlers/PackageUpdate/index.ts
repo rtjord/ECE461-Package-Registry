@@ -10,6 +10,8 @@ const { createErrorResponse, getPackageById, getPackageByName, updatePackageHist
 const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(interfacesPath);
 
 type PackageData = typeof interfaces.PackageData;

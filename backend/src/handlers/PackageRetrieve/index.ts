@@ -4,13 +4,13 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
 const utilsPath = process.env.UTILS_PATH || 'common/utils';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
+ 
 const { createErrorResponse, getPackageById, updatePackageHistory } = require(utilsPath);
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(interfacesPath);
 
