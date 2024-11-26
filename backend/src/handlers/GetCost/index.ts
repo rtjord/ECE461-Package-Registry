@@ -5,7 +5,7 @@ const utilsPath = process.env.UTILS_PATH || '/common/utils';
 const { getPackageById, createErrorResponse } = require(utilsPath);
 
 const interfacesPath = process.env.INTERFACES_PATH || '/common/interfaces';
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 const interfaces = require(interfacesPath);
 
 type PackageCost = typeof interfaces.PackageCost;
