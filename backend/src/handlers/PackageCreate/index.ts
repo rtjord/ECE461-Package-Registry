@@ -3,14 +3,14 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3 } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-const utilsPath = process.env.UTILS_PATH || 'common/utils';
+const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
 import dotenv from 'dotenv';
 dotenv.config();
  
 // eslint-disable-next-line @typescript-eslint/no-require-imports 
 const { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(utilsPath);
 
-const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
+const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
  
  
 /* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
@@ -22,7 +22,7 @@ type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
 
 
-const servicesPath = process.env.SERVICES_PATH || 'services/rate';
+const servicesPath = process.env.SERVICES_PATH || '/opt/nodejs/services/rate';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { npmAnalysis } = require(`${servicesPath}/tools/api`);
 

@@ -2,13 +2,13 @@ import { S3Client, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/cli
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
-const utilsPath = process.env.UTILS_PATH || 'common/utils';
+const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports 
 const { createErrorResponse, getPackageById, updatePackageHistory } = require(utilsPath);
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
+const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
 
 /* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 const interfaces = require(interfacesPath);

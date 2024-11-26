@@ -3,8 +3,8 @@ import { DynamoDBClient, QueryCommand, QueryCommandInput, ScanCommand } from "@a
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 
-const utilsPath = process.env.UTILS_PATH || 'common/utils';
-const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
+const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
+const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
 // eslint-disable-next-line @typescript-eslint/no-require-imports 
 const { createErrorResponse } = require(utilsPath);
 /* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
