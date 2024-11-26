@@ -6,12 +6,11 @@ const { getPackageById, createErrorResponse } = require(utilsPath);
 
 const interfacesPath = process.env.INTERFACES_PATH || '/common/interfaces';
 // eslint-disable-next-line @typescript-eslint/no-import-requires, @typescript-eslint/no-unused-vars
-cont interfaces = require(interfacesPath);
+const interfaces = require(interfacesPath);
 
 type PackageCost = typeof interfaces.PackageCost;
 type PackageTableRow = typeof interfaces.PackageTableRow;
 
-import { PackageTableRow, PackageCost } from './interfaces';
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
