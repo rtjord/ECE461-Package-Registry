@@ -220,6 +220,11 @@ Resources:
             TableName: !Ref PackageMetadataTable
         - DynamoDBWritePolicy:
             TableName: !Ref PackageHistoryTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: arn:aws:secretsmanager:us-east-2:122610496633:secret:GitHubToken
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"

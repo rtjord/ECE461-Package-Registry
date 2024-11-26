@@ -6,13 +6,13 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
 import dotenv from 'dotenv';
 dotenv.config();
- 
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports 
 const { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(utilsPath);
 
 const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
- 
- 
+
+
 /* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
 const interfaces = require(interfacesPath);
 type PackageData = typeof interfaces.PackageData;
@@ -24,9 +24,14 @@ type PackageMetadata = typeof interfaces.PackageMetadata;
 
 const servicesPath = process.env.SERVICES_PATH || '/opt/nodejs/services/rate';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { npmAnalysis } = require(`${servicesPath}/tools/api`);
+const { runAnalysis } = require(`${servicesPath}/tools/scripts`);
+const { getEnvVars } = require(`${servicesPath}/tools/getEnvVars`);
+const ratingInterfaces = require(`${servicesPath}/utils/interfaces`);
+const { metricCalc } = require(`${servicesPath}/tools/metricCalc`);
 
-
+type envVars = typeof ratingInterfaces.envVars;
+type repoData = typeof ratingInterfaces.repoData;
+type metricData = typeof ratingInterfaces.metricData;
 
 
 import { createHash } from 'crypto';
@@ -39,7 +44,7 @@ import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
 import axios from 'axios';
 
- 
+
 const s3 = new S3({
     region: 'us-east-2',
     useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
@@ -52,6 +57,33 @@ type NpmMetadata = {
     };
 };
 
+// Use this code snippet in your app.
+// If you need more information about configurations or implementing the sample code, visit the AWS docs:
+// https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/getting-started.html
+
+import {
+    SecretsManagerClient,
+    GetSecretValueCommand
+} from "@aws-sdk/client-secrets-manager";
+
+const client = new SecretsManagerClient({
+    region: "us-east-2",
+});
+
+
+export async function getSecret(secret_name: string): Promise<string> {
+    const response = await client.send(
+        new GetSecretValueCommand({
+            SecretId: secret_name,
+            VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
+        })
+    );
+    const secret = response.SecretString || "";
+    return secret;
+}
+
+
+// Your code goes here
 
 // Main Lambda handler function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -85,6 +117,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             // Decode the uploaded file content
             fileContent = Buffer.from(requestBody.Content, 'base64');
         } else if (requestBody.URL) {
+            const secret = await getSecret("GitHubToken");
+            const token = JSON.parse(secret) as { GitHubToken: string };
+            process.env.GITHUB_TOKEN = token.GitHubToken;
+            process.env.LOG_FILE = '/tmp/log.txt';
+            process.env.LOG_LEVEL = '1';
+            const npmResults = await getScores(requestBody.URL);
+            console.log(npmResults);
             const { packageName: urlPackageName, version: urlVersion } = extractPackageInfoFromURL(requestBody.URL);
             // Fetch the GitHub repository URL from the npm package
             const repoUrl = await getGitHubRepoUrl(urlPackageName);
@@ -100,13 +139,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
-        const npmResults = await npmAnalysis(packageName);
 
-        console.log(npmResults);
+        // const npmResults = await npmAnalysis(packageName);
+
         // Extract package.json and README.md from the zip file
         const { packageJson, readme } = await extractFilesFromZip(fileContent);
         // upload readme to opensearch in the future
-        console.log(readme);
 
         // If the version is not provided, try to extract it from package.json
         if (!version && packageJson) {
@@ -299,4 +337,20 @@ async function zipDirectory(directoryPath: string): Promise<Buffer> {
 
         zipFile.end();
     });
+}
+
+async function getScores(url: string): Promise<metricData[]> {
+    const envVar: envVars = new getEnvVars();
+    const runAnalysisClass = new runAnalysis(envVar);
+
+    try {
+        const repoData: repoData[] = await runAnalysisClass.runAnalysis([url]);
+        const repo = repoData[0];
+        const metricCalcClass = new metricCalc();
+        const result: metricData = metricCalcClass.getValue(repo);
+
+        return result;
+    } catch (error) {
+        throw new Error(`Could not execute URL analysis of modules: ${error}`);
+    }
 }
