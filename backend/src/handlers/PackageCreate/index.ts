@@ -21,9 +21,9 @@ type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
 
 
-const servicesPath = process.env.SERVICES_PATH || 'services/rate';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { npmAnalysis } = require(`${servicesPath}/tools/api`);
+// const servicesPath = process.env.SERVICES_PATH || 'services/rate';
+// // eslint-disable-next-line @typescript-eslint/no-require-imports
+// const { npmAnalysis } = require(`${servicesPath}/tools/api`);
 
 
 
