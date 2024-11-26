@@ -2,9 +2,9 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
       "outDir": "./layers/dependencies/nodejs",
-      "rootDir": "./src"
+      "rootDir": "./src/common"
     },
     "include": [
-      "./src/services/future_lambda_layer/**/*"
+      "./src/common/**/*"
     ]
 }
