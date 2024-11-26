@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const utilsPath = process.env.UTILS_PATH || '/common/utils';
-// eslint-disable-next-line @typescript-eslint/no-import-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getPackageById, createErrorResponse } = require(utilsPath);
 
 const interfacesPath = process.env.INTERFACES_PATH || '/common/interfaces';
