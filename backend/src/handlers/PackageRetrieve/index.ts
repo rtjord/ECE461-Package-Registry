@@ -4,21 +4,20 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
 const utilsPath = process.env.UTILS_PATH || 'common/utils';
 
- 
- 
+// eslint-disable-next-line @typescript-eslint/no-require-imports 
 const { createErrorResponse, getPackageById, updatePackageHistory } = require(utilsPath);
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const interfacesPath = process.env.INTERFACES_PATH || 'common/interfaces';
- 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports 
 const interfaces = require(interfacesPath);
 
 type PackageTableRow = typeof interfaces.PackageTableRow;
 type User = typeof interfaces.User;
 type Package = typeof interfaces.Package;
 
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         // Initialize clients
