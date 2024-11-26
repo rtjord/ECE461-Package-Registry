@@ -19,7 +19,10 @@ export const handler: APIGatewayProxyHandler = async () => {
     try {
         // Inject clients
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
-        const s3Client = new S3Client();
+        const s3Client = new S3Client({
+            region: 'us-east-2',
+            useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
+        });
 
         // Define table and bucket names
         const table1 = "PackageMetadata"; // Table with ID as primary key

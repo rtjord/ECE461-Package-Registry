@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "body": "{\"RegEx\": \"test-package|yazl\"}",
   "httpMethod": "POST",
@@ -12,3 +13,19 @@
     "resourcePath": "/packages/by-regex"
   }
 }
+=======
+{
+    "body": "{\"RegEx\": \"^[a-zA-Z0-9_-]+$\"}",
+    "httpMethod": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParameters": null,
+    "queryStringParameters": null,
+    "requestContext": {
+      "requestId": "test-request-id",
+      "httpMethod": "POST",
+      "resourcePath": "/packages/by-regex"
+    }
+  }
+>>>>>>> dev

@@ -1,8 +1,14 @@
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
-import { PackageMetadata } from './interfaces';
+const interfacesPath = process.env.INTERFACES_PATH || '/common/interfaces';
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars
+const interfaces = require(interfacesPath);
+type PackageMetadata = typeof interfaces.PackageMetadata;
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createErrorResponse } from './utils';
+
+const utilsPath = process.env.UTILS_PATH || '/common/utils';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { createErrorResponse } = require(utilsPath);
 
 // Define the Lambda handler function that processes incoming API Gateway requests
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {

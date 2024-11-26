@@ -1,8 +1,8 @@
 {
-  "pathParameters": {
-    "id": "12345"
-  },
-  "queryStringParameters": {
-    "dependency": "false"
+    "pathParameters": {
+      "id": "12345"
+    },
+    "queryStringParameters": {
+      "dependency": "false"
+    }
   }
-}
