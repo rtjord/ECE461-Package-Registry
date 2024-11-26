@@ -8,14 +8,6 @@ Resources:
     Properties:
       StageName: !Ref Stage
       EndpointConfiguration: REGIONAL
-<<<<<<< HEAD
-=======
-      # DefinitionBody: 
-      #   Fn::Transform:
-      #     Name: AWS::Include
-      #     Parameters:
-      #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
->>>>>>> dev
 
   DependenciesLayer:
     Type: AWS::Serverless::LayerVersion
@@ -161,15 +153,10 @@ Resources:
       Handler: index.handler
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageUpdate
-<<<<<<< HEAD
-      MemorySize: 1024
-      Timeout: 120
-=======
       MemorySize: 128
       Timeout: 60
       Layers:
         - !Ref DependenciesLayer
->>>>>>> dev
       Events:
         ApiEvent:
           Type: Api

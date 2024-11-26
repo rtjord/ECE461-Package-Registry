@@ -5,7 +5,7 @@ import { baseUrl } from "./config";
 
 const timeout = 30000;
 
-describe("E2E Test for Package By Regex Endpoint", () => {
+describe("E2E Test for PackageByRegEx Endpoint", () => {
     let content_id: string;
     let url_id: string;
     beforeAll(async () => {

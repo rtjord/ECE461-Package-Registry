@@ -1,6 +1,7 @@
 import axios from "axios";
 import { baseUrl } from "./config";
 
+const timeout = 30000;
 
 describe("E2E Test for GetTracks Endpoint", () => {
   const endpoint = "/tracks"; // Adjust if needed based on your routing
@@ -22,5 +23,5 @@ describe("E2E Test for GetTracks Endpoint", () => {
       console.error("Error in E2E test:", error);
       throw error; // Fail the test if there's an error
     }
-  });
+  }, timeout);
 });
