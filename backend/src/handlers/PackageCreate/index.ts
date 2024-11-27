@@ -22,7 +22,6 @@ type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
 type PackageRating = typeof interfaces.PackageRating;
 
-
 const servicesPath = process.env.SERVICES_PATH || '/opt/nodejs/services/rate';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { runAnalysis } = require(`${servicesPath}/tools/scripts`);
@@ -69,20 +68,6 @@ const client = new SecretsManagerClient({
     region: "us-east-2",
 });
 
-
-export async function getSecret(secret_name: string): Promise<string> {
-    const response = await client.send(
-        new GetSecretValueCommand({
-            SecretId: secret_name,
-            VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
-        })
-    );
-    const secret = response.SecretString || "";
-    return secret;
-}
-
-
-// Your code goes here
 
 // Main Lambda handler function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -223,7 +208,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         };
     } catch (error) {
         console.error("Error during POST package:", error);
-        return createErrorResponse(500, 'Failed to upload package.');
+        return createErrorResponse(500, `Failed to upload package. ${error}`);
     }
 };
 
@@ -374,4 +359,15 @@ async function getScores(url: string): Promise<metricData[]> {
     } catch (error) {
         throw new Error(`Could not execute URL analysis of modules: ${error}`);
     }
+}
+
+export async function getSecret(secret_name: string): Promise<string> {
+    const response = await client.send(
+        new GetSecretValueCommand({
+            SecretId: secret_name,
+            VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
+        })
+    );
+    const secret = response.SecretString || "";
+    return secret;
 }

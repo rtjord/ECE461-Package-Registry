@@ -223,11 +223,8 @@ Resources:
             TableName: !Ref PackageHistoryTable
         - S3CrudPolicy:
             BucketName: !Ref PackageBucket
-        - Statement:
-            - Effect: Allow
-              Action:
-                - secretsmanager:GetSecretValue
-              Resource: arn:aws:secretsmanager:us-east-2:122610496633:secret:GitHubToken
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:GitHubToken-WoSvl2"
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
@@ -240,6 +237,8 @@ Resources:
       CodeUri: dist/handlers/PackageRate
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
