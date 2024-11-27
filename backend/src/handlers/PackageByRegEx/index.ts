@@ -1,12 +1,12 @@
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
-const interfacesPath = process.env.INTERFACES_PATH || '/common/interfaces';
+const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars
 const interfaces = require(interfacesPath);
 type PackageMetadata = typeof interfaces.PackageMetadata;
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-const utilsPath = process.env.UTILS_PATH || '/common/utils';
+const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createErrorResponse } = require(utilsPath);
 
