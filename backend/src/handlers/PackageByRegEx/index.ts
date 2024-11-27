@@ -1,12 +1,12 @@
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
-const interfacesPath = process.env.INTERFACES_PATH || '/common/interfaces';
+const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars
 const interfaces = require(interfacesPath);
 type PackageMetadata = typeof interfaces.PackageMetadata;
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-const utilsPath = process.env.UTILS_PATH || '/common/utils';
+const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { createErrorResponse } = require(utilsPath);
 
@@ -19,11 +19,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Parse the request body or default to an empty object if it's undefined
     const parsedBody = event.body && typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
     // Check if the body has a valid RegEx field
-    if (!parsedBody.RegEx) {
+    if (!parsedBody.RegEx || !(typeof parsedBody.RegEx === 'string') || !isValidRegEx(parsedBody.RegEx)) {
       return createErrorResponse(400, 'Missing or invalid RegEx field in the request body.');
     }
 
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
+    console.log(`Searching for packages matching the regular expression: ${RegEx}`);
 
     const params = {
       TableName: 'PackageMetadata',
@@ -35,7 +36,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const packages = result.Items ? result.Items.map(item => unmarshall(item)) : [];  // Unmarshall the DynamoDB items to JavaScript objects
     console.log(packages);
     // Filter the packages based on the provided regular expression to find matching package names
-    const matchingPackages = packages.filter((pkg) => new RegExp(RegEx, 'i').test(pkg.Name));
+    const matchingPackages = packages.filter((pkg) => new RegExp(RegEx, 'i').test(pkg.PackageName));
+    console.log(matchingPackages);
     const packageMetadataList: PackageMetadata[] = matchingPackages.map((pkg) => ({ Name: pkg.PackageName, Version: pkg.Version, ID: pkg.ID }));
 
     // If there are no matching packages, return a 404 response
@@ -53,3 +55,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     return createErrorResponse(500, 'An error occurred while processing the request.');
   }
 };
+
+function isValidRegEx(RegEx: string): boolean {
+  try {
+    new RegExp(RegEx);
+    return true;
+  } catch {
+    return false;
+  }
+}

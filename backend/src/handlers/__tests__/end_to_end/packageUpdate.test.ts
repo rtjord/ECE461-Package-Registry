@@ -1,10 +1,10 @@
 import axios from "axios";
+import { baseUrl } from "./config";
 import { Package, PackageData, PackageMetadata } from "../../../common/interfaces";
 
-const baseUrl = "http://127.0.0.1:3000";
 const timeout = 30000;
 
-describe("E2E Test for Package Create Endpoint", () => {
+describe("E2E Test for Package Update Endpoint", () => {
     let content_id: string;
     let url_id: string;
     beforeAll(async () => {

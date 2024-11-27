@@ -141,7 +141,11 @@ export class metricCalc{
             ResponsiveMaintainer: this.calculateResponsiveness(data),
             ResponsiveMaintainer_Latency: parseFloat((data.latency.lastCommitDate / 1000).toFixed(3)),
             License: this.checkLicenseExistence(data),
-            License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3))
+            License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3)),
+            GoodPinningPractice: 0,
+            GoodPinningPracticeLatency: 0,
+            PullRequest: 0,
+            PullRequestLatency: 0
         };
     }
 }

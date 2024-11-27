@@ -1,9 +1,9 @@
 import axios from "axios";
+import { baseUrl } from "./config";
 
+const timeout = 30000;
 
-const baseUrl = "http://127.0.0.1:3000"; // Replace with your API's base URL
-
-describe("E2E Test for Planned Tracks Endpoint", () => {
+describe("E2E Test for GetTracks Endpoint", () => {
   const endpoint = "/tracks"; // Adjust if needed based on your routing
 
   it("should return planned tracks successfully", async () => {
@@ -23,5 +23,5 @@ describe("E2E Test for Planned Tracks Endpoint", () => {
       console.error("Error in E2E test:", error);
       throw error; // Fail the test if there's an error
     }
-  });
+  }, timeout);
 });
