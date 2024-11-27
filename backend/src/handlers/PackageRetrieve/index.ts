@@ -1,10 +1,23 @@
 import { S3Client, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { createErrorResponse, getPackageById, updatePackageHistory, getEnvVariable } from './utils';
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { PackageTableRow, Package, User } from './interfaces';
 
+const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports 
+const { createErrorResponse, getPackageById, updatePackageHistory, getEnvVariable } = require(utilsPath);
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+
+const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
+
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
+const interfaces = require(interfacesPath);
+
+type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
+type Package = typeof interfaces.Package;
+
+ 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         // Initialize clients

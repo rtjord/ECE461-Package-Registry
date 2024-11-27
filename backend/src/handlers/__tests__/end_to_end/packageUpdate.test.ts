@@ -1,7 +1,6 @@
 import axios from "axios";
-import { Package, PackageData, PackageMetadata } from "../../../future_lambda_layer/interfaces";
 import { baseUrl } from "./config";
-
+import { Package, PackageData, PackageMetadata } from "../../../common/interfaces";
 
 const timeout = 30000;
 

@@ -1,0 +1,6 @@
+{
+  "name": "common",
+  "version": "1.0.0",
+  "main": "utils.js",
+  "description": "Shared utilities for Lambda functions"
+}

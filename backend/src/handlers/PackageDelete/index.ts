@@ -2,9 +2,24 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { S3, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { PackageTableRow } from './interfaces';
-import { createErrorResponse, getPackageById, getEnvVariable } from './utils';
 
+
+const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
+ 
+// eslint-disable-next-line @typescript-eslint/no-require-imports 
+const { createErrorResponse, getPackageById, getEnvVariable } = require(utilsPath);
+
+const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
+
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
+const interfaces = require(interfacesPath);
+
+type PackageTableRow = typeof interfaces.PackageTableRow;
+
+
+
+
+ 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());

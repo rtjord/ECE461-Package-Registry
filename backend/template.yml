@@ -33,6 +33,18 @@ Resources:
       NodeToNodeEncryptionOptions:
         Enabled: true
 
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: DependenciesLayer
+      ContentUri: ./layers/dependencies
+      CompatibleRuntimes:
+        - nodejs14.x
+        - nodejs12.x
+        - nodejs10.x
+        - nodejs18.x
+
+
   PackageMetadataTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -88,6 +100,8 @@ Resources:
       CodeUri: dist/handlers/PackagesList
       MemorySize: 256
       Timeout: 60
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -107,6 +121,8 @@ Resources:
       CodeUri: dist/handlers/RegistryReset
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -133,6 +149,8 @@ Resources:
       CodeUri: dist/handlers/PackageRetrieve
       MemorySize: 128
       Timeout: 10
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -159,8 +177,10 @@ Resources:
       Handler: index.handler
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageUpdate
-      MemorySize: 1024
-      Timeout: 120
+      MemorySize: 128
+      Timeout: 60
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -187,6 +207,8 @@ Resources:
       CodeUri: dist/handlers/PackageDelete
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -209,6 +231,8 @@ Resources:
       CodeUri: dist/handlers/PackageCreate
       MemorySize: 1024
       Timeout: 120
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -223,6 +247,8 @@ Resources:
             TableName: !Ref PackageHistoryTable
         - S3CrudPolicy:
             BucketName: !Ref PackageBucket
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:GitHubToken-WoSvl2"
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
@@ -235,6 +261,8 @@ Resources:
       CodeUri: dist/handlers/PackageRate
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -254,6 +282,8 @@ Resources:
       CodeUri: dist/handlers/GetCost
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -273,6 +303,8 @@ Resources:
       CodeUri: dist/handlers/CreateAuthToken
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -289,6 +321,8 @@ Resources:
       CodeUri: dist/handlers/PackageByNameGet
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -310,6 +344,8 @@ Resources:
       CodeUri: dist/handlers/PackageByRegEx
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -329,6 +365,8 @@ Resources:
       CodeUri: dist/handlers/GetTracks
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { PackageData, Package, PackageMetadata, PackageQuery, EnumerateOffset } from "../../../future_lambda_layer/interfaces";
+import { PackageData, Package, PackageMetadata, PackageQuery, EnumerateOffset } from "../../../common/interfaces";
 import { baseUrl } from "./config";
 
 

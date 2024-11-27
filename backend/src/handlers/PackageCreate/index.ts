@@ -2,8 +2,38 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } from './utils';
-import { PackageData, PackageTableRow, User, Package, PackageMetadata, PackageRating } from './interfaces';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports 
+const { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(utilsPath);
+
+const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
+
+
+/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
+const interfaces = require(interfacesPath);
+type PackageData = typeof interfaces.PackageData;
+type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
+type Package = typeof interfaces.Package;
+type PackageMetadata = typeof interfaces.PackageMetadata;
+type PackageRating = typeof interfaces.PackageRating;
+
+const servicesPath = process.env.SERVICES_PATH || '/opt/nodejs/services/rate';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { runAnalysis } = require(`${servicesPath}/tools/scripts`);
+const { getEnvVars } = require(`${servicesPath}/tools/getEnvVars`);
+const ratingInterfaces = require(`${servicesPath}/utils/interfaces`);
+const { metricCalc } = require(`${servicesPath}/tools/metricCalc`);
+
+type envVars = typeof ratingInterfaces.envVars;
+type repoData = typeof ratingInterfaces.repoData;
+type metricData = typeof ratingInterfaces.metricData;
+
+
 import { createHash } from 'crypto';
 import JSZip from "jszip";
 import * as fs from 'fs';
@@ -27,6 +57,19 @@ type NpmMetadata = {
         url?: string;
     };
 };
+
+// Use this code snippet in your app.
+// If you need more information about configurations or implementing the sample code, visit the AWS docs:
+// https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/getting-started.html
+
+import {
+    SecretsManagerClient,
+    GetSecretValueCommand
+} from "@aws-sdk/client-secrets-manager";
+
+const client = new SecretsManagerClient({
+    region: "us-east-2",
+});
 
 
 // Main Lambda handler function
@@ -62,6 +105,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             // Decode the uploaded file content
             fileContent = Buffer.from(requestBody.Content, 'base64');
         } else if (requestBody.URL) {
+            const secret = await getSecret("GitHubToken");
+            const token = JSON.parse(secret) as { GitHubToken: string };
+            process.env.GITHUB_TOKEN = token.GitHubToken;
+            process.env.LOG_FILE = '/tmp/log.txt';
+            process.env.LOG_LEVEL = '1';
+            rating = await getScores(requestBody.URL);
+            if (rating.NetScore < 0.5) {
+                console.log('In the future, Package should not be uploaded due to the disqualified rating.');
+                // return createErrorResponse(424, 'Package is not uploaded due to the disqualified rating.');
+            }
+
             const { packageName: urlPackageName, version: urlVersion } = extractPackageInfoFromURL(requestBody.URL);
             // Fetch the GitHub repository URL from the npm package
             const repoUrl = await getGitHubRepoUrl(urlPackageName);
@@ -73,24 +127,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             fileContent = await cloneAndZipRepository(repoUrl, urlVersion);
             if (urlVersion) {
                 version = urlVersion;
-            }
-            rating = {
-                RampUp: 1,
-                Correctness: 1,
-                BusFactor: 1,
-                ResponsiveMaintainer: 1,
-                LicenseScore: 1,
-                GoodPinningPractice: 1,
-                PullRequest: 1,
-                NetScore: 1,
-                RampUpLatency: 1,
-                CorrectnessLatency: 1,
-                BusFactorLatency: 1,
-                ResponsiveMaintainerLatency: 1,
-                LicenseScoreLatency: 1,
-                GoodPinningPracticeLatency: 1,
-                PullRequestLatency: 1,
-                NetScoreLatency: 1,
             }
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
@@ -164,7 +200,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         };
     } catch (error) {
         console.error("Error during POST package:", error);
-        return createErrorResponse(500, 'Failed to upload package.');
+        return createErrorResponse(500, `Failed to upload package. ${error}`);
     }
 };
 
@@ -346,4 +382,31 @@ async function uploadReadme(
       err.response?.data || err.message
     );
   }
+}
+
+async function getScores(url: string): Promise<metricData[]> {
+    const envVar: envVars = new getEnvVars();
+    const runAnalysisClass = new runAnalysis(envVar);
+
+    try {
+        const repoData: repoData[] = await runAnalysisClass.runAnalysis([url]);
+        const repo = repoData[0];
+        const metricCalcClass = new metricCalc();
+        const result: metricData = metricCalcClass.getValue(repo);
+
+        return result;
+    } catch (error) {
+        throw new Error(`Could not execute URL analysis of modules: ${error}`);
+    }
+}
+
+export async function getSecret(secret_name: string): Promise<string> {
+    const response = await client.send(
+        new GetSecretValueCommand({
+            SecretId: secret_name,
+            VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
+        })
+    );
+    const secret = response.SecretString || "";
+    return secret;
 }

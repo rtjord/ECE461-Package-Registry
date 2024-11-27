@@ -1,6 +1,7 @@
 import axios from "axios";
 import { baseUrl } from "./config";
 
+const timeout = 30000;
 
 describe("E2E Test for Authentication Endpoint", () => {
     it("should return a 501 status with the expected message", async () => {
@@ -23,5 +24,5 @@ describe("E2E Test for Authentication Endpoint", () => {
             // Assertions for the response
             expect(response.status).toBe(501); // Check HTTP status code
         }
-    });
+    }, timeout);
 });
