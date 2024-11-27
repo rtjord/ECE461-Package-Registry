@@ -107,8 +107,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             process.env.GITHUB_TOKEN = token.GitHubToken;
             process.env.LOG_FILE = '/tmp/log.txt';
             process.env.LOG_LEVEL = '1';
-            const npmResults = await getScores(requestBody.URL);
-            console.log(npmResults);
+            rating = await getScores(requestBody.URL);
+            if (rating.NetScore < 0.5) {
+                console.log('In the future, Package should not be uploaded due to the disqualified rating.');
+                // return createErrorResponse(424, 'Package is not uploaded due to the disqualified rating.');
+            }
+
             const { packageName: urlPackageName, version: urlVersion } = extractPackageInfoFromURL(requestBody.URL);
             // Fetch the GitHub repository URL from the npm package
             const repoUrl = await getGitHubRepoUrl(urlPackageName);
@@ -121,29 +125,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             if (urlVersion) {
                 version = urlVersion;
             }
-            rating = {
-                RampUp: 1,
-                Correctness: 1,
-                BusFactor: 1,
-                ResponsiveMaintainer: 1,
-                LicenseScore: 1,
-                GoodPinningPractice: 1,
-                PullRequest: 1,
-                NetScore: 1,
-                RampUpLatency: 1,
-                CorrectnessLatency: 1,
-                BusFactorLatency: 1,
-                ResponsiveMaintainerLatency: 1,
-                LicenseScoreLatency: 1,
-                GoodPinningPracticeLatency: 1,
-                PullRequestLatency: 1,
-                NetScoreLatency: 1,
-            }
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
-
-        // const npmResults = await npmAnalysis(packageName);
 
         // Extract package.json and README.md from the zip file
         const { packageJson, readme } = await extractFilesFromZip(fileContent);
