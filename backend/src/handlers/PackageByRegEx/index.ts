@@ -9,11 +9,8 @@ const { createErrorResponse } = require(`${commonPath}/utils`);
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageMetadata = typeof interfaces.PackageMetadata;
 
-// Define the Lambda handler function that processes incoming API Gateway requests
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    // Create a new instance of the DynamoDB client to interact with the database
-    // const dynamoDb = new DynamoDB({});
 
     // Parse the request body or default to an empty object if it's undefined
     const parsedBody = event.body && typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
@@ -21,19 +18,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (!parsedBody.RegEx || !(typeof parsedBody.RegEx === 'string') || !isValidRegEx(parsedBody.RegEx)) {
       return createErrorResponse(400, 'Missing or invalid RegEx field in the request body.');
     }
-
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
-
-    // const params = {
-    //   TableName: 'PackageMetadata',
-    //   ProjectionExpression: 'PackageName, Version, ID', // Retrieve these attributes
-    // };
-
-    // const result = await dynamoDb.scan(params);  // Scan the DynamoDB table to retrieve all items
-    // const packages = result.Items ? result.Items.map(item => unmarshall(item)) : [];  // Unmarshall the DynamoDB items to JavaScript objects
-    // // Filter the packages based on the provided regular expression to find matching package names
-    // const matchingPackages = packages.filter((pkg) => new RegExp(RegEx, 'i').test(pkg.PackageName));
-    // const packageMetadataList: PackageMetadata[] = matchingPackages.map((pkg) => ({ Name: pkg.PackageName, Version: pkg.Version, ID: pkg.ID }));
     const matches = await searchReadmes('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', RegEx);
     console.log('Readme Matches:', matches);
 
@@ -71,16 +56,28 @@ async function searchReadmes(
     // Get AWS credentials
     const credentials = await defaultProvider()();
 
-    const regexQuery =
-    {
-      "query": {
-        "regexp": {
-          "content": {
-            "value": regEx,
-          }
-        }
-      }
-    }
+    const regexQuery = {
+      query: {
+        bool: {
+          should: [
+            {
+              regexp: {
+                content: {
+                  value: regEx, // Your regex pattern
+                },
+              },
+            },
+            {
+              regexp: {
+                "metadata.Name": {
+                  value: regEx, // Same or different regex pattern
+                },
+              },
+            },
+          ],
+        },
+      },
+    };
 
     // Prepare the OpenSearch request
     const request = {

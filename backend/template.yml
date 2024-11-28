@@ -46,6 +46,9 @@ Resources:
       Policies:
         - ElasticsearchHttpPostPolicy:
             DomainName: !GetAtt MyOpenSearchDomain.DomainEndpoint
+      Environment:
+        Variables:
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
   
   CreateIndexCustomResource:
     Type: Custom::CreateIndex
@@ -246,6 +249,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
       Role: !GetAtt PackageCreateUpdateRole.Arn
 
   PackageDelete:
@@ -293,6 +297,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
   PackageRate:
     Type: AWS::Serverless::Function

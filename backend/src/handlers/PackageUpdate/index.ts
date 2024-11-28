@@ -16,15 +16,15 @@ const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { createErrorResponse } = require(`${commonPath}/utils`);
 const { getPackageById, getPackageByName, uploadPackageMetadata, updatePackageHistory } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
+const { uploadReadme } = require(`${commonPath}/opensearch`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const interfaces = require(`${commonPath}/s3`);
+const interfaces = require(`${commonPath}/interfaces`);
 
 type PackageData = typeof interfaces.PackageData;
 type PackageTableRow = typeof interfaces.PackageTableRow;
 type User = typeof interfaces.User;
 type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
-
 
 type NpmMetadata = {
     repository?: {
@@ -114,10 +114,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Extract package.json and README.md from the zip file
         // upload readme to opensearch in the future
-        // const { packageJson, readme } = await extractFilesFromZip(fileContent);
+        const { readme } = await extractFilesFromZip(fileContent);
 
         // Generate a unique ID for the package
         const packageId = generatePackageID(data.Name, metadata.Version);
+
+        // upload readme to opensearch
+        const new_metadata: PackageMetadata = {
+            Name: metadata.Name,
+            Version: metadata.Version,
+            ID: packageId,
+        };
+        if (readme){
+            await uploadReadme('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', readme, new_metadata);
+        }
 
         // Upload the package zip to S3
         const s3Key = await uploadToS3(s3Client, fileContent, data.Name, metadata.Version);
