@@ -9,14 +9,14 @@ Resources:
       StageName: !Ref Stage
       EndpointConfiguration: REGIONAL
   
-    MyOpenSearchDomain:
+  MyOpenSearchDomain:
     Type: AWS::OpenSearchService::Domain
     Properties:
-      DomainName: package-readmes # Replace with your domain name
-      EngineVersion: 'OpenSearch_2.17' # Replace with the desired OpenSearch version
+      DomainName: package-readmes
+      EngineVersion: 'OpenSearch_2.17'
       ClusterConfig:
         InstanceType: t3.small.search
-        InstanceCount: 1 # Replace with the number of instances you need
+        InstanceCount: 1
       EBSOptions:
         EBSEnabled: true
         VolumeSize: 10 # Size in GiB
@@ -25,13 +25,67 @@ Resources:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
-            Principal: "*"
+            Principal:
+              AWS: !GetAtt PackageCreateUpdateRole.Arn
             Action: "es:*"
-            Resource: "*"
+            Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/package-readmes/*"
       EncryptionAtRestOptions:
         Enabled: true
       NodeToNodeEncryptionOptions:
         Enabled: true
+
+  CreateIndexFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: ./dist/handlers/CreateIndex
+      Timeout: 30
+      Layers:
+        - !Ref DependenciesLayer
+      Policies:
+        - ElasticsearchHttpPostPolicy:
+            DomainName: !GetAtt MyOpenSearchDomain.DomainEndpoint
+  
+  CreateIndexCustomResource:
+    Type: Custom::CreateIndex
+    Properties:
+      ServiceToken: !GetAtt CreateIndexFunction.Arn
+
+  PackageCreateUpdateRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies: # Add custom inline policies
+        - PolicyName: AWSSecretsManagerGetSecretValuePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:GitHubToken-WoSvl2"
+        - PolicyName: OpenSearchAccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - es:ESHttpGet
+                  - es:ESHttpPost
+                  - es:ESHttpPut
+                Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/package-readmes/*"
 
   DependenciesLayer:
     Type: AWS::Serverless::LayerVersion
@@ -120,7 +174,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/RegistryReset
       MemorySize: 128
-      Timeout: 3
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -133,6 +187,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          OPEN_SEARCH_DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PackageMetadataTable
@@ -191,13 +246,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PackageMetadataTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PackageHistoryTable
-        - S3CrudPolicy:
-            BucketName: !Ref PackageBucket
+      Role: !GetAtt PackageCreateUpdateRole.Arn
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -240,15 +289,7 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package
             Method: post
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PackageMetadataTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PackageHistoryTable
-        - S3CrudPolicy:
-            BucketName: !Ref PackageBucket
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:GitHubToken-WoSvl2"
+      Role: !GetAtt PackageCreateUpdateRole.Arn
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
@@ -343,7 +384,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageByRegEx
       MemorySize: 128
-      Timeout: 3
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:

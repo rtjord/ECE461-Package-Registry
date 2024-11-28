@@ -146,11 +146,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Generate a unique ID for the package
         const packageId = generatePackageID(packageName, version);
 
+        const metadata = {
+            Name: packageName,
+            Version: version,
+            ID: packageId,
+        };
+
         // upload readme to opensearch in the future
-        console.log(readme);
-        // if (readme){
-        //     await uploadReadme('', 'readmes', readme, packageId);
-        // }
+        if (readme){
+            await uploadReadme('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', readme, metadata);
+        }
 
         // Upload the package zip to S3
         const s3Key = await uploadToS3(fileContent, packageName, version);
@@ -341,7 +346,7 @@ async function uploadReadme(
   domainEndpoint: string,
   indexName: string,
   readmeContent: string,
-  id: string
+  metadata: PackageMetadata
 ) {
   try {
     // Get AWS credentials
@@ -351,10 +356,11 @@ async function uploadReadme(
     const request = {
       host: domainEndpoint.replace(/^https?:\/\//, ''), // Extract the hostname
       method: 'PUT',
-      path: `/${indexName}/_doc/${id}`, // Document path in OpenSearch
+      path: `/${indexName}/_doc/${metadata.ID}`, // Document path in OpenSearch
       service: 'es', // AWS service name for OpenSearch
       body: JSON.stringify({
         content: readmeContent,
+        metadata: metadata,
         timestamp: new Date().toISOString(),
       }),
       headers: {
@@ -374,6 +380,7 @@ async function uploadReadme(
     });
 
     console.log('Document indexed:', response.data);
+
   } catch (error) {
     // Error handling
     const err = error as any;

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc --project tsconfig.handlers.json && tsc --project tsconfig.common.json && tsc --project tsconfig.rate.json",
+    "build": "npm run clean && tsc --project tsconfig.handlers.json && tsc --project tsconfig.common.json && tsc --project tsconfig.rate.json && cd layers/dependencies/nodejs && npm install",
     "test": "npx jest --coverage --testPathIgnorePatterns='end_to_end'",
     "test:e2e": "npx jest --runInBand end_to_end",
     "lint": "npx eslint"

@@ -1,5 +1,5 @@
 {
-  "body": "{\"RegEx\": \"test-package|yazl\"}",
+  "body": "{\"RegEx\": \".*test.*\"}",
   "httpMethod": "POST",
   "headers": {
     "Content-Type": "application/json"
