@@ -34,7 +34,7 @@ Resources:
       NodeToNodeEncryptionOptions:
         Enabled: true
 
-  CreateIndexFunction:
+  CreateIndex:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
@@ -48,7 +48,7 @@ Resources:
             DomainName: !GetAtt MyOpenSearchDomain.DomainEndpoint
       Environment:
         Variables:
-          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
   
   CreateIndexCustomResource:
     Type: Custom::CreateIndex
@@ -190,7 +190,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
-          OPEN_SEARCH_DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
+          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PackageMetadataTable
@@ -249,7 +249,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
-          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
       Role: !GetAtt PackageCreateUpdateRole.Arn
 
   PackageDelete:
@@ -297,7 +297,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
-          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
 
   PackageRate:
     Type: AWS::Serverless::Function

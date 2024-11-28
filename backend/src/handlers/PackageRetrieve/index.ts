@@ -37,7 +37,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const { ID: packageId, PackageName: packageName, Version: version, s3Key: s3Key, URL: url } = existingPackage;
         const bucketName = getEnvVariable('S3_BUCKET_NAME');
-        console.log('S3 Key:', s3Key);
 
         // Fetch S3 object content if S3 key exists
         const s3Result = s3Key ? await getS3ObjectContent(s3Client, bucketName, s3Key) : { base64Content: null, fileUrl: null };
@@ -94,7 +93,6 @@ async function getS3ObjectContent(
     key: string
 ): Promise<{ base64Content: string | null; fileUrl: string | null }> {
     try {
-        console.log('Fetching S3 object:', key);
         const s3Object: GetObjectCommandOutput = await s3Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${key}`;
 

@@ -19,8 +19,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return createErrorResponse(400, 'Missing or invalid RegEx field in the request body.');
     }
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
+    // Search over package names and readmes
     const matches = await searchReadmes('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', RegEx);
-    console.log('Readme Matches:', matches);
 
     // If there are no matching packages, return a 404 response
     if (matches.length === 0) {
@@ -91,8 +91,6 @@ async function searchReadmes(
       body: JSON.stringify(regexQuery)
     };
 
-    console.log('Request:', request);
-
     // Sign the request using aws4
     aws4.sign(request, credentials);
 
@@ -105,7 +103,6 @@ async function searchReadmes(
     });
     const packages: string[] = [];
 
-    console.log('Response:', JSON.stringify(response.data.hits));
     response.data.hits.hits.forEach((hit: { _source: PackageMetadata }) => {
       packages.push(hit._source.metadata);
     });

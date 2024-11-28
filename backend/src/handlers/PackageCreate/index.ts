@@ -4,7 +4,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse } = require(`${commonPath}/utils`);
+const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
 
 const interfaces = require(`${commonPath}/interfaces`);
@@ -115,7 +115,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
             // Clone the GitHub repository and zip it
-            console.log(`Cloning repository from ${repoUrl}`);
             fileContent = await cloneAndZipRepository(repoUrl, urlVersion);
             if (urlVersion) {
                 version = urlVersion;
@@ -370,8 +369,6 @@ async function uploadReadme(
       headers: request.headers,
       data: request.body, // Attach request body
     });
-
-    console.log('Document indexed:', response.data);
 
   } catch (error) {
     // Error handling

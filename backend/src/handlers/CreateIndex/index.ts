@@ -20,7 +20,6 @@ export const handler = async (_event: LambdaEvent) => {
     // Extract required details from the event
     const domainEndpoint = getEnvVariable("DOMAIN_ENDPOINT");
     const indexName = "readmes";
-
     const exists = await checkIndexExists(domainEndpoint, indexName);
 
     if (!exists) {

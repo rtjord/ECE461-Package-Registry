@@ -42,7 +42,7 @@ export const handler: APIGatewayProxyHandler = async () => {
                 Date: item.Date,
             })),
             emptyS3Bucket(s3Client, bucket),
-            clearIndex(getEnvVariable("OPEN_SEARCH_DOMAIN_ENDPOINT"), "readmes"),
+            clearIndex(getEnvVariable("DOMAIN_ENDPOINT"), "readmes"),
         ]);
 
         console.log("All resources cleared successfully.");

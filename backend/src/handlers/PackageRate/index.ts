@@ -15,7 +15,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Validate package ID from path parameters
         const packageId = event.pathParameters?.id;
-        console.log("PackageID:", packageId);
         if (!packageId) {
             return createErrorResponse(400, "There is missing field(s) in the PackageID");
         }
