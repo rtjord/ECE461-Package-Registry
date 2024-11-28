@@ -2,13 +2,11 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyResult, APIGatewayEvent } from 'aws-lambda';
 
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { createErrorResponse, getPackageHistory } = require(utilsPath);
-
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const interfaces = require(interfacesPath);
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse } = require(`${commonPath}/utils`);
+const { getPackageHistory } = require(`${commonPath}/dynamodb`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
 type PackageHistoryEntry = typeof interfaces.PackageHistoryEntry;
 
 export const handler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {

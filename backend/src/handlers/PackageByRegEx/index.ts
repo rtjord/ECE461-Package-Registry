@@ -1,18 +1,13 @@
-// import { DynamoDB } from '@aws-sdk/client-dynamodb';
-// import { unmarshall } from '@aws-sdk/util-dynamodb';
-
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars
-const interfaces = require(interfacesPath);
-type PackageMetadata = typeof interfaces.PackageMetadata;
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import aws4 from 'aws4';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
+import aws4 from 'aws4';
 import axios from 'axios';
 
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { createErrorResponse } = require(utilsPath);
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse } = require(`${commonPath}/utils`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
+type PackageMetadata = typeof interfaces.PackageMetadata;
 
 // Define the Lambda handler function that processes incoming API Gateway requests
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {

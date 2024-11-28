@@ -2,19 +2,12 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import dotenv from 'dotenv';
-dotenv.config();
 
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse } = require(`${commonPath}/utils`);
+const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
-const { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(utilsPath);
-
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-
-
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const interfaces = require(interfacesPath);
+const interfaces = require(`${commonPath}/interfaces`);
 type PackageData = typeof interfaces.PackageData;
 type PackageTableRow = typeof interfaces.PackageTableRow;
 type User = typeof interfaces.User;
@@ -23,7 +16,6 @@ type PackageMetadata = typeof interfaces.PackageMetadata;
 type PackageRating = typeof interfaces.PackageRating;
 
 const servicesPath = process.env.SERVICES_PATH || '/opt/nodejs/services/rate';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { runAnalysis } = require(`${servicesPath}/tools/scripts`);
 const { getEnvVars } = require(`${servicesPath}/tools/getEnvVars`);
 const ratingInterfaces = require(`${servicesPath}/utils/interfaces`);
