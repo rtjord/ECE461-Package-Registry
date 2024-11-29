@@ -3,7 +3,7 @@ import axios from "axios";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const interfaces = require("/interfaces");
+const interfaces = require("./interfaces");
 type PackageMetadata = typeof interfaces.PackageMetadata;
 
 export async function uploadReadme(
