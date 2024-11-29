@@ -9,7 +9,7 @@ export default [
   {languageOptions: { globals: globals.browser }},
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
-  {ignores: ["**/node_modules/**", "**/dist/**", "**/build/**"]},
+  {ignores: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/services/**", "**layers/dependencies/**", "**/coverage/**"]},
   {
     rules: {
       "@typescript-eslint/no-explicit-any": "error",

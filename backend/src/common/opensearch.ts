@@ -3,6 +3,7 @@ import axios from "axios";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageMetadata = typeof interfaces.PackageMetadata;
 
@@ -47,10 +48,10 @@ export async function uploadReadme(
 
     } catch (error) {
         // Error handling
-        const err = error as any;
+        const err = error as Error;
         console.error(
             'Error indexing document:',
-            err.response?.data || err.message
+            err.message
         );
     }
 }

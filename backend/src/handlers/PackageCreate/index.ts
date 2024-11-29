@@ -1,12 +1,15 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
+const { createErrorResponse } = require(`${commonPath}/utils`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
+const { uploadToS3 } = require(`${commonPath}/s3`);
+const { uploadReadme } = require(`${commonPath}/opensearch`);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageData = typeof interfaces.PackageData;
 type PackageTableRow = typeof interfaces.PackageTableRow;
@@ -18,13 +21,13 @@ type PackageRating = typeof interfaces.PackageRating;
 const servicesPath = process.env.SERVICES_PATH || '/opt/nodejs/services/rate';
 const { runAnalysis } = require(`${servicesPath}/tools/scripts`);
 const { getEnvVars } = require(`${servicesPath}/tools/getEnvVars`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ratingInterfaces = require(`${servicesPath}/utils/interfaces`);
 const { metricCalc } = require(`${servicesPath}/tools/metricCalc`);
 
 type envVars = typeof ratingInterfaces.envVars;
 type repoData = typeof ratingInterfaces.repoData;
 type metricData = typeof ratingInterfaces.metricData;
-
 
 import { createHash } from 'crypto';
 import JSZip from "jszip";
@@ -35,8 +38,6 @@ import git from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
 import axios from 'axios';
-import aws4 from 'aws4';
-import { defaultProvider } from '@aws-sdk/credential-provider-node';
 
 const s3Client = new S3Client({
     region: 'us-east-2',
@@ -149,7 +150,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         // Upload the package zip to S3
-        const s3Key = await uploadToS3(fileContent, packageName, version);
+        const s3Key = await uploadToS3(s3Client, fileContent, packageName, version);
         const standaloneCost = fileContent.length / (1024 * 1024);
 
         // Save the package metadata to DynamoDB
@@ -263,25 +264,6 @@ export function extractVersionFromPackageJson(packageJson: string) {
     return version;
 }
 
-
-async function uploadToS3(fileContent: Buffer, packageName: string, version: string): Promise<string> {
-    const s3Key = `uploads/${packageName}-${version}.zip`;
-    const bucketName = process.env.S3_BUCKET_NAME;
-
-    if (!bucketName) throw new Error('S3_BUCKET_NAME is not defined in environment variables');
-
-    const command = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: s3Key,
-        Body: fileContent,
-        ContentType: 'application/zip',
-    });
-
-    await s3Client.send(command);
-
-    return s3Key;
-}
-
 // Clone GitHub repository and compress it to a zip file
 async function cloneAndZipRepository(repoUrl: string, version?: string | null): Promise<Buffer> {
     const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'repo-'));
@@ -331,53 +313,6 @@ async function zipDirectory(directoryPath: string): Promise<Buffer> {
 
         zipFile.end();
     });
-}
-
-async function uploadReadme(
-  domainEndpoint: string,
-  indexName: string,
-  readmeContent: string,
-  metadata: PackageMetadata
-) {
-  try {
-    // Get AWS credentials
-    const credentials = await defaultProvider()();
-
-    // Prepare the OpenSearch request
-    const request = {
-      host: domainEndpoint.replace(/^https?:\/\//, ''), // Extract the hostname
-      method: 'PUT',
-      path: `/${indexName}/_doc/${metadata.ID}`, // Document path in OpenSearch
-      service: 'es', // AWS service name for OpenSearch
-      body: JSON.stringify({
-        content: readmeContent,
-        metadata: metadata,
-        timestamp: new Date().toISOString(),
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
-
-    // Sign the request using aws4
-    aws4.sign(request, credentials);
-
-    // Send the request using axios
-    const response = await axios({
-      method: request.method,
-      url: `https://${request.host}${request.path}`, // Construct full URL
-      headers: request.headers,
-      data: request.body, // Attach request body
-    });
-
-  } catch (error) {
-    // Error handling
-    const err = error as any;
-    console.error(
-      'Error indexing document:',
-      err.response?.data || err.message
-    );
-  }
 }
 
 async function getScores(url: string): Promise<metricData[]> {
