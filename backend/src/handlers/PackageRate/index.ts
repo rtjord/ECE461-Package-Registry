@@ -3,7 +3,8 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, getPackageById } = require(`${commonPath}/utils`);
+const { createErrorResponse } = require(`${commonPath}/utils`);
+const { getPackageById } = require(`${commonPath}/dynamodb`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageRating = typeof interfaces.PackageRating;

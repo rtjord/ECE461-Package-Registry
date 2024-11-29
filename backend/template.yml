@@ -183,6 +183,23 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetadataTable
 
+  RegistryResetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
   RegistryReset:
     Type: AWS::Serverless::Function
     Properties:
@@ -204,13 +221,7 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
           DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PackageMetadataTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PackageHistoryTable
-        - S3CrudPolicy:
-            BucketName: !Ref PackageBucket
+      Role: !GetAtt RegistryResetRole.Arn
 
   PackageRetrieve:
     Type: AWS::Serverless::Function
@@ -395,6 +406,22 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageHistoryTable
 
+  PackageByRegExRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
   PackageByRegEx:
     Type: AWS::Serverless::Function
     Properties:
@@ -412,9 +439,7 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/byRegEx
             Method: post
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PackageMetadataTable
+      Role: !GetAtt PackageByRegExRole.Arn
 
   GetTracks:
     Type: AWS::Serverless::Function

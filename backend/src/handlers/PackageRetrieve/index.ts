@@ -4,8 +4,8 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, getPackageById, getEnvVariable } = require(`${commonPath}/utils`);
-const { updatePackageHistory } = require(`${commonPath}/dynamodb`);
+const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
+const { updatePackageHistory, getPackageById } = require(`${commonPath}/dynamodb`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 
