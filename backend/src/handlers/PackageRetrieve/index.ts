@@ -1,17 +1,13 @@
 import { S3Client, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
-const { createErrorResponse, getPackageById, updatePackageHistory, getEnvVariable } = require(utilsPath);
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const interfaces = require(interfacesPath);
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
+const { updatePackageHistory, getPackageById } = require(`${commonPath}/dynamodb`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
 
 type PackageTableRow = typeof interfaces.PackageTableRow;
 type User = typeof interfaces.User;
@@ -41,7 +37,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const { ID: packageId, PackageName: packageName, Version: version, s3Key: s3Key, URL: url } = existingPackage;
         const bucketName = getEnvVariable('S3_BUCKET_NAME');
-        console.log('S3 Key:', s3Key);
 
         // Fetch S3 object content if S3 key exists
         const s3Result = s3Key ? await getS3ObjectContent(s3Client, bucketName, s3Key) : { base64Content: null, fileUrl: null };
@@ -98,7 +93,6 @@ async function getS3ObjectContent(
     key: string
 ): Promise<{ base64Content: string | null; fileUrl: string | null }> {
     try {
-        console.log('Fetching S3 object:', key);
         const s3Object: GetObjectCommandOutput = await s3Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${key}`;
 

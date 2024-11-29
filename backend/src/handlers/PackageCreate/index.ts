@@ -1,20 +1,16 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import dotenv from 'dotenv';
-dotenv.config();
 
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse } = require(`${commonPath}/utils`);
+const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
+const { uploadToS3 } = require(`${commonPath}/s3`);
+const { uploadReadme } = require(`${commonPath}/opensearch`);
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
-const { createErrorResponse, getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(utilsPath);
-
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-
-
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const interfaces = require(interfacesPath);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
 type PackageData = typeof interfaces.PackageData;
 type PackageTableRow = typeof interfaces.PackageTableRow;
 type User = typeof interfaces.User;
@@ -23,16 +19,15 @@ type PackageMetadata = typeof interfaces.PackageMetadata;
 type PackageRating = typeof interfaces.PackageRating;
 
 const servicesPath = process.env.SERVICES_PATH || '/opt/nodejs/services/rate';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { runAnalysis } = require(`${servicesPath}/tools/scripts`);
 const { getEnvVars } = require(`${servicesPath}/tools/getEnvVars`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ratingInterfaces = require(`${servicesPath}/utils/interfaces`);
 const { metricCalc } = require(`${servicesPath}/tools/metricCalc`);
 
 type envVars = typeof ratingInterfaces.envVars;
 type repoData = typeof ratingInterfaces.repoData;
 type metricData = typeof ratingInterfaces.metricData;
-
 
 import { createHash } from 'crypto';
 import JSZip from "jszip";
@@ -48,6 +43,7 @@ const s3Client = new S3Client({
     region: 'us-east-2',
     useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
 });
+
 
 type NpmMetadata = {
     repository?: {
@@ -120,7 +116,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
             // Clone the GitHub repository and zip it
-            console.log(`Cloning repository from ${repoUrl}`);
             fileContent = await cloneAndZipRepository(repoUrl, urlVersion);
             if (urlVersion) {
                 version = urlVersion;
@@ -131,7 +126,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Extract package.json and README.md from the zip file
         const { packageJson, readme } = await extractFilesFromZip(fileContent);
-        // upload readme to opensearch in the future
 
         // If the version is not provided, try to extract it from package.json
         if (!version && packageJson) {
@@ -144,8 +138,19 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Generate a unique ID for the package
         const packageId = generatePackageID(packageName, version);
 
+        const metadata = {
+            Name: packageName,
+            Version: version,
+            ID: packageId,
+        };
+
+        // upload readme to opensearch in the future
+        if (readme){
+            await uploadReadme('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', readme, metadata);
+        }
+
         // Upload the package zip to S3
-        const s3Key = await uploadToS3(fileContent, packageName, version);
+        const s3Key = await uploadToS3(s3Client, fileContent, packageName, version);
         const standaloneCost = fileContent.length / (1024 * 1024);
 
         // Save the package metadata to DynamoDB
@@ -257,25 +262,6 @@ export function extractVersionFromPackageJson(packageJson: string) {
     const metadata = JSON.parse(packageJson);
     const version = metadata.version ?? '1.0.0';
     return version;
-}
-
-
-async function uploadToS3(fileContent: Buffer, packageName: string, version: string): Promise<string> {
-    const s3Key = `uploads/${packageName}-${version}.zip`;
-    const bucketName = process.env.S3_BUCKET_NAME;
-
-    if (!bucketName) throw new Error('S3_BUCKET_NAME is not defined in environment variables');
-
-    const command = new PutObjectCommand({
-        Bucket: bucketName,
-        Key: s3Key,
-        Body: fileContent,
-        ContentType: 'application/zip',
-    });
-
-    await s3Client.send(command);
-
-    return s3Key;
 }
 
 // Clone GitHub repository and compress it to a zip file

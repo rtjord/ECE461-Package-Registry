@@ -1,1 +1,1 @@
-README file for test-package version 1.0.1
+This is a README file without the name of the package.

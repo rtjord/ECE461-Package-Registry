@@ -67,7 +67,7 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
 
     it("should return a 400 status for an invalid regex", async () => {
         const requestBody: PackageRegEx = {
-            RegEx: "test-package|"
+            RegEx: "~("
         };
 
         try {
