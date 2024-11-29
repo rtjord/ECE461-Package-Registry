@@ -2,9 +2,8 @@ import aws4 from "aws4";
 import axios from "axios";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
-const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const interfaces = require(`${commonPath}/interfaces`);
+const interfaces = require("/interfaces");
 type PackageMetadata = typeof interfaces.PackageMetadata;
 
 export async function uploadReadme(
