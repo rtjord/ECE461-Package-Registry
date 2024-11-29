@@ -34,18 +34,31 @@ Resources:
       NodeToNodeEncryptionOptions:
         Enabled: true
 
+  CreateIndexRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
   CreateIndex:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
       CodeUri: ./dist/handlers/CreateIndex
-      Timeout: 30
+      Timeout: 120
       Layers:
         - !Ref DependenciesLayer
-      Policies:
-        - ElasticsearchHttpPostPolicy:
-            DomainName: !GetAtt MyOpenSearchDomain.DomainEndpoint
+      Role: !GetAtt CreateIndexRole.Arn
       Environment:
         Variables:
           DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
@@ -53,7 +66,7 @@ Resources:
   CreateIndexCustomResource:
     Type: Custom::CreateIndex
     Properties:
-      ServiceToken: !GetAtt CreateIndexFunction.Arn
+      ServiceToken: !GetAtt CreateIndex.Arn
 
   PackageCreateUpdateRole:
     Type: AWS::IAM::Role

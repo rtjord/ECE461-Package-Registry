@@ -1,6 +1,8 @@
 import axios from "axios";
 import aws4 from "aws4";
+import https from "https";
 import { defaultProvider } from "@aws-sdk/credential-provider-node";
+
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
 
@@ -12,14 +14,33 @@ interface EventResourceProperties {
 
 interface LambdaEvent {
   ResourceProperties: EventResourceProperties;
+  ResponseURL: string;
+  RequestType: string; // "Create", "Update", or "Delete"
+  PhysicalResourceId?: string;
+  StackId: string;
+  RequestId: string;
+  LogicalResourceId: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const handler = async (_event: LambdaEvent) => {
+import { Context } from 'aws-lambda';
+
+export const handler = async (event: LambdaEvent, context: Context) => {
+  console.log("Received event:", JSON.stringify(event, null, 2));
+
+  const response = {
+    Status: "FAILED",
+    Reason: "Unknown error occurred",
+    PhysicalResourceId: event.PhysicalResourceId || context.logStreamName,
+    StackId: event.StackId,
+    RequestId: event.RequestId,
+    LogicalResourceId: event.LogicalResourceId,
+    Data: {},
+  };
+
   try {
-    // Extract required details from the event
     const domainEndpoint = getEnvVariable("DOMAIN_ENDPOINT");
     const indexName = "readmes";
+
     const exists = await checkIndexExists(domainEndpoint, indexName);
 
     if (!exists) {
@@ -28,19 +49,63 @@ export const handler = async (_event: LambdaEvent) => {
       console.log(`Index '${indexName}' already exists. Skipping creation.`);
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify("Index operation completed successfully"),
-    };
+    response.Status = "SUCCESS";
+    response.Reason = "Index operation completed successfully";
   } catch (error) {
-    const err = error as Error;
-    console.error(`Error during index operation: ${err.message}`);
-    return {
-      statusCode: 500,
-      body: JSON.stringify("Error during index operation"),
-    };
+    console.error("Error during index operation:", error);
+    response.Status = "FAILED";
+    if (error instanceof Error) {
+      response.Reason = error.message || "Error during index operation";
+    } else {
+      response.Reason = "Error during index operation";
+    }
   }
+
+  // Send response to CloudFormation
+  await sendCloudFormationResponse(event.ResponseURL, response);
 };
+
+interface CloudFormationResponse {
+  Status: string;
+  Reason: string;
+  PhysicalResourceId: string;
+  StackId: string;
+  RequestId: string;
+  LogicalResourceId: string;
+  Data: Record<string, string | number | boolean>;
+}
+
+async function sendCloudFormationResponse(responseUrl: string, response: CloudFormationResponse) {
+  const responseBody = JSON.stringify(response);
+  console.log("Sending CloudFormation response:", responseBody);
+
+  const parsedUrl = new URL(responseUrl);
+
+  return new Promise<void>((resolve, reject) => {
+    const options = {
+      hostname: parsedUrl.hostname,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: "PUT",
+      headers: {
+        "Content-Type": "",
+        "Content-Length": Buffer.byteLength(responseBody),
+      },
+    };
+
+    const request = https.request(options, (res) => {
+      console.log(`CloudFormation response status: ${res.statusCode}`);
+      resolve();
+    });
+
+    request.on("error", (err) => {
+      console.error("Error sending CloudFormation response:", err);
+      reject(err);
+    });
+
+    request.write(responseBody);
+    request.end();
+  });
+}
 
 // Function to check whether an index exists
 async function checkIndexExists(domainEndpoint: string, indexName: string): Promise<boolean> {
