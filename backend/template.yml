@@ -276,6 +276,23 @@ Resources:
           DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
       Role: !GetAtt PackageCreateUpdateRole.Arn
 
+  PackageDeleteRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
   PackageDelete:
     Type: AWS::Serverless::Function
     Properties:
@@ -293,12 +310,12 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: delete
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PackageMetadataTable
+      Role: !GetAtt PackageDeleteRole.Arn
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
+
 
   PackageCreate:
     Type: AWS::Serverless::Function
