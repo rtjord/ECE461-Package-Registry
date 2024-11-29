@@ -4,7 +4,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse } = require(`${commonPath}/utils`);
+const { createErrorResponse, debloatPackage } = require(`${commonPath}/utils`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
 const { uploadReadme } = require(`${commonPath}/opensearch`);
@@ -148,8 +148,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (readme){
             await uploadReadme('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', readme, metadata);
         }
-
         // Upload the package zip to S3
+        if (requestBody.debloat) {
+            // Debloat the package content
+            fileContent = await debloatPackage(fileContent);
+        }
         const s3Key = await uploadToS3(s3Client, fileContent, packageName, version);
         const standaloneCost = fileContent.length / (1024 * 1024);
 
