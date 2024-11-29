@@ -44,13 +44,18 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
     
     it("should return a 200 status for a package that exists", async () => {
         const requestBody: PackageRegEx = {
-            RegEx: ".*yazl.*"
+            RegEx: "test-package|yazl"
         };
 
         const response = await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
         expect(response.status).toBe(200);
 
         const expectedPackages: PackageMetadata[] = [{
+            Name: "test-package",
+            Version: "1.0.0",
+            ID: content_id
+        }, 
+        {
             Name: "yazl",
             Version: "3.1.0",
             ID: url_id
@@ -62,7 +67,7 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
 
     it("should return a 400 status for an invalid regex", async () => {
         const requestBody: PackageRegEx = {
-            RegEx: ""
+            RegEx: "~("
         };
 
         try {
