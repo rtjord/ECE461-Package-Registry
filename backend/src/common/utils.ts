@@ -1,78 +1,78 @@
 import { APIGatewayProxyResult } from "aws-lambda";
+import { createHash } from 'crypto';
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand
+} from "@aws-sdk/client-secrets-manager";
+import { metricData, repoData, envVars } from "../services/rate/utils/interfaces";
+import { runAnalysis } from "../services/rate/tools/scripts";
+import { metricCalc } from "../services/rate/tools/metricCalc";
+import { urlAnalysis } from "../services/rate/tools/urlOps";
 
 // Function to create a consistent error response
 export const createErrorResponse = (statusCode: number, message: string): APIGatewayProxyResult => {
-    return {
-        statusCode,
-        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
-    };
+  return {
+    statusCode,
+    headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  };
 };
 
 // Validate environment variables
 export function getEnvVariable(name: string): string {
-    const value = process.env[name];
-    if (!value) {
-        throw new Error(`Environment variable ${name} is not defined`);
-    }
-    return value;
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Environment variable ${name} is not defined`);
+  }
+  return value;
 }
 
-import * as esbuild from 'esbuild';
-import * as JSZip from 'jszip'; // For unzipping
-import * as Yazl from 'yazl';
-
-export async function debloatPackage(zipBuffer: Buffer): Promise<Buffer> {
-  // Step 1: Extract the zip contents using JSZip
-  const jsZip = await JSZip.loadAsync(zipBuffer);
-  const tempFiles: { [path: string]: string } = {};
-
-  // Read files into memory
-  for (const fileName of Object.keys(jsZip.files)) {
-    const file = jsZip.files[fileName];
-    if (!file.dir) {
-      tempFiles[fileName] = await file.async('string');
-    }
-  }
-
-  // Step 2: Optimize files (tree shake and minify)
-  const optimizedFiles: { [path: string]: string } = {};
-  for (const [path, content] of Object.entries(tempFiles)) {
-    if (path.endsWith('.js') || path.endsWith('.ts')) {
-      try {
-        const result = await esbuild.transform(content, {
-          loader: path.endsWith('.ts') ? 'ts' : 'js',
-          minify: true,
-          treeShaking: true,
-          target: 'es2017',
-        });
-        optimizedFiles[path] = result.code;
-      } catch (error) {
-        console.error(`Failed to optimize ${path}:`, error);
-        optimizedFiles[path] = content; // Preserve original if optimization fails
-      }
-    } else {
-      optimizedFiles[path] = content; // Copy non-JS files as-is
-    }
-  }
-
-  // Step 3: Create a new zip with Yazl
-  const yazlZip = new Yazl.ZipFile();
-  for (const [path, content] of Object.entries(optimizedFiles)) {
-    yazlZip.addBuffer(Buffer.from(content, 'utf-8'), path);
-  }
-
-  // Finalize the zip and return a Buffer
-  yazlZip.end();
-  return await zipToBuffer(yazlZip);
+// Generate a unique package ID based on the package name and version
+export function generatePackageID(name: string, version: string): string {
+  return createHash('sha256').update(name + version).digest('base64url').slice(0, 20);
 }
 
-// Utility function to convert Yazl zip output to a Buffer
-function zipToBuffer(zipFile: Yazl.ZipFile): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const buffers: Buffer[] = [];
-    zipFile.outputStream.on('data', (chunk) => buffers.push(chunk));
-    zipFile.outputStream.on('end', () => resolve(Buffer.concat(buffers)));
-    zipFile.outputStream.on('error', (error) => reject(error));
-  });
+export async function getSecret(client: SecretsManagerClient, secret_name: string): Promise<string> {
+  const response = await client.send(
+    new GetSecretValueCommand({
+      SecretId: secret_name,
+      VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
+    })
+  );
+  const secret = response.SecretString || "";
+  return secret;
+}
+
+export async function getScores(token: string, url: string): Promise<metricData> {
+  const envVars: envVars = {
+    token: token,
+    logLevel: 1,
+    logFilePath: '/tmp/log.txt',
+  }
+  const runAnalysisClass = new runAnalysis(envVars);
+
+  try {
+    const repoData: repoData[] = await runAnalysisClass.runAnalysis([url]);
+    const repo = repoData[0];
+    const metricCalcClass = new metricCalc();
+    const result: metricData = metricCalcClass.getValue(repo);
+
+    return result;
+  } catch (error) {
+    throw new Error(`Could not execute URL analysis of modules: ${error}`);
+  }
+}
+
+
+// Function to get the GitHub repository URL from an NPM package URL
+export async function getRepoUrl(url: string): Promise<string> {
+  const envVars: envVars = {
+    token: '',
+    logLevel: 1,
+    logFilePath: '/tmp/log.txt',
+  }
+  const urlOps = new urlAnalysis(envVars);
+  const [status, repoUrl] = await urlOps.evalUrl(url);
+
+  return repoUrl;
 }

@@ -109,9 +109,6 @@ Resources:
       LayerName: DependenciesLayer
       ContentUri: ./layers/dependencies
       CompatibleRuntimes:
-        - nodejs14.x
-        - nodejs12.x
-        - nodejs10.x
         - nodejs18.x
 
 

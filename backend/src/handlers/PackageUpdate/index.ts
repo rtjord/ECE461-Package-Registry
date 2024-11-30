@@ -2,29 +2,25 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { createHash } from 'crypto';
+import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 import JSZip from "jszip";
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import git from 'isomorphic-git';
-import http from 'isomorphic-git/http/node';
-import yazl from 'yazl';
 import axios from 'axios';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, debloatPackage } = require(`${commonPath}/utils`);
-const { getPackageById, getPackageByName, uploadPackageMetadata, updatePackageHistory } = require(`${commonPath}/dynamodb`);
+const { createErrorResponse, generatePackageID, getPackageById, getSecret, getScores, getEnvVariable, getRepoUrl } = require(`${commonPath}/utils`);
+const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
+const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
 const { uploadReadme } = require(`${commonPath}/opensearch`);
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
-
 type PackageData = typeof interfaces.PackageData;
 type PackageTableRow = typeof interfaces.PackageTableRow;
 type User = typeof interfaces.User;
 type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
+type PackageRating = typeof interfaces.PackageRating;
 
 type NpmMetadata = {
     repository?: {
@@ -35,11 +31,16 @@ type NpmMetadata = {
 // Main Lambda handler function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        // Initialize the AWS clients
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient({ 
+            region: 'us-east-2',
+        }));
         const s3Client = new S3Client({
             region: 'us-east-2',
-            useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
         });
-        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+        const secretsManagerClient = new SecretsManagerClient({
+            region: "us-east-2",
+        });
 
         // Extract packageName and version from the path (assuming package id is passed in the path)
         const oldId = event.pathParameters?.id;
@@ -48,6 +49,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, 'Missing ID or request body.');
         }
 
+        // The request body should be a Package object
         const requestBody: Package = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
         // In this metadata, the name of must match name of the old package
@@ -95,26 +97,47 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Convert the uploaded content/url to a buffer representing the zip file
         let fileContent: Buffer;
+        let rating: PackageRating | null = null;
+
+        // If Content is provided, use it directly
         if (data.Content) {
-            // Decode the uploaded file content
+            // Convert base64-encoded content to a Buffer
             fileContent = Buffer.from(data.Content, 'base64');
         } else if (data.URL) {
-            const { packageName: urlPackageName, version: urlVersion } = extractPackageInfoFromURL(data.URL);
-            // Fetch the GitHub repository URL from the npm package
-            const repoUrl = await getGitHubRepoUrl(urlPackageName);
+            // Get the rating of the package
+            const secret = await getSecret(secretsManagerClient, "GitHubToken");
+            const token = JSON.parse(secret) as { GitHubToken: string };
+            rating = await getScores(token.GitHubToken, requestBody.URL);
+
+            // If the rating is less than 0.5, do not upload the package
+            if (rating.NetScore < 0.5) {
+                console.log('In the future, Package should not be uploaded due to the disqualified rating.');
+                // return createErrorResponse(424, 'Package is not uploaded due to the disqualified rating.');
+            }
+
+            // Extract the version from the NPM url, if present
+            // If a GitHub url is provided, the urlVersion will be empty
+            const urlVersion: string = extractVersionFromNpmUrl(requestBody.URL);
+            if (urlVersion != metadata.Version) {
+                return createErrorResponse(400, 'Version in the URL does not match the version in the metadata.');
+            }
+
+            // Fetch the GitHub repository URL from the GitHub/NPM package url
+            const repoUrl = await getRepoUrl(requestBody.URL);
             if (!repoUrl) {
                 return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
-            // Clone the GitHub repository and zip it
-            console.log(`Cloning repository from ${repoUrl}`);
+            // Clone the GitHub repository with the correct version and zip it
             fileContent = await cloneAndZipRepository(repoUrl, urlVersion);
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
 
         // Extract package.json and README.md from the zip file
-        // upload readme to opensearch in the future
-        const { readme } = await extractFilesFromZip(fileContent);
+        const packageJson = await extractPackageJsonFromZip(fileContent);
+        const readme = await extractReadmeFromZip(fileContent);
+        console.log('packageJson:', packageJson);
+        console.log('readme:', readme);
 
         // Generate a unique ID for the package
         const packageId = generatePackageID(data.Name, metadata.Version);
@@ -126,7 +149,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             ID: packageId,
         };
         if (readme){
-            await uploadReadme('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', readme, new_metadata);
+            await uploadReadme(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, new_metadata);
         }
 
         // Upload the package zip to S3
@@ -134,7 +157,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             // Debloat the package content
             fileContent = await debloatPackage(fileContent);
         }
-        const s3Key = await uploadToS3(s3Client, fileContent, data.Name, metadata.Version);
+        const s3Key = await uploadToS3(s3Client, fileContent, metadata.Name, metadata.Version);
         const standaloneCost = fileContent.length / (1024 * 1024);
 
         // Save the package metadata to DynamoDB
@@ -146,6 +169,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             s3Key: s3Key,
             JSProgram: data.JSProgram,
             standaloneCost: standaloneCost,
+            ...(rating && { Rating: rating }),
         };
         await uploadPackageMetadata(dynamoDBClient, row);
 
@@ -184,18 +208,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 };
 
-function extractPackageInfoFromURL(url: string): { packageName: string; version: string | null } {
+function extractVersionFromNpmUrl(url: string): string {
     const regex = /https:\/\/www\.npmjs\.com\/package\/([^/]+)(?:\/v\/([\d.]+))?/;
     const match = url.match(regex);
-
-    if (match) {
-        const packageName = match[1];
-        const version = match[2] || null;
-
-        return { packageName, version };
-    } else {
-        throw new Error("Invalid npm package URL");
-    }
+    return match ? match[2] : '';
 }
 
 /**
@@ -222,11 +238,6 @@ export async function getGitHubRepoUrl(packageName: string): Promise<string | nu
     }
 }
 
-// Generate a unique package ID based on the package name and version
-export function generatePackageID(name: string, version: string): string {
-    return createHash('sha256').update(name + version).digest('base64url').slice(0, 20);
-}
-
 // Extract package.json and README.md from the uploaded zip file
 export async function extractFilesFromZip(zipBuffer: Buffer) {
     const zip = await JSZip.loadAsync(zipBuffer);
@@ -245,57 +256,6 @@ export function extractVersionFromPackageJson(packageJson: string) {
     const metadata = JSON.parse(packageJson);
     const version = metadata.version ?? '1.0.0';
     return version;
-}
-
-// Clone GitHub repository and compress it to a zip file
-async function cloneAndZipRepository(repoUrl: string, version?: string | null): Promise<Buffer> {
-    const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'repo-'));
-    const repoPath = path.join(tempDir, 'repo');
-
-    try {
-        // Clone the GitHub repository using isomorphic-git
-        await git.clone({
-            fs,
-            http,
-            dir: repoPath,
-            url: repoUrl,
-            singleBranch: true,
-            depth: 1,
-            ...(version && { ref: version }), // Checkout a specific version if provided
-        });
-
-        // Create a zip archive of the cloned repository
-        return await zipDirectory(repoPath);
-    } finally {
-        // Clean up temporary files
-        await fs.promises.rm(tempDir, { recursive: true, force: true });
-    }
-}
-
-// Zip a directory and return a buffer of the zip file using yazl
-async function zipDirectory(directoryPath: string): Promise<Buffer> {
-    return new Promise<Buffer>((resolve, reject) => {
-        const zipFile = new yazl.ZipFile();
-        const filePaths = fs.readdirSync(directoryPath);
-
-        for (const filePath of filePaths) {
-            const fullPath = path.join(directoryPath, filePath);
-            const stat = fs.statSync(fullPath);
-
-            if (stat.isFile()) {
-                zipFile.addFile(fullPath, filePath);
-            } else if (stat.isDirectory()) {
-                zipFile.addEmptyDirectory(filePath);
-            }
-        }
-
-        const chunks: Buffer[] = [];
-        zipFile.outputStream.on('data', (chunk) => chunks.push(chunk));
-        zipFile.outputStream.on('end', () => resolve(Buffer.concat(chunks)));
-        zipFile.outputStream.on('error', (err) => reject(err));
-
-        zipFile.end();
-    });
 }
 
 
