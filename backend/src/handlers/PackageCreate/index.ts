@@ -3,11 +3,10 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
-import axios from 'axios';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, generatePackageID, getSecret, getScores, getEnvVariable, getRepoUrl } = require(`${commonPath}/utils`);
-const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
+const { createErrorResponse, generatePackageID, getSecret, getScores, getEnvVariable, extractFieldFromPackageJson, getRepoUrl } = require(`${commonPath}/utils`);
+const { debloatPackage, calculateDependenciesCost, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
 const { uploadReadme } = require(`${commonPath}/opensearch`);
@@ -20,13 +19,6 @@ type User = typeof interfaces.User;
 type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
 type PackageRating = typeof interfaces.PackageRating;
-
-
-type NpmMetadata = {
-    repository?: {
-        url?: string;
-    };
-};
 
 
 // Main Lambda handler function
@@ -57,7 +49,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         // Initialize package name and version
-        let packageName = requestBody.Name;
+        const packageName = requestBody.Name;
         let version = null;
 
         // Check if any packages with the same name already exist
@@ -134,6 +126,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
         const s3Key = await uploadToS3(s3Client, fileContent, packageName, version);
         const standaloneCost = fileContent.length / (1024 * 1024);
+        const dependenciesCost = await calculateDependenciesCost(packageJson);
+        const totalCost = standaloneCost + dependenciesCost;
 
         // Save the package metadata to DynamoDB
         const row: PackageTableRow = {
@@ -144,6 +138,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             s3Key: s3Key,
             JSProgram: requestBody.JSProgram,
             standaloneCost: standaloneCost,
+            totalCost: totalCost,
             ...(rating && { Rating: rating }),
         };
         await uploadPackageMetadata(dynamoDBClient, row);
@@ -187,34 +182,4 @@ function extractVersionFromNpmUrl(url: string): string {
     const regex = /https:\/\/www\.npmjs\.com\/package\/([^/]+)(?:\/v\/([\d.]+))?/;
     const match = url.match(regex);
     return match ? match[2] : '';
-}
-
-/**
- * Fetches the GitHub repository URL from an npm package and processes it.
- * @param packageName - The name of the npm package.
- * @returns The processed GitHub repository URL or null if an error occurs.
- */
-export async function getGitHubRepoUrl(packageName: string): Promise<string | null> {
-    try {
-        // Fetch npm metadata
-        const response = await axios.get<NpmMetadata>(`https://registry.npmjs.org/${packageName}`);
-        const repoUrl = response.data.repository?.url;
-
-        if (!repoUrl) {
-            throw new Error("Repository URL not found in npm metadata.");
-        }
-
-        // Remove `git+` prefix if present
-        return repoUrl.startsWith("git+") ? repoUrl.slice(4) : repoUrl;
-
-    } catch (error) {
-        console.error("Error fetching GitHub repository URL:", error);
-        return null;
-    }
-}
-
-// Extract an arbitrary field from package.json content
-export function extractFieldFromPackageJson(packageJson: string, field: string): any {
-    const metadata = JSON.parse(packageJson);
-    return metadata[field];
 }

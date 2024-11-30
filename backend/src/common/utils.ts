@@ -73,6 +73,14 @@ export async function getRepoUrl(url: string): Promise<string> {
   }
   const urlOps = new urlAnalysis(envVars);
   const [status, repoUrl] = await urlOps.evalUrl(url);
-
+  if (status === -1) {
+    console.error('Failed to fetch GitHub repository URL from npm package.');
+  }
   return repoUrl;
+}
+
+// Extract an arbitrary field from package.json content
+export function extractFieldFromPackageJson(packageJson: string, field: string) {
+  const metadata = JSON.parse(packageJson);
+  return metadata[field];
 }

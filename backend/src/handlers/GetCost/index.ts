@@ -24,8 +24,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const includeDependencies = event.queryStringParameters?.dependency === 'true';
 
         // Fetch the package data from DynamoDB
-        const packageData: PackageTableRow | null = await getPackageById(dynamoDBClient, packageId);
-        if (!packageData) {
+        const packageRow: PackageTableRow | null = await getPackageById(dynamoDBClient, packageId);
+        if (!packageRow) {
             return createErrorResponse(404, "Package does not exist.");
         }
 
@@ -34,15 +34,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // If we need to include dependencies, add the standalone cost and total cost
         if (includeDependencies) {
             response[packageId] = {
-                standaloneCost: packageData.standaloneCost,
-                totalCost: packageData.standaloneCost,
+                standaloneCost: packageRow.standaloneCost,
+                totalCost: packageRow.totalCost,
             };
         } else {  // Otherwise, only add the standalone cost
             response[packageId] = {
-                totalCost: packageData.standaloneCost,
+                totalCost: packageRow.standaloneCost,
             };
         }
 
+        // TODO: Return a list containing the standalone cost and total cost of the package and its dependencies
+        // The list should have one entry per dependency, with the standalone cost and total cost of each dependency
         // Success response
         return {
             statusCode: 200,

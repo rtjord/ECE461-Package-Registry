@@ -3,12 +3,10 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
-import JSZip from "jszip";
-import axios from 'axios';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { createErrorResponse, generatePackageID, getPackageById, getSecret, getScores, getEnvVariable, getRepoUrl } = require(`${commonPath}/utils`);
-const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
+const { debloatPackage, calculateDependenciesCost, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
 const { uploadReadme } = require(`${commonPath}/opensearch`);
@@ -22,11 +20,6 @@ type Package = typeof interfaces.Package;
 type PackageMetadata = typeof interfaces.PackageMetadata;
 type PackageRating = typeof interfaces.PackageRating;
 
-type NpmMetadata = {
-    repository?: {
-        url?: string;
-    };
-};
 
 // Main Lambda handler function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -159,6 +152,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
         const s3Key = await uploadToS3(s3Client, fileContent, metadata.Name, metadata.Version);
         const standaloneCost = fileContent.length / (1024 * 1024);
+        const dependenciesCost = await calculateDependenciesCost(packageJson);
+        const totalCost = standaloneCost + dependenciesCost;
 
         // Save the package metadata to DynamoDB
         const row: PackageTableRow = {
@@ -169,6 +164,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             s3Key: s3Key,
             JSProgram: data.JSProgram,
             standaloneCost: standaloneCost,
+            totalCost: totalCost,
             ...(rating && { Rating: rating }),
         };
         await uploadPackageMetadata(dynamoDBClient, row);
@@ -208,56 +204,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 };
 
-function extractVersionFromNpmUrl(url: string): string {
+export function extractVersionFromNpmUrl(url: string): string {
     const regex = /https:\/\/www\.npmjs\.com\/package\/([^/]+)(?:\/v\/([\d.]+))?/;
     const match = url.match(regex);
     return match ? match[2] : '';
 }
-
-/**
- * Fetches the GitHub repository URL from an npm package and processes it.
- * @param packageName - The name of the npm package.
- * @returns The processed GitHub repository URL or null if an error occurs.
- */
-export async function getGitHubRepoUrl(packageName: string): Promise<string | null> {
-    try {
-        // Fetch npm metadata
-        const response = await axios.get<NpmMetadata>(`https://registry.npmjs.org/${packageName}`);
-        const repoUrl = response.data.repository?.url;
-
-        if (!repoUrl) {
-            throw new Error("Repository URL not found in npm metadata.");
-        }
-
-        // Remove `git+` prefix if present
-        return repoUrl.startsWith("git+") ? repoUrl.slice(4) : repoUrl;
-
-    } catch (error) {
-        console.error("Error fetching GitHub repository URL:", error);
-        return null;
-    }
-}
-
-// Extract package.json and README.md from the uploaded zip file
-export async function extractFilesFromZip(zipBuffer: Buffer) {
-    const zip = await JSZip.loadAsync(zipBuffer);
-
-    const packageJsonFile = zip.file(/package\.json$/i)[0];
-    const readmeFile = zip.file(/readme\.md$/i)[0];
-
-    return {
-        packageJson: packageJsonFile ? await packageJsonFile.async('string') : null,
-        readme: readmeFile ? await readmeFile.async('string') : null,
-    };
-}
-
-// Extract metadata (name and version) from package.json content
-export function extractVersionFromPackageJson(packageJson: string) {
-    const metadata = JSON.parse(packageJson);
-    const version = metadata.version ?? '1.0.0';
-    return version;
-}
-
 
 function isNewVersionValid(oldVersion: string, newVersion: string): boolean {
     // Split the versions into major, minor, and patch numbers
