@@ -365,7 +365,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/GetCost
       MemorySize: 128
-      Timeout: 3
+      Timeout: 120
       Layers:
         - !Ref DependenciesLayer
       Events:

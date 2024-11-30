@@ -115,7 +115,7 @@ export async function cloneAndZipRepository(repoUrl: string, version?: string | 
 }
 
 // Zip a directory and return a buffer of the zip file using yazl
-async function zipDirectory(directoryPath: string): Promise<Buffer> {
+export async function zipDirectory(directoryPath: string): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     const zipFile = new yazl.ZipFile();
     const filePaths = fs.readdirSync(directoryPath);
