@@ -1,15 +1,19 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import * as fs from 'fs-extra';
+import * as path from 'path';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, generatePackageID } = require(`${commonPath}/utils`);
-const { getPackageById } = require(`${commonPath}/dynamodb`);
+const { createErrorResponse, generatePackageID, getEnvVariable } = require(`${commonPath}/utils`);
+const { getPackageById, updatePackageHistory } = require(`${commonPath}/dynamodb`);
 const { zipDirectory } = require(`${commonPath}/zip`);
+const { retrieveFromOpenSearch } = require(`${commonPath}/opensearch`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageCost = typeof interfaces.PackageCost;
 type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
@@ -30,7 +34,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(404, "Package does not exist.");
         }
 
-        let packageJson: string = "";
+
         let response: PackageCost = {};
 
         console.log(`Calculating costs for ${packageRow.PackageName}@${packageRow.Version}...`);
@@ -38,19 +42,27 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (includeDependencies) {
             // Switch to fetching package.json from opensearch
             // Need to save package.json to opensearch
-            packageJson = await fetchPackageJson(packageRow.PackageName, packageRow.Version);
-            const packageCostMap: PackageCost = await calculatePackageCosts(packageJson, {});
+            const { content: packageJson } = await retrieveFromOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', packageId)
+            // packageJson = await fetchPackageJson(packageRow.PackageName, packageRow.Version);
+            console.log('packageJson:', packageJson);
+            const isNpm = packageRow.URL ? false : true;
+            const packageCostMap: PackageCost = await calculatePackageCosts(packageJson, {}, isNpm);
             response = packageCostMap;
-        
+
         } else {  // Otherwise, only add the standalone cost
             response[packageId] = {
                 totalCost: packageRow.standaloneCost,
             };
         }
 
-        // TODO: Return a list containing the standalone cost and total cost of the package and its dependencies
-        // The list should have one entry per dependency, with the standalone cost and total cost of each dependency
-        // Success response
+        // Log the package creation in the package history
+        const user: User = {
+            name: "ece30861defaultadminuser",
+            isAdmin: true,
+        };
+
+        await updatePackageHistory(dynamoDBClient, packageRow.Name, packageRow.Version, packageId, user, "UPDATE");
+
         return {
             statusCode: 200,
             body: JSON.stringify(response),
@@ -87,9 +99,6 @@ export async function fetchPackageJson(name: string, version: string): Promise<s
     }
 }
 
-import * as fs from 'fs-extra';
-import * as path from 'path';
-
 
 // We measure the total cost of a package by putting that in its own package.json file, 
 // and then running npm install --omit=dev in a temporary directory. 
@@ -103,6 +112,7 @@ import * as path from 'path';
 
 
 import { execSync } from "child_process";
+
 
 
 // Measure the cost of installing every dependency in the package.json file
@@ -144,11 +154,14 @@ export async function calculateCost(packageJsonContent: string): Promise<number>
 // Main function to calculate costs for a package and update the cost map
 export async function calculatePackageCosts(
     packageJsonContent: string,
-    packageCostMap: PackageCost = {}
+    packageCostMap: PackageCost = {},
+    isNpm: boolean = true
 ): Promise<PackageCost> {
-    const packageJson = JSON.parse(packageJsonContent);
-    const { name, version } = packageJson;
+    const packageJson = JSON.parse(JSON.parse(packageJsonContent));
+    const name = packageJson["name"];
+    const version = packageJson["version"];
     const packageId = generatePackageID(name, version);
+    console.log('packageId:', packageId);
 
     // Avoid reprocessing packages
     if (packageCostMap[packageId]) {
@@ -159,23 +172,36 @@ export async function calculatePackageCosts(
     await fs.ensureDir(tempDir);
     const packageJsonPath = path.join(tempDir, "package.json");
     await fs.writeFile(packageJsonPath, packageJsonContent);
+    console.log('packageJsonPath:', packageJsonPath);
     try {
         // Step 1: Calculate total cost
-        const topPackageJson = JSON.stringify({
-            name: "temp-package",
-            version: "1.0.0",
-            dependencies: { [name]: version },
-        });
-        const totalCost = await calculateCost(topPackageJson);
+        let totalCost = 0;
+        let standaloneCost = 0;
+        if (isNpm) {
+            const topPackageJson = JSON.stringify({
+                name: "temp-package",
+                version: "1.0.0",
+                dependencies: { [name]: version },
+            });
+            totalCost = await calculateCost(topPackageJson);
+        } else {
+            const packageRow = await getPackageById();
+            standaloneCost = packageRow.standaloneCost;
+        }
 
         // Step 2: Calculate dependency cost
+        // Assume all dependencies are available on npm
         const dependenciesCost = await calculateCost(packageJsonContent);
 
-        // Step 3: Calculate standalone cost
-        const standaloneCost = totalCost - dependenciesCost;
+        // Step 3: Calculate standalone or total cost
+        if (isNpm) {
+            standaloneCost = totalCost - dependenciesCost;
+        } else {
+            totalCost = standaloneCost + dependenciesCost;
+        }
 
-        console.log(`Standalone cost for ${packageId}: ${standaloneCost.toFixed(2)} MB`);
-        console.log(`Total cost for ${packageId}: ${totalCost.toFixed(2)} MB`);
+        console.log(`Standalone cost for ${name}@${version}: ${standaloneCost.toFixed(5)} MB`);
+        console.log(`Total cost for ${name}@${version}: ${totalCost.toFixed(5)} MB`);
 
         // Step 4: Update the cost map
         packageCostMap[packageId] = {

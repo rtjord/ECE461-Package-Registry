@@ -6,10 +6,10 @@ import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { createErrorResponse, generatePackageID, getSecret, getScores, getEnvVariable, extractFieldFromPackageJson, getRepoUrl } = require(`${commonPath}/utils`);
-const { debloatPackage, calculateDependenciesCost, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
+const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
-const { uploadReadme } = require(`${commonPath}/opensearch`);
+const { uploadToOpenSearch } = require(`${commonPath}/opensearch`);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
@@ -37,6 +37,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Ensure the request body is present
         if (!event.body) {
+            console.error('Request body is missing.');
             return createErrorResponse(400, 'Request body is missing.');
         }
 
@@ -45,26 +46,36 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Validate that exactly one of Content or URL is provided
         if ((!requestBody.Content && !requestBody.URL) || (requestBody.Content && requestBody.URL)) {
+            console.error('Exactly one of Content or URL must be provided.');
             return createErrorResponse(400, 'Exactly one of Content or URL must be provided.');
         }
 
-        // Initialize package name and version
+        // Get the package name
         const packageName = requestBody.Name;
-        let version = null;
+
+        // If the package name is missing, we cannot check whether the package already exists
+        // so we must return an error
+        if (!packageName) {
+            console.error('Package name is missing.');
+            return createErrorResponse(400, 'Package name is missing.');
+        }
 
         // Check if any packages with the same name already exist
         const existingPackages: PackageMetadata[] = await getPackageByName(dynamoDBClient, packageName);
         if (existingPackages.length > 0) {
             return createErrorResponse(409, 'Package already exists.');
         }
+
+        // Initialize package version
+        let version = null;
         
-        let fileContent: Buffer;
+        let packageContent: Buffer;
         let rating: PackageRating | null = null;
 
         // If Content is provided, use it directly
         if (requestBody.Content) {
             // Convert base64-encoded content to a Buffer
-            fileContent = Buffer.from(requestBody.Content, 'base64');
+            packageContent = Buffer.from(requestBody.Content, 'base64');
         } else if (requestBody.URL) { // If URL is provided
             // Get the rating of the package
             const secret = await getSecret(secretsManagerClient, "GitHubToken");
@@ -86,7 +97,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
             // Clone the GitHub repository with the correct version and zip it
-            fileContent = await cloneAndZipRepository(repoUrl, urlVersion);
+            packageContent = await cloneAndZipRepository(repoUrl, urlVersion);
             if (urlVersion) {
                 version = urlVersion;
             }
@@ -94,9 +105,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
 
+        // From this point on, the package content is available in the packageContent variable
         // Extract package.json and README.md from the zip file
-        const packageJson = await extractPackageJsonFromZip(fileContent);
-        const readme = await extractReadmeFromZip(fileContent);
+        const packageJson = await extractPackageJsonFromZip(packageContent);
+        const readme = await extractReadmeFromZip(packageContent);
 
         // If the version is not provided, try to extract it from package.json
         if (!version && packageJson) {
@@ -109,25 +121,32 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Generate a unique ID for the package
         const packageId = generatePackageID(packageName, version);
 
-        const metadata = {
+        const metadata: PackageMetadata = {
             Name: packageName,
             Version: version,
             ID: packageId,
         };
 
-        // upload readme to opensearch
         if (readme){
-            await uploadReadme(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, metadata);
+            // upload readme to opensearch
+            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, metadata);
         }
-        // Upload the package zip to S3
+
+        if (packageJson) {
+            // upload package.json to opensearch
+            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', JSON.stringify(packageJson), metadata);
+        }
+
         if (requestBody.debloat) {
             // Debloat the package content
-            fileContent = await debloatPackage(fileContent);
+            packageContent = await debloatPackage(packageContent);
         }
-        const s3Key = await uploadToS3(s3Client, fileContent, packageName, version);
-        const standaloneCost = fileContent.length / (1024 * 1024);
-        const dependenciesCost = await calculateDependenciesCost(packageJson);
-        const totalCost = standaloneCost + dependenciesCost;
+        // Upload the package zip to S3
+        const s3Key = await uploadToS3(s3Client, packageContent, packageName, version);
+        
+        // const standaloneCost = packageContent.length / (1024 * 1024);
+        // const dependenciesCost = await calculateDependenciesCost(packageJson);
+        // const totalCost = standaloneCost + dependenciesCost;
 
         // Save the package metadata to DynamoDB
         const row: PackageTableRow = {
@@ -137,8 +156,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             URL: requestBody.URL,
             s3Key: s3Key,
             JSProgram: requestBody.JSProgram,
-            standaloneCost: standaloneCost,
-            totalCost: totalCost,
+            // standaloneCost: standaloneCost,
+            // totalCost: totalCost,
             ...(rating && { Rating: rating }),
         };
         await uploadPackageMetadata(dynamoDBClient, row);
@@ -159,7 +178,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             },
             data: {
                 Name: packageName,
-                Content: fileContent.toString('base64'),
+                Content: packageContent.toString('base64'),
                 URL: requestBody.URL,
                 JSProgram: requestBody.JSProgram,
             },

@@ -52,43 +52,6 @@ export async function debloatPackage(zipBuffer: Buffer): Promise<Buffer> {
   return await zipToBuffer(yazlZip);
 }
 
-import { execSync } from "child_process";
-
-export async function calculateDependenciesCost(packageJsonContent: string): Promise<number> {
-  const tempDir = path.join("/tmp", "npm_temp");
-  const packageJsonPath = path.join(tempDir, "package.json");
-
-  try {
-    // Step 1: Create a temporary directory
-    await fs.ensureDir(tempDir);
-
-    // Step 2: Write the provided package.json content to a file
-    await fs.writeFile(packageJsonPath, packageJsonContent);
-
-    // Step 3: Run npm install in the temporary directory
-    console.log("Installing dependencies...");
-    execSync("npm install --omit=dev", { cwd: tempDir, stdio: "inherit" });
-
-    // Step 4: Zip the node_modules directory
-    console.log("Zipping node_modules...");
-    const nodeModulesPath = path.join(tempDir, "node_modules");
-    const zipBuffer: Buffer = await zipDirectory(nodeModulesPath);
-
-    // Step 5: Calculate the size of the zipped node_modules
-    const zippedSize = zipBuffer.length / (1024 * 1024)
-
-    console.log(`Size of zipped node_modules: ${zippedSize.toFixed(2)} MB`);
-    return zippedSize;
-  } catch (error) {
-    console.error("Error while calculating size:", error);
-    throw new Error("Failed to calculate size of zipped node_modules");
-  } finally {
-    // Step 5: Cleanup
-    console.log("Cleaning up temporary files...");
-    await fs.remove(tempDir);
-  }
-}
-
 // Clone GitHub repository and compress it to a zip file
 export async function cloneAndZipRepository(repoUrl: string, version?: string | null): Promise<Buffer> {
   const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'repo-'));
@@ -141,7 +104,7 @@ export async function zipDirectory(directoryPath: string): Promise<Buffer> {
 }
 
 // Utility function to convert Yazl zip output to a Buffer
-function zipToBuffer(zipFile: yazl.ZipFile): Promise<Buffer> {
+export function zipToBuffer(zipFile: yazl.ZipFile): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const buffers: Buffer[] = [];
     zipFile.outputStream.on('data', (chunk) => buffers.push(chunk));

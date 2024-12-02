@@ -1,7 +1,7 @@
 {
   "body": {
     "Name": "yazl",
-    "URL": "https://www.npmjs.com/package/yazl",
+    "URL": "https://www.npmjs.com/package/yazl/v/3.1.0",
     "JSProgram": "if (process.argv.length === 7) { console.log('Success'); process.exit(0); } else { console.log('Failed'); process.exit(1); }",
     "debloat": true
   },

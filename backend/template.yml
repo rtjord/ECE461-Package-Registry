@@ -378,6 +378,9 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetadataTable
+      Environment:
+        Variables:
+          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
 
   CreateAuthToken:
     Type: AWS::Serverless::Function

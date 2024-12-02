@@ -5,11 +5,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, generatePackageID, getPackageById, getSecret, getScores, getEnvVariable, getRepoUrl } = require(`${commonPath}/utils`);
-const { debloatPackage, calculateDependenciesCost, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
-const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
+const { createErrorResponse, generatePackageID, getSecret, getScores, getEnvVariable, getRepoUrl } = require(`${commonPath}/utils`);
+const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
+const { getPackageByName, updatePackageHistory, uploadPackageMetadata, getPackageById } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
-const { uploadReadme } = require(`${commonPath}/opensearch`);
+const { uploadToOpenSearch } = require(`${commonPath}/opensearch`);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
@@ -100,23 +100,25 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             // Get the rating of the package
             const secret = await getSecret(secretsManagerClient, "GitHubToken");
             const token = JSON.parse(secret) as { GitHubToken: string };
-            rating = await getScores(token.GitHubToken, requestBody.URL);
+            rating = await getScores(token.GitHubToken, data.URL);
 
             // If the rating is less than 0.5, do not upload the package
             if (rating.NetScore < 0.5) {
-                console.log('In the future, Package should not be uploaded due to the disqualified rating.');
+                console.log('Package is not uploaded due to the disqualified rating of ', rating.NetScore);
                 // return createErrorResponse(424, 'Package is not uploaded due to the disqualified rating.');
             }
 
             // Extract the version from the NPM url, if present
             // If a GitHub url is provided, the urlVersion will be empty
-            const urlVersion: string = extractVersionFromNpmUrl(requestBody.URL);
-            if (urlVersion != metadata.Version) {
+            console.log('extracting version from npm url:', data.URL);
+            const urlVersion: string = extractVersionFromNpmUrl(data.URL);
+            // If the version is provided in the URL, it must match the version in the metadata
+            if (urlVersion && urlVersion != metadata.Version) {
                 return createErrorResponse(400, 'Version in the URL does not match the version in the metadata.');
             }
 
             // Fetch the GitHub repository URL from the GitHub/NPM package url
-            const repoUrl = await getRepoUrl(requestBody.URL);
+            const repoUrl = await getRepoUrl(data.URL);
             if (!repoUrl) {
                 return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
@@ -129,8 +131,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Extract package.json and README.md from the zip file
         const packageJson = await extractPackageJsonFromZip(fileContent);
         const readme = await extractReadmeFromZip(fileContent);
-        console.log('packageJson:', packageJson);
-        console.log('readme:', readme);
 
         // Generate a unique ID for the package
         const packageId = generatePackageID(data.Name, metadata.Version);
@@ -142,7 +142,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             ID: packageId,
         };
         if (readme){
-            await uploadReadme(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, new_metadata);
+            // upload readme to opensearch
+            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, new_metadata);
+        }
+
+        if (packageJson) {
+            // upload package.json to opensearch
+            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', JSON.stringify(packageJson), new_metadata);
         }
 
         // Upload the package zip to S3
@@ -151,9 +157,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             fileContent = await debloatPackage(fileContent);
         }
         const s3Key = await uploadToS3(s3Client, fileContent, metadata.Name, metadata.Version);
-        const standaloneCost = fileContent.length / (1024 * 1024);
-        const dependenciesCost = await calculateDependenciesCost(packageJson);
-        const totalCost = standaloneCost + dependenciesCost;
+        // const standaloneCost = fileContent.length / (1024 * 1024);
+        // const dependenciesCost = await calculateDependenciesCost(packageJson);
+        // const totalCost = standaloneCost + dependenciesCost;
 
         // Save the package metadata to DynamoDB
         const row: PackageTableRow = {
@@ -163,8 +169,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             URL: data.URL,
             s3Key: s3Key,
             JSProgram: data.JSProgram,
-            standaloneCost: standaloneCost,
-            totalCost: totalCost,
+            // standaloneCost: standaloneCost,
+            // totalCost: totalCost,
             ...(rating && { Rating: rating }),
         };
         await uploadPackageMetadata(dynamoDBClient, row);
@@ -210,7 +216,7 @@ export function extractVersionFromNpmUrl(url: string): string {
     return match ? match[2] : '';
 }
 
-function isNewVersionValid(oldVersion: string, newVersion: string): boolean {
+export function isNewVersionValid(oldVersion: string, newVersion: string): boolean {
     // Split the versions into major, minor, and patch numbers
     const [oldMajor, oldMinor, oldPatch] = oldVersion.split('.').map(Number);
     const [newMajor, newMinor, newPatch] = newVersion.split('.').map(Number);

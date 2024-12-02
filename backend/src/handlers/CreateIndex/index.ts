@@ -39,9 +39,19 @@ export const handler = async (event: LambdaEvent, context: Context) => {
 
   try {
     const domainEndpoint = getEnvVariable("DOMAIN_ENDPOINT");
-    const indexName = "readmes";
+    let indexName = "readmes";
 
-    const exists = await checkIndexExists(domainEndpoint, indexName);
+    let exists = await checkIndexExists(domainEndpoint, indexName);
+
+    if (!exists) {
+      await createIndex(domainEndpoint, indexName);
+    } else {
+      console.log(`Index '${indexName}' already exists. Skipping creation.`);
+    }
+
+    indexName = "packagejsons";
+
+    exists = await checkIndexExists(domainEndpoint, indexName);
 
     if (!exists) {
       await createIndex(domainEndpoint, indexName);

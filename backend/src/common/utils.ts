@@ -59,7 +59,27 @@ export async function getScores(token: string, url: string): Promise<metricData>
 
     return result;
   } catch (error) {
-    throw new Error(`Could not execute URL analysis of modules: ${error}`);
+    const emptyResult: metricData = {
+      URL: url,
+      NetScore: -1,
+      NetScore_Latency: -1,
+      RampUp: -1,
+      RampUp_Latency: -1,
+      Correctness: -1,
+      Correctness_Latency: -1,
+      BusFactor: -1,
+      BusFactor_Latency: -1,
+      ResponsiveMaintainer: -1,
+      ResponsiveMaintainer_Latency: -1,
+      License: -1,
+      License_Latency: -1,
+      GoodPinningPractice: -1,
+      GoodPinningPracticeLatency: -1,
+      PullRequest: -1,
+      PullRequestLatency: 0-1
+  };
+    console.log('Error calculating score:', error);
+    return emptyResult;
   }
 }
 

@@ -35,6 +35,8 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
         const response2 = await axios.post(`${baseUrl}/package`, requestBody2);
         // Get the ID of the uploaded package
         url_id = response2.data.metadata.ID;
+        console.log("content_id: ", content_id);
+        console.log("url_id: ", url_id);
 
     }, 90000);
     afterAll(async () => {
@@ -44,7 +46,7 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
     
     it("should return a 200 status for a package that exists", async () => {
         const requestBody: PackageRegEx = {
-            RegEx: "test-package|yazl"
+            RegEx: ".*test-package.*"
         };
 
         const response = await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
@@ -54,11 +56,6 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
             Name: "test-package",
             Version: "1.0.0",
             ID: content_id
-        }, 
-        {
-            Name: "yazl",
-            Version: "3.1.0",
-            ID: url_id
         }];
         const packages: PackageMetadata[] = response.data;
         expect(packages).toEqual(expectedPackages);

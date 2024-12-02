@@ -1,0 +1,19 @@
+{
+  "pathParameters": {
+    "id": "Dcj5JO-VuU1JLu1UeljI"
+  },
+  "headers": {
+    "X-Authorization": "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+  },
+  "body": {
+    "metadata": {
+      "Name": "yazl",
+      "Version": "3.2.0",
+      "ID": "Dcj5JO-VuU1JLu1UeljI"
+    },
+    "data": {
+      "Name": "yazl",
+      "URL": "https://www.npmjs.com/package/yazl/v/3.2.0"
+    }
+  }
+}
