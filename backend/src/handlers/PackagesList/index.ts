@@ -2,13 +2,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DynamoDBClient, QueryCommand, QueryCommandInput, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
-const { createErrorResponse } = require(utilsPath);
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const interfaces = require(interfacesPath);
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse } = require(`${commonPath}/utils`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
 type PackageQuery = typeof interfaces.PackageQuery;
 type PackageMetadata = typeof interfaces.PackageMetadata;
 type PackageTableRow = typeof interfaces.PackageTableRow;
@@ -17,7 +14,6 @@ import semver from "semver";
 
 const PAGE_SIZE = 50;
 
- 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());

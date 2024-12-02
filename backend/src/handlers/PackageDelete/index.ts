@@ -2,22 +2,16 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { S3, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import axios from "axios";
+import aws4 from "aws4";
+import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
-
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
- 
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
-const { createErrorResponse, getPackageById, getEnvVariable } = require(utilsPath);
-
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const interfaces = require(interfacesPath);
-
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
+const { getPackageById } = require(`${commonPath}/dynamodb`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
 type PackageTableRow = typeof interfaces.PackageTableRow;
-
-
-
 
  
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -38,6 +32,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         await deletePackageFromDynamoDB(dynamoDBClient, id);
 
         await deletePackageFromS3(s3Client, existingPackage.s3Key);
+
+        await deleteDocumentById(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', id);
 
         return createSuccessResponse(existingPackage.PackageName, existingPackage.Version);
     } catch (error) {
@@ -80,6 +76,36 @@ async function deletePackageFromS3(client: S3, s3Key: string | undefined): Promi
     } catch (error) {
         console.error(`Error deleting file from S3 with key: ${s3Key}`, error);
         throw new Error('Failed to delete package file from S3.');
+    }
+}
+
+async function deleteDocumentById(domainEndpoint: string, indexName: string, documentId: string) {
+    const credentials = await defaultProvider()();
+
+    // Construct the delete document request
+    const request = {
+        host: domainEndpoint.replace(/^https?:\/\//, ""),
+        path: `/${indexName}/_doc/${documentId}`, // Path to the specific document
+        service: "es",
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    };
+
+    aws4.sign(request, credentials);
+
+    console.log(`Deleting document with ID '${documentId}' from index: '${indexName}'`);
+    try {
+        const response = await axios({
+            method: request.method,
+            url: `https://${request.host}${request.path}`,
+            headers: request.headers,
+        });
+        console.log(`Document with ID '${documentId}' deleted from index '${indexName}':`, response.data);
+    } catch (error) {
+        console.error(`Error deleting document with ID '${documentId}' from index '${indexName}':`, error);
+        throw new Error(`Failed to delete document with ID '${documentId}' from index '${indexName}'.`);
     }
 }
 

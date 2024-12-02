@@ -1,23 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import { S3 } from '@aws-sdk/client-s3';
+import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { createErrorResponse, getPackageById, getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(utilsPath);
-
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const interfaces = require(interfacesPath);
-
-type PackageData = typeof interfaces.PackageData;
-type PackageTableRow = typeof interfaces.PackageTableRow;
-type User = typeof interfaces.User;
-type Package = typeof interfaces.Package;
-type PackageMetadata = typeof interfaces.PackageMetadata;
-
- 
-
 import { createHash } from 'crypto';
 import JSZip from "jszip";
 import * as fs from 'fs';
@@ -28,12 +12,19 @@ import http from 'isomorphic-git/http/node';
 import yazl from 'yazl';
 import axios from 'axios';
 
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse, debloatPackage } = require(`${commonPath}/utils`);
+const { getPackageById, getPackageByName, uploadPackageMetadata, updatePackageHistory } = require(`${commonPath}/dynamodb`);
+const { uploadToS3 } = require(`${commonPath}/s3`);
+const { uploadReadme } = require(`${commonPath}/opensearch`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
 
-const s3 = new S3({
-    region: 'us-east-2',
-    useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
-});
-
+type PackageData = typeof interfaces.PackageData;
+type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
+type Package = typeof interfaces.Package;
+type PackageMetadata = typeof interfaces.PackageMetadata;
 
 type NpmMetadata = {
     repository?: {
@@ -41,10 +32,13 @@ type NpmMetadata = {
     };
 };
 
-
 // Main Lambda handler function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        const s3Client = new S3Client({
+            region: 'us-east-2',
+            useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
+        });
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
         // Extract packageName and version from the path (assuming package id is passed in the path)
@@ -120,13 +114,27 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Extract package.json and README.md from the zip file
         // upload readme to opensearch in the future
-        // const { packageJson, readme } = await extractFilesFromZip(fileContent);
+        const { readme } = await extractFilesFromZip(fileContent);
 
         // Generate a unique ID for the package
         const packageId = generatePackageID(data.Name, metadata.Version);
 
+        // upload readme to opensearch
+        const new_metadata: PackageMetadata = {
+            Name: metadata.Name,
+            Version: metadata.Version,
+            ID: packageId,
+        };
+        if (readme){
+            await uploadReadme('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', readme, new_metadata);
+        }
+
         // Upload the package zip to S3
-        const s3Key = await uploadToS3(fileContent, data.Name, metadata.Version);
+        if (data.debloat) {
+            // Debloat the package content
+            fileContent = await debloatPackage(fileContent);
+        }
+        const s3Key = await uploadToS3(s3Client, fileContent, data.Name, metadata.Version);
         const standaloneCost = fileContent.length / (1024 * 1024);
 
         // Save the package metadata to DynamoDB
@@ -237,23 +245,6 @@ export function extractVersionFromPackageJson(packageJson: string) {
     const metadata = JSON.parse(packageJson);
     const version = metadata.version ?? '1.0.0';
     return version;
-}
-
-// Upload the zip file to S3 and return the file URL
-async function uploadToS3(fileContent: Buffer, packageName: string, version: string): Promise<string> {
-    const s3Key = `uploads/${packageName}-${version}.zip`;
-    const bucketName = process.env.S3_BUCKET_NAME;
-
-    if (!bucketName) throw new Error('S3_BUCKET_NAME is not defined in environment variables');
-
-    await s3.putObject({
-        Bucket: bucketName,
-        Key: s3Key,
-        Body: fileContent,
-        ContentType: 'application/zip',
-    });
-
-    return `https://${bucketName}.s3.amazonaws.com/${s3Key}`;
 }
 
 // Clone GitHub repository and compress it to a zip file

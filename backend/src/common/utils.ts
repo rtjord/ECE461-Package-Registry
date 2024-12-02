@@ -1,96 +1,4 @@
 import { APIGatewayProxyResult } from "aws-lambda";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { GetCommand, QueryCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { PackageID, PackageHistoryEntry, PackageMetadata, User, PackageTableRow } from "./interfaces";
-
-export async function getPackageById(dynamoDBClient: DynamoDBDocumentClient, packageId: PackageID) {
-    const params = {
-        TableName: "PackageMetadata",
-        Key: {
-            ID: packageId
-        }
-    };
-
-    const command = new GetCommand(params);
-    const result = await dynamoDBClient.send(command);
-
-    // Check if the item was found
-    if (!result.Item) {
-        return null;
-    }
-    return result.Item as PackageTableRow;
-}
-
-export async function getPackageByName(dynamoDBClient: DynamoDBDocumentClient, name: string): Promise<PackageMetadata[]> {
-    const tableName = "PackageMetadata";
-    const indexName = "PackageNameVersionIndex";
-  
-    try {
-      const result = await dynamoDBClient.send(
-        new QueryCommand({
-          TableName: tableName,
-          IndexName: indexName,
-          KeyConditionExpression: "PackageName = :packageName",
-          ExpressionAttributeValues: {
-            ":packageName": name,
-          },
-        })
-      );
-  
-      // If no items are found, return an empty array
-      return result.Items as PackageMetadata[] || [];
-    } catch (error) {
-      console.error("Error querying the DynamoDB table:", error);
-      throw new Error("Failed to retrieve packages.");
-    }
-  }
-
-export async function getPackageHistory(dynamoDBClient: DynamoDBDocumentClient, packageName: string): Promise<PackageHistoryEntry[]> {
-    const params = {
-        TableName: "PackageHistoryTable",
-        KeyConditionExpression: "#pkgName = :nameVal",
-        ExpressionAttributeNames: {
-            "#pkgName": "PackageName",
-        },
-        ExpressionAttributeValues: {
-            ":nameVal": packageName,
-        },
-    };
-
-    // Must use query to get all items with the same partition key
-    const command = new QueryCommand(params);
-    const result = await dynamoDBClient.send(command);
-
-    return result.Items as PackageHistoryEntry[];
-}
-
-export async function updatePackageHistory(dynamoDBClient: DynamoDBDocumentClient, packageName: string, version: string, packageId: string, user: User, action: string) {
-    const date = new Date().toISOString();
-    const dynamoDBParams = {
-        TableName: "PackageHistoryTable",
-        Item: {
-            PackageName: packageName,
-            Date: date,
-            User: user,
-            PackageMetadata: {
-                Name: packageName,
-                Version: version,
-                ID: packageId,
-            },
-            Action: action,
-        }
-    };
-    await dynamoDBClient.send(new PutCommand(dynamoDBParams));
-}
-
-
-export async function uploadPackageMetadata(dynamoDBClient: DynamoDBDocumentClient, metadata: PackageTableRow) {
-    const dynamoDBParams = {
-        TableName: "PackageMetadata",
-        Item: metadata,
-    };
-    await dynamoDBClient.send(new PutCommand(dynamoDBParams));
-}
 
 // Function to create a consistent error response
 export const createErrorResponse = (statusCode: number, message: string): APIGatewayProxyResult => {
@@ -108,4 +16,63 @@ export function getEnvVariable(name: string): string {
         throw new Error(`Environment variable ${name} is not defined`);
     }
     return value;
+}
+
+import * as esbuild from 'esbuild';
+import * as JSZip from 'jszip'; // For unzipping
+import * as Yazl from 'yazl';
+
+export async function debloatPackage(zipBuffer: Buffer): Promise<Buffer> {
+  // Step 1: Extract the zip contents using JSZip
+  const jsZip = await JSZip.loadAsync(zipBuffer);
+  const tempFiles: { [path: string]: string } = {};
+
+  // Read files into memory
+  for (const fileName of Object.keys(jsZip.files)) {
+    const file = jsZip.files[fileName];
+    if (!file.dir) {
+      tempFiles[fileName] = await file.async('string');
+    }
+  }
+
+  // Step 2: Optimize files (tree shake and minify)
+  const optimizedFiles: { [path: string]: string } = {};
+  for (const [path, content] of Object.entries(tempFiles)) {
+    if (path.endsWith('.js') || path.endsWith('.ts')) {
+      try {
+        const result = await esbuild.transform(content, {
+          loader: path.endsWith('.ts') ? 'ts' : 'js',
+          minify: true,
+          treeShaking: true,
+          target: 'es2017',
+        });
+        optimizedFiles[path] = result.code;
+      } catch (error) {
+        console.error(`Failed to optimize ${path}:`, error);
+        optimizedFiles[path] = content; // Preserve original if optimization fails
+      }
+    } else {
+      optimizedFiles[path] = content; // Copy non-JS files as-is
+    }
+  }
+
+  // Step 3: Create a new zip with Yazl
+  const yazlZip = new Yazl.ZipFile();
+  for (const [path, content] of Object.entries(optimizedFiles)) {
+    yazlZip.addBuffer(Buffer.from(content, 'utf-8'), path);
+  }
+
+  // Finalize the zip and return a Buffer
+  yazlZip.end();
+  return await zipToBuffer(yazlZip);
+}
+
+// Utility function to convert Yazl zip output to a Buffer
+function zipToBuffer(zipFile: Yazl.ZipFile): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const buffers: Buffer[] = [];
+    zipFile.outputStream.on('data', (chunk) => buffers.push(chunk));
+    zipFile.outputStream.on('end', () => resolve(Buffer.concat(buffers)));
+    zipFile.outputStream.on('error', (error) => reject(error));
+  });
 }

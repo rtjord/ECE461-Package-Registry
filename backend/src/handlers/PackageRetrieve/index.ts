@@ -1,17 +1,13 @@
 import { S3Client, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-
-const utilsPath = process.env.UTILS_PATH || '/opt/nodejs/common/utils';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports 
-const { createErrorResponse, getPackageById, updatePackageHistory } = require(utilsPath);
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-const interfacesPath = process.env.INTERFACES_PATH || '/opt/nodejs/common/interfaces';
-
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const interfaces = require(interfacesPath);
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
+const { updatePackageHistory, getPackageById } = require(`${commonPath}/dynamodb`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
 
 type PackageTableRow = typeof interfaces.PackageTableRow;
 type User = typeof interfaces.User;
@@ -28,7 +24,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         });
 
         // Extract and validate the package ID
-        const id = getIdFromEvent(event);
+        const id = event.pathParameters?.id;
         if (!id) {
             return createErrorResponse(400, "Missing ID in path parameters.");
         }
@@ -39,7 +35,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(404, 'Package not found.');
         }
 
-        const { ID: packageId, PackageName: packageName, Version: version, s3Key, URL: url } = existingPackage;
+        const { ID: packageId, PackageName: packageName, Version: version, s3Key: s3Key, URL: url } = existingPackage;
         const bucketName = getEnvVariable('S3_BUCKET_NAME');
 
         // Fetch S3 object content if S3 key exists
@@ -88,24 +84,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return createErrorResponse(500, 'Failed to retrieve package.');
     }
 };
-
-// Extract ID from the event
-function getIdFromEvent(event: APIGatewayProxyEvent): string {
-    const id = event.pathParameters?.id;
-    if (!id) {
-        throw new Error("Missing ID in path parameters.");
-    }
-    return id;
-}
-
-// Validate environment variables
-function getEnvVariable(name: string): string {
-    const value = process.env[name];
-    if (!value) {
-        throw new Error(`Environment variable ${name} is not defined`);
-    }
-    return value;
-}
 
 
 // Fetch S3 object content
