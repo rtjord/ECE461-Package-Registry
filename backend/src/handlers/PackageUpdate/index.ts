@@ -13,7 +13,7 @@ import yazl from 'yazl';
 import axios from 'axios';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse } = require(`${commonPath}/utils`);
+const { createErrorResponse, debloatPackage } = require(`${commonPath}/utils`);
 const { getPackageById, getPackageByName, uploadPackageMetadata, updatePackageHistory } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
 const { uploadReadme } = require(`${commonPath}/opensearch`);
@@ -130,6 +130,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         // Upload the package zip to S3
+        if (data.debloat) {
+            // Debloat the package content
+            fileContent = await debloatPackage(fileContent);
+        }
         const s3Key = await uploadToS3(s3Client, fileContent, data.Name, metadata.Version);
         const standaloneCost = fileContent.length / (1024 * 1024);
 
