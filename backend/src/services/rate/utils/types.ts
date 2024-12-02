@@ -8,10 +8,10 @@ export type documentationData = {
   numLines: number;
   hasExamples: boolean;
   hasDocumentation: boolean;
-  dependecies?: {
+  dependencies?: {
     total: number;
     pinned: number;
-    outdated: number;
+    fractionPinned: number;
   };
 };
 
@@ -24,5 +24,5 @@ export type repoLatencyData = {
   numberOfCommits: number;
   numberOfLines: number;
   documentation: number;
-  dependecies?: number;
+  dependencies?: number;
 }

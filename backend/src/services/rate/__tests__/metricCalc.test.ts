@@ -9,7 +9,7 @@ const fakeRepoData: repoData = {
     numberOfContributors: 400,
     numberOfOpenIssues: 10,
     numberOfClosedIssues: 20,
-    lastCommitDate: "Sat Dec 09 2023",
+    lastCommitDate: "Sat Nov 09 2024",
     licenses: [''],
     numberOfCommits: 1200,
     numberOfLines: 600,
@@ -241,8 +241,38 @@ describe('metricCalcClass', () => {
         expect(netScore).toEqual(0);
     });
 
+    describe('calculatePinnedDependencies', () => {
+        it('should return 1.0 for a repo with no dependencies', () => {
+            fakeRepoData.dependencies = [];
+            const pinnedDependencies = metricClass.calculatePinnedDependencies(fakeRepoData);
+            expect(pinnedDependencies).toEqual(1.0);
+        });
+    
+        it('should calculate the fraction of pinned dependencies correctly', () => {
+            fakeRepoData.dependencies = [
+                { name: 'dep1', version: '1.0.0' },
+                { name: 'dep2', version: '2.3.x' },
+                { name: 'dep3', version: '^1.2.3' },
+            ];
+            const pinnedDependencies = metricClass.calculatePinnedDependencies(fakeRepoData);
+            expect(pinnedDependencies).toEqual(0.667);
+        });
+    
+        it('should return 0 for invalid dependencies', () => {
+            fakeRepoData.dependencies = undefined;
+            const pinnedDependencies = metricClass.calculatePinnedDependencies(fakeRepoData);
+            expect(pinnedDependencies).toEqual(0);
+        });
+    });
+    
+
     // Test the overall getValue function
     it('Return correct values from getValue method', () => {
+        fakeRepoData.dependencies = [
+            { name: 'dep1', version: '1.0.0' },
+            { name: 'dep2', version: '2.3.x' },
+        ];
+    
         const result = metricClass.getValue(fakeRepoData);
         expect(result).toHaveProperty('URL', fakeRepoData.repoUrl);
         expect(result).toHaveProperty('NetScore');
@@ -251,5 +281,6 @@ describe('metricCalcClass', () => {
         expect(result).toHaveProperty('RampUp');
         expect(result).toHaveProperty('ResponsiveMaintainer');
         expect(result).toHaveProperty('License');
+        expect(result).toHaveProperty('PinnedDependencies');
     });
 });

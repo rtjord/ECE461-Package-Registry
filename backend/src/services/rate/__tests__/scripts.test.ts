@@ -4,7 +4,7 @@ import { envVars } from '../utils/interfaces';
 import { getEnvVars } from '../tools/getEnvVars';
 
 // Mock Data for Testing
-const url = "https://github.com/phillips302/ECE461";
+const url = "https://github.com/axios/axios";
 
 const fakeRepoData: repoData = {
     repoName: '',
@@ -21,7 +21,12 @@ const fakeRepoData: repoData = {
         hasReadme: false,
         numLines: -1,
         hasExamples: false,
-        hasDocumentation: false
+        hasDocumentation: false,
+        dependencies: {
+            total: -1,
+            fractionPinned: -1,
+            pinned: -1
+        }
     },
     latency: {
         contributors: -1,
@@ -76,12 +81,19 @@ describe('runAnalysisClass', () => {
     // Test run analysis with good url
     it('should have a valid token', async () => {
         const result = await runAnalysisInstance.runAnalysis([url]);
-        expect(result).not.toBe([fakeRepoData]);
-    }, 15000);
+        expect(result).not.toEqual([fakeRepoData]);
+    }, 50000);
 
     // Test run analysis with bad url
-    it('should have a valid token', async () => {
+    it('have a valid token', async () => {
         const result = await runAnalysisInstance.runAnalysis(["https://pypi.org/"]);
         expect(result).toStrictEqual([fakeWrongRepoData]);
     });
+
+    it('should include dependency analysis results in the documentation field', async () => {
+        const result = await runAnalysisInstance.runAnalysis([url]);
+        console.log(result[0].documentation.dependencies);
+        expect(result[0].documentation.dependencies).toBeDefined();
+        expect(result[0].documentation.dependencies).toHaveProperty('fractionPinned');
+    }, 50000);
 });

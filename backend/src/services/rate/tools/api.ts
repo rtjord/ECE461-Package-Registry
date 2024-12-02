@@ -98,24 +98,24 @@ export class npmAnalysis {
             const packageJson = await fs.readFile(packageJsonPath, 'utf-8');
             const packageData = JSON.parse(packageJson);
 
-            const dependecies = {... packageData.dependencies, ... packageData.devDependencies};
-            const pinnedCount =  Object.values(dependecies).filter(version => /^\d+\.\d+/.test(version as string)).length;
+            const dependencies = {... packageData.dependencies, ... packageData.devDependencies};
+            const pinnedCount =  Object.values(dependencies).filter(version => /^\d+\.\d+/.test(version as string)).length;
             
-            const totalDependencies = Object.keys(dependecies).length;
+            const totalDependencies = Object.keys(dependencies).length;
             const fractionPinned = totalDependencies > 0 ? pinnedCount / totalDependencies : 1.0;
 
-            npmData.documentation.dependecies = {
+            npmData.documentation.dependencies = {
                 total: totalDependencies,
                 pinned: pinnedCount,
-                outdated: parseFloat(fractionPinned.toFixed(3))
+                fractionPinned: parseFloat(fractionPinned.toFixed(3))
             };
         }
         catch (error) {
             this.logger.logDebug(`Error analyzing dependencies in ${dir} for ${npmData.repoUrl}: ${error}`);
-            npmData.documentation.dependecies = {
-                total: -1,
-                pinned: -1,
-                outdated: -1
+            npmData.documentation.dependencies = {
+                total: 0,
+                pinned: 0,
+                fractionPinned: 1.0
             };
         }
     }
@@ -148,6 +148,7 @@ export class npmAnalysis {
                 numLines: -1,
                 hasExamples: false,
                 hasDocumentation: false,
+                dependencies: undefined,
             },
             latency: {
                 contributors: -1,
@@ -157,7 +158,8 @@ export class npmAnalysis {
                 licenses: -1,
                 numberOfCommits: -1,
                 numberOfLines: -1,
-                documentation: -1
+                documentation: -1,
+                dependencies: -1
             }
         };
 
@@ -169,7 +171,7 @@ export class npmAnalysis {
             this.executeTasks(this.getReadmeContent.bind(this), repoDir, npmData)
         ]);
 
-        npmData.latency.dependecies = await this.executeTasks(this.analyzeDependencies.bind(this), repoDir, npmData);
+        npmData.latency.dependencies = await this.executeTasks(this.analyzeDependencies.bind(this), repoDir, npmData);
         await this.deleteRepo(repoDir);
     
         this.logger.logInfo(`All npm tasks completed in order within dir ${repoDir}`);

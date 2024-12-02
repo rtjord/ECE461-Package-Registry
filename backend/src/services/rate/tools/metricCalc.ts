@@ -114,6 +114,32 @@ export class metricCalc{
         return 0;
     }
 
+    calculatePinnedDependencies(data: repoData): number {
+        //if invalid (undefined) dependencies are found
+        if(data.dependencies == undefined) {
+            return 0;
+        }
+        if (!data.dependencies || data.dependencies.length === 0) {
+            return 1.0; // Perfect score if no dependencies
+        }
+
+        
+    
+        const pinnedCount = data.dependencies.filter(dep => /^\d+\.\d+/.test(dep.version)).length;
+        const fractionPinned = pinnedCount / data.dependencies.length;
+    
+        return parseFloat(fractionPinned.toFixed(3));
+    }
+
+    getPinnedDependenciesLatency(latency: repoLatencyData): number
+    {   
+        if (latency.dependencies == undefined) {
+            return -1;
+        }
+        return parseFloat((latency.dependencies / 1000).toFixed(3));
+    }
+    
+
     calculateNetScore(data: repoData): number 
     {
         // Calculate the net score based on the individual metrics
@@ -121,7 +147,7 @@ export class metricCalc{
                                 (0.25 * this.calculateCorrectness(data)) + 
                                 (0.2 * this.calculateRampup(data)) + 
                                 (0.15 * this.calculateBusFactor(data))+ 
-                                (0.1 * this.checkLicenseExistence(data)
+                                (0.1 * this.calculatePinnedDependencies(data)
                             );
         return this.checkLicenseExistence(data) * parseFloat(weightedScore.toFixed(3));
     }
@@ -146,7 +172,9 @@ export class metricCalc{
             ResponsiveMaintainer: this.calculateResponsiveness(data),
             ResponsiveMaintainer_Latency: parseFloat((data.latency.lastCommitDate / 1000).toFixed(3)),
             License: this.checkLicenseExistence(data),
-            License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3))
+            License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3)),
+            PinnedDependencies: this.calculatePinnedDependencies(data),
+            PinnedDependencies_Latency: this.getPinnedDependenciesLatency(data.latency) // New latency metric
         };
     }
 }
