@@ -61,8 +61,6 @@ export interface metricData{
     ResponsiveMaintainer_Latency: number;
     License: number;
     License_Latency: number;
-    PullRequest: number;
-    PullRequestLatency: number;
     NetScore: number;
     NetScore_Latency: number;
     PinnedDependencies: number;
