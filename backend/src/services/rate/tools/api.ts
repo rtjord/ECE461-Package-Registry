@@ -91,7 +91,34 @@ export class npmAnalysis {
             this.logger.logDebug(`Error retrieving the last commit in ${dir} for ${npmData.repoUrl} from lastCommitDate`);
         }
     }
-    
+
+    async analyzeDependencies(dir: string, npmData: npmData): Promise<void> { 
+        try {
+            const packageJsonPath = `${dir}/package.json`;
+            const packageJson = await fs.readFile(packageJsonPath, 'utf-8');
+            const packageData = JSON.parse(packageJson);
+
+            const dependecies = {... packageData.dependencies, ... packageData.devDependencies};
+            const pinnedCount =  Object.values(dependecies).filter(version => /^\d+\.\d+/.test(version as string)).length;
+            
+            const totalDependencies = Object.keys(dependecies).length;
+            const fractionPinned = totalDependencies > 0 ? pinnedCount / totalDependencies : 1.0;
+
+            npmData.documentation.dependecies = {
+                total: totalDependencies,
+                pinned: pinnedCount,
+                outdated: parseFloat(fractionPinned.toFixed(3))
+            };
+        }
+        catch (error) {
+            this.logger.logDebug(`Error analyzing dependencies in ${dir} for ${npmData.repoUrl}: ${error}`);
+            npmData.documentation.dependecies = {
+                total: -1,
+                pinned: -1,
+                outdated: -1
+            };
+        }
+    }
     async deleteRepo(dir: string): Promise<void> {
         this.logger.logDebug(`Deleting repository ${dir}...`);
         try {
@@ -141,6 +168,8 @@ export class npmAnalysis {
             this.executeTasks(this.lastCommitDate.bind(this), repoDir, npmData),
             this.executeTasks(this.getReadmeContent.bind(this), repoDir, npmData)
         ]);
+
+        npmData.latency.dependecies = await this.executeTasks(this.analyzeDependencies.bind(this), repoDir, npmData);
         await this.deleteRepo(repoDir);
     
         this.logger.logInfo(`All npm tasks completed in order within dir ${repoDir}`);

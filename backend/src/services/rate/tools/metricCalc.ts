@@ -117,7 +117,12 @@ export class metricCalc{
     calculateNetScore(data: repoData): number 
     {
         // Calculate the net score based on the individual metrics
-        const weightedScore = (0.3 * this.calculateResponsiveness(data)) + (0.25 * this.calculateCorrectness(data)) + (0.25 * this.calculateRampup(data)) + (0.2 * this.calculateBusFactor(data));
+        const weightedScore =   (0.3 * this.calculateResponsiveness(data)) +
+                                (0.25 * this.calculateCorrectness(data)) + 
+                                (0.2 * this.calculateRampup(data)) + 
+                                (0.15 * this.calculateBusFactor(data))+ 
+                                (0.1 * this.checkLicenseExistence(data)
+                            );
         return this.checkLicenseExistence(data) * parseFloat(weightedScore.toFixed(3));
     }
 

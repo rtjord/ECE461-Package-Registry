@@ -1,6 +1,14 @@
 import { documentationData, repoLatencyData } from "./types";
+import { Dependency } from "./types";
 
+export interface npmData {
+    repoUrl: string;
+    lastCommitDate: string;
+    documentation: documentationData;
+    latency: repoLatencyData;
+}
 export interface repoData {
+    dependencies?: Dependency[];
     repoName: string;
     repoUrl: string;
     repoOwner: string;
