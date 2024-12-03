@@ -63,6 +63,6 @@ export interface metricData{
     License_Latency: number;
     NetScore: number;
     NetScore_Latency: number;
-    PinnedDependencies: number;
-    PinnedDependencies_Latency: number;
+    GoodPinningPractice: number;
+    GoodPinningPractice_Latency: number;
 }

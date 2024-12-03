@@ -174,7 +174,7 @@ export class metricCalc{
             License: this.checkLicenseExistence(data),
             License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3)),
             GoodPinningPractice: this.calculatePinnedDependencies(data),
-            GoodPinningPracticeLatency: this.getPinnedDependenciesLatency(data.latency),
+            GoodPinningPractice_Latency: this.getPinnedDependenciesLatency(data.latency),
         };
     }
 }
