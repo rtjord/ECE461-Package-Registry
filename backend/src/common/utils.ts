@@ -73,8 +73,6 @@ export async function getScores(token: string, url: string): Promise<metricData>
       ResponsiveMaintainer_Latency: -1,
       License: -1,
       License_Latency: -1,
-      GoodPinningPractice: -1,
-      GoodPinningPracticeLatency: -1,
       PullRequest: -1,
       PullRequestLatency: 0-1
   };

@@ -173,8 +173,8 @@ export class metricCalc{
             ResponsiveMaintainer_Latency: parseFloat((data.latency.lastCommitDate / 1000).toFixed(3)),
             License: this.checkLicenseExistence(data),
             License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3)),
-            PinnedDependencies: this.calculatePinnedDependencies(data),
-            PinnedDependencies_Latency: this.getPinnedDependenciesLatency(data.latency) // New latency metric
+            GoodPinningPractice: this.calculatePinnedDependencies(data),
+            GoodPinningPracticeLatency: this.getPinnedDependenciesLatency(data.latency),
         };
     }
 }
