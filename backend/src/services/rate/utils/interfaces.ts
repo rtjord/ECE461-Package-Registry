@@ -1,5 +1,6 @@
 import { documentationData, repoLatencyData } from "./types";
 import { Dependency } from "./types";
+import { PullRequestMetrics } from "./types";
 
 export interface npmData {
     repoUrl: string;
@@ -21,6 +22,7 @@ export interface repoData {
     numberOfLines: number;
     documentation: documentationData;
     latency: repoLatencyData;
+    pullRequestMetrics?: PullRequestMetrics;
 }
 
 export interface gitData {
@@ -34,6 +36,7 @@ export interface gitData {
     numberOfCommits: number;
     numberOfLines: number;
     latency: repoLatencyData;
+    pullRequestMetrics?: PullRequestMetrics;
 }
 
 export interface npmData {

@@ -84,6 +84,7 @@ export class runAnalysis {
             licenses: [],
             numberOfCommits: -1,
             numberOfLines: -1,
+            pullRequestMetrics: undefined,
             documentation: {
                 hasReadme: false,
                 numLines: -1,
@@ -103,7 +104,8 @@ export class runAnalysis {
                 licenses: -1,
                 numberOfCommits: -1,
                 numberOfLines: -1,
-                documentation: -1
+                documentation: -1,
+                pullRequests: -1
             }
         };
 
@@ -129,6 +131,7 @@ export class runAnalysis {
             licenses: gitData.licenses,
             numberOfCommits: gitData.numberOfCommits,
             numberOfLines: gitData.numberOfLines,
+            pullRequestMetrics: gitData.pullRequestMetrics,
             documentation: {
                 hasReadme: npmData.documentation.hasReadme,
                 numLines: npmData.documentation.numLines,
@@ -144,7 +147,9 @@ export class runAnalysis {
                 licenses: gitData.latency.licenses,
                 numberOfCommits: gitData.latency.numberOfCommits,
                 numberOfLines: gitData.latency.numberOfLines,
-                documentation: npmData.latency.documentation
+                documentation: npmData.latency.documentation,
+                dependencies: npmData.latency.dependencies,
+                pullRequests: gitData.latency.pullRequests
             }
         };
 

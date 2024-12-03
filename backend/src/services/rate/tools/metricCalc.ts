@@ -138,23 +138,36 @@ export class metricCalc{
         }
         return parseFloat((latency.dependencies / 1000).toFixed(3));
     }
+
+    calculatePullRequestScore(data: repoData): number {
+        if (!data.pullRequestMetrics) {
+            return 0;
+        }
+
+        return data.pullRequestMetrics.reviewedFraction;
+    }
+
+    getPullRequestLatency(latency: repoLatencyData): number {
+        return parseFloat((latency.pullRequests / 1000).toFixed(3));
+    }
+
     
 
     calculateNetScore(data: repoData): number 
     {
         // Calculate the net score based on the individual metrics
-        const weightedScore =   (0.3 * this.calculateResponsiveness(data)) +
-                                (0.25 * this.calculateCorrectness(data)) + 
-                                (0.2 * this.calculateRampup(data)) + 
+        const weightedScore =   (0.25 * this.calculateResponsiveness(data)) +
+                                (0.2 * this.calculateCorrectness(data)) + 
+                                (0.15 * this.calculateRampup(data)) + 
                                 (0.15 * this.calculateBusFactor(data))+ 
-                                (0.1 * this.calculatePinnedDependencies(data)
-                            );
+                                (0.1 * this.calculatePinnedDependencies(data)) +
+                                (0.15 * this.calculatePullRequestScore(data));
         return this.checkLicenseExistence(data) * parseFloat(weightedScore.toFixed(3));
     }
 
     getNetScoreLatency(latency: repoLatencyData): number 
     {
-        return parseFloat(((Math.max(latency.openIssues, latency.licenses) + latency.numberOfLines + latency.closedIssues + latency.numberOfCommits + latency.contributors) / 1000).toFixed(3));
+        return parseFloat(((Math.max(latency.openIssues, latency.licenses) + latency.numberOfLines + latency.closedIssues + latency.numberOfCommits + latency.contributors + latency.pullRequests + (latency.dependencies||0)) / 1000).toFixed(3));
         //return parseFloat((Math.max(latency.numberOfLines, latency.openIssues, latency.closedIssues, latency.licenses, latency.numberOfCommits, latency.numberOfLines, latency.documentation) / 1000).toFixed(3));
     }
 
@@ -175,8 +188,8 @@ export class metricCalc{
             License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3)),
             GoodPinningPractice: this.calculatePinnedDependencies(data),
             GoodPinningPractice_Latency: this.getPinnedDependenciesLatency(data.latency),
-            PullRequest: 0,
-            PullRequest_Latency: 0
+            PullRequest: this.calculatePullRequestScore(data),
+            PullRequest_Latency: this.getPullRequestLatency(data.latency),
         };
     }
 }

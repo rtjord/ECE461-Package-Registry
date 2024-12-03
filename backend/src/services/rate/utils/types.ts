@@ -3,6 +3,12 @@ export interface Dependency {
   version: string;
 }
 
+export interface PullRequestMetrics {
+  totalAdditions: number;
+  reviewedAdditions: number;
+  reviewedFraction: number;
+}
+
 export type documentationData = {
   hasReadme: boolean;
   numLines: number;
@@ -25,4 +31,5 @@ export type repoLatencyData = {
   numberOfLines: number;
   documentation: number;
   dependencies?: number;
+  pullRequests: number;
 }

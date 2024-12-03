@@ -68,7 +68,8 @@ describe('npmAnalysis', () => {
                 licenses: -1,
                 numberOfCommits: -1,
                 numberOfLines: -1,
-                documentation: -1
+                documentation: -1,
+                pullRequests: -1
             }
         };
 
@@ -115,7 +116,8 @@ describe('npmAnalysis', () => {
                 licenses: -1,
                 numberOfCommits: -1,
                 numberOfLines: -1,
-                documentation: -1
+                documentation: -1,
+                pullRequests: -1
             }
         };
 
@@ -164,6 +166,7 @@ describe('npmAnalysis', () => {
                     numberOfLines: -1,
                     documentation: -1,
                     dependencies: -1,
+                    pullRequests: -1,
                 },
             };
     
