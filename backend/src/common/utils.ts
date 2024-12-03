@@ -74,6 +74,8 @@ export async function getScores(token: string, url: string): Promise<metricData>
       License: -1,
       License_Latency: -1,
       PullRequest: -1,
+      GoodPinningPractice: -1,
+      GoodPinningPractice_Latency: -1,
       PullRequest_Latency: -1
   };
     console.log('Error calculating score:', error);
