@@ -471,6 +471,9 @@ Resources:
             Path: /package/byRegEx
             Method: post
       Role: !GetAtt PackageByRegExRole.Arn
+      Environment:
+        Variables:
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
   GetTracks:
     Type: AWS::Serverless::Function

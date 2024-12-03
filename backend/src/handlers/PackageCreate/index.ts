@@ -80,7 +80,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             // Get the rating of the package
             const secret = await getSecret(secretsManagerClient, "GitHubToken");
             const token = JSON.parse(secret) as { GitHubToken: string };
+            
+            console.log('Getting scores for the package...');
             rating = await getScores(token.GitHubToken, requestBody.URL);
+            console.log('Rating:', rating);
 
             // If the rating is less than 0.5, do not upload the package
             if (rating.NetScore < 0.5) {
@@ -192,7 +195,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             body: JSON.stringify(responseBody),
         };
     } catch (error) {
-        console.error("Error during POST package:", error);
+        console.log("Error during POST package:", error);
         return createErrorResponse(500, `Failed to upload package. ${error}`);
     }
 };
