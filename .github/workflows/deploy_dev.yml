@@ -38,8 +38,8 @@ jobs:
 
       - name: Build
         working-directory: backend
-        run: docker run --rm -v \"$(pwd)/layers/dependencies/nodejs:/var/task\" node:18 bash -c \"cd /var/task && npm install --omit=dev\" && tsc --project tsconfig.handlers.json && tsc --project tsconfig.common.json && tsc --project tsconfig.rate.json && sam build --use-container
-        
+        run: npm run build:linux
+
       - name: Configure AWS Credentials for Development Account
         uses: aws-actions/configure-aws-credentials@v1.7.0
         with:
