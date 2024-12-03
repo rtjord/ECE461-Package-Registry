@@ -20,7 +20,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
     // Search over package names and readmes
-    const matches = await searchReadmes(getEnvVariable('DOMAIN_NAME'), 'readmes', RegEx);
+    const matches = await searchReadmes(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', RegEx);
 
     // If there are no matching packages, return a 404 response
     if (matches.length === 0) {
