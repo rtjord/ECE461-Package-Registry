@@ -175,6 +175,8 @@ export class metricCalc{
             License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3)),
             GoodPinningPractice: this.calculatePinnedDependencies(data),
             GoodPinningPractice_Latency: this.getPinnedDependenciesLatency(data.latency),
+            PullRequest: 0,
+            PullRequestLatency: 0
         };
     }
 }
