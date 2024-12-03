@@ -11,7 +11,7 @@
     "test": "npx jest --coverage --testPathIgnorePatterns='end_to_end'",
     "test:e2e": "npx jest --runInBand end_to_end",
     "lint": "npx eslint",
-    "layer-install-linux": "cd layers/dependencies/nodejs && npm install && npm install cd ../../..",
+    "layer-install-linux": "cd layers/dependencies/nodejs && npm install && cd ../../..",
     "build:linux": "npm run clean && npm run compile && npm run layer-install-linux && sam build --use-container"
   },
   "author": "",

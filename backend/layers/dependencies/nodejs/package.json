@@ -19,7 +19,6 @@
     "cd": "^0.3.3",
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.5",
-    "ece461-project-phase2": "file:../../..",
     "esbuild": "^0.24.0",
     "fs": "^0.0.1-security",
     "fs-extra": "^11.2.0",
