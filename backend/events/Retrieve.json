@@ -1,0 +1,22 @@
+{
+    "resource": "/package/{id}",
+    "path": "/package/underscore:1.0.0",
+    "httpMethod": "GET",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "pathParameters": {
+      "id": "underscore:1.0.0"
+    },
+    "requestContext": {
+      "authorizer": {
+        "claims": {
+          "name": "John Doe",
+          "isAdmin": true
+        }
+      }
+    },
+    "body": null,
+    "isBase64Encoded": false
+  }
+  

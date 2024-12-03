@@ -9,7 +9,7 @@ const fakeRepoData: repoData = {
     numberOfContributors: 400,
     numberOfOpenIssues: 10,
     numberOfClosedIssues: 20,
-    lastCommitDate: "Sat Dec 09 2023",
+    lastCommitDate: "Sat Mar 09 2024",
     licenses: [''],
     numberOfCommits: 1200,
     numberOfLines: 600,

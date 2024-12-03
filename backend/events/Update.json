@@ -1,0 +1,10 @@
+{
+    "pathParameters": {
+      "id": "Underscore:1.0.0"
+    },
+    "body": "{\n  \"metadata\": {\n    \"Name\": \"underscore\",\n    \"Version\": \"1.0.0\"\n  },\n  \"data\": {\n    \"Content\": \"UEsDBBQAAAAIAAeLbUst1IfSAgAAAAIAAAALABwAaW5kZXguanNVVAkAA2FkZGOWP6NpX3V4CwABBPUBAAAEFAAAAGlmIChwcm9jZXNzLmFyZ3YubGVuZ3RoID09PSA3KSB7XG4gICAgY29uc29sZS5sb2coJ1N1Y2Nlc3MnKTtcbiAgICBwcm9jZXNzLmV4aXQoMCk7XG59IGVsc2Uge1xuICAgIGNvbnNvbGUubG9nKCdGYWlsZWQnKTtcbiAgICBwcm9jZXNzLmV4aXQoMSk7XG59XG4=\",\n    \"URL\": null,\n    \"JSProgram\": \"if (process.argv.length === 7) { console.log('Success'); process.exit(0); } else { console.log('Failed'); process.exit(1); }\"\n  }\n}",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+  

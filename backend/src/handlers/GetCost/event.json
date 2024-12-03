@@ -1,9 +1,8 @@
 {
-    "pathParameters": {
-      "id": "test:1.0.0"
-    },
-    "queryStringParameters": {
-      "dependency": "false"
-    }
+  "pathParameters": {
+    "id": "AGjGiVFlgzT5KrO2p3gF"
+  },
+  "queryStringParameters": {
+    "dependency": "true"
   }
-  
+}

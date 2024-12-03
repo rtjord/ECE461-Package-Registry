@@ -109,6 +109,6 @@ describe('gitAnalysisClass', () => {
     it('should have a gitData with values', async () => {
         const result = await gitAnalysisInstance.runTasks(url);
         expect(result).not.toBe(fakeRepoData);
-    });
+    }, 10000);
 
 });

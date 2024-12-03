@@ -38,8 +38,8 @@ jobs:
 
       - name: Build
         working-directory: backend
-        run: npm run build && sam build --use-container
-        
+        run: npm run build:linux
+
       - name: Configure AWS Credentials for Development Account
         uses: aws-actions/configure-aws-credentials@v1.7.0
         with:

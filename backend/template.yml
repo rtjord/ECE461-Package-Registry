@@ -1,34 +1,157 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: AWS SAM template for Lambda functions and API Gateway
-
 
 Resources:
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Stage
-      # DefinitionBody: 
-      #   Fn::Transform:
-      #     Name: AWS::Include
-      #     Parameters:
-      #       Location: ./open_api/ece461-project-phase2-fall2024-updated.yaml
+      EndpointConfiguration: REGIONAL
+  
+  MyOpenSearchDomain:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      DomainName: package-readmes
+      EngineVersion: 'OpenSearch_2.17'
+      ClusterConfig:
+        InstanceType: t3.small.search
+        InstanceCount: 1
+      EBSOptions:
+        EBSEnabled: true
+        VolumeSize: 10 # Size in GiB
+        VolumeType: gp2
+      AccessPolicies:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt PackageCreateUpdateRole.Arn
+            Action: "es:*"
+            Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/package-readmes/*"
+      EncryptionAtRestOptions:
+        Enabled: true
+      NodeToNodeEncryptionOptions:
+        Enabled: true
 
-  PackageMetaDataTable:
+  CreateIndexRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
+  CreateIndex:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: ./dist/handlers/CreateIndex
+      Timeout: 120
+      Layers:
+        - !Ref DependenciesLayer
+      Role: !GetAtt CreateIndexRole.Arn
+      Environment:
+        Variables:
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+  
+  CreateIndexCustomResource:
+    Type: Custom::CreateIndex
+    Properties:
+      ServiceToken: !GetAtt CreateIndex.Arn
+
+  PackageCreateUpdateRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies: # Add custom inline policies
+        - PolicyName: AWSSecretsManagerGetSecretValuePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:GitHubToken-WoSvl2"
+        - PolicyName: OpenSearchAccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - es:ESHttpGet
+                  - es:ESHttpPost
+                  - es:ESHttpPut
+                Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/package-readmes/*"
+
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: DependenciesLayer
+      ContentUri: ./layers/dependencies
+      CompatibleRuntimes:
+        - nodejs18.x
+
+
+  PackageMetadataTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: "package-metadata"
+      TableName: PackageMetadata
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: packageName
+        - AttributeName: ID
           AttributeType: S
-        - AttributeName: version
+        - AttributeName: PackageName
+          AttributeType: S
+        - AttributeName: Version
           AttributeType: S
       KeySchema:
-        - AttributeName: packageName
-          KeyType: HASH
-        - AttributeName: version
-          KeyType: RANGE
+        - AttributeName: ID
+          KeyType: HASH # Partition Key
+      GlobalSecondaryIndexes:
+        - IndexName: PackageNameVersionIndex
+          KeySchema:
+            - AttributeName: PackageName
+              KeyType: HASH # Partition Key for the GSI
+            - AttributeName: Version
+              KeyType: RANGE # Sort Key for the GSI
+          Projection:
+            ProjectionType: ALL
+
+  PackageHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: PackageHistoryTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PackageName
+          AttributeType: S
+        - AttributeName: Date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PackageName
+          KeyType: HASH # Partition key
+        - AttributeName: Date
+          KeyType: RANGE # Sort key
 
   PackageBucket:
     Type: AWS::S3::Bucket
@@ -36,39 +159,136 @@ Resources:
       BucketName: !Sub "package-files-${Stage}"
       AccessControl: Private
 
+  PackagesList:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackagesList
+      MemorySize: 256
+      Timeout: 60
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /packages
+            Method: post
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetadataTable
+
+  RegistryResetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
+  RegistryReset:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/RegistryReset
+      MemorySize: 128
+      Timeout: 30
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /reset
+            Method: delete
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+      Role: !GetAtt RegistryResetRole.Arn
+
   PackageRetrieve:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: dist/handlers/PackageRetrieve   # Ensure this points only to the necessary code
+      CodeUri: dist/handlers/PackageRetrieve
       MemorySize: 128
       Timeout: 10
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            RestApiId: !Ref MyApi   # Reference the API defined above
+            RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: get
             RequestParameters:
               method.request.path.id: true
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetadataTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackageHistoryTable
+        - S3ReadPolicy:
+            BucketName: !Ref PackageBucket
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
 
-  PackageCreate:
+  PackageUpdate:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: dist/handlers/PackageCreate
+      CodeUri: dist/handlers/PackageUpdate
       MemorySize: 128
-      Timeout: 3
+      Timeout: 60
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
           Properties:
-            RestApiId: !Ref MyApi   # Reference the API defined above
-            Path: /package
+            RestApiId: !Ref MyApi
+            Path: /package/{id}
             Method: post
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+      Role: !GetAtt PackageCreateUpdateRole.Arn
+
+  PackageDeleteRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -78,6 +298,8 @@ Resources:
       CodeUri: dist/handlers/PackageDelete
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -85,22 +307,170 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}
             Method: delete
+      Role: !GetAtt PackageDeleteRole.Arn
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
-  PackageUpdate:
+
+  PackageCreate:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
-      CodeUri: dist/handlers/PackageUpdate
-      MemorySize: 128
-      Timeout: 3
+      CodeUri: dist/handlers/PackageCreate
+      MemorySize: 1024
+      Timeout: 120
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
           Properties:
             RestApiId: !Ref MyApi
-            Path: /package/{id}
+            Path: /package
+            Method: post
+      Role: !GetAtt PackageCreateUpdateRole.Arn
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub "package-files-${Stage}"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+
+  PackageRate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackageRate
+      MemorySize: 128
+      Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/{id}/rate
+            Method: get
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageMetadataTable
+
+  GetCostRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
+  GetCost:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/GetCost
+      MemorySize: 128
+      Timeout: 180
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/{id}/cost
+            Method: get
+      Role: !GetAtt GetCostRole.Arn
+      Environment:
+        Variables:
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+
+  CreateAuthToken:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/CreateAuthToken
+      MemorySize: 128
+      Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /authenticate
             Method: put
+
+  PackageByNameGet:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackageByNameGet
+      MemorySize: 128
+      Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/byName/{name}
+            Method: get
+            RequestParameters:
+              method.request.path.name: true
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PackageHistoryTable
+
+  PackageByRegExRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
+  PackageByRegEx:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackageByRegEx
+      MemorySize: 128
+      Timeout: 30
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /package/byRegEx
+            Method: post
+      Role: !GetAtt PackageByRegExRole.Arn
 
   GetTracks:
     Type: AWS::Serverless::Function
@@ -110,6 +480,8 @@ Resources:
       CodeUri: dist/handlers/GetTracks
       MemorySize: 128
       Timeout: 3
+      Layers:
+        - !Ref DependenciesLayer
       Events:
         ApiEvent:
           Type: Api
@@ -117,30 +489,14 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /tracks
             Method: get
-  
-  GetCost:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: index.handler
-      Runtime: nodejs18.x
-      CodeUri: dist/handlers/GetCost
-      MemorySize: 128
-      Timeout: 3
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            RestApiId: !Ref MyApi
-            Path: /package/{id}/cost
-            Method: get
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetaDataTable
 
 Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+  OpenSearchDomainEndpoint:
+    Description: "The endpoint of the OpenSearch domain"
+    Value: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
 Parameters:
   Stage:

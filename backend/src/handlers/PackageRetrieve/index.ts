@@ -1,101 +1,115 @@
+import { S3Client, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
+const { updatePackageHistory, getPackageById } = require(`${commonPath}/dynamodb`);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
 
-interface PathParameters {
-    id: string;
-}
+type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
+type Package = typeof interfaces.Package;
 
-interface Event {
-    pathParameters: PathParameters;
-    headers: { [key: string]: string };
-}
-
-export const handler = async (event: Event) => {
+ 
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        // Extract packageName and version from pathParameters (format: /package/{id})
-        const { id } = event.pathParameters;
+        // Initialize clients
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+        const s3Client = new S3Client({
+            region: 'us-east-2',
+            useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
+        });
 
-        // Split the id to extract packageName and version
-        const [packageName, version] = id.split(':');
-
-        // Validate the packageName and version
-        if (!packageName || !version) {
-            return {
-                statusCode: 400, // Bad Request
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: "Both packageName and version are required.",
-                }),
-            };
+        // Extract and validate the package ID
+        const id = event.pathParameters?.id;
+        if (!id) {
+            return createErrorResponse(400, "Missing ID in path parameters.");
         }
 
-        // Query DynamoDB using packageName (Partition Key) and version (Sort Key)
-        const dynamoDBParams = {
-            TableName: 'PackageMetaData',
-            Key: {
-                packageName: packageName,
-                version: version,
-            },
+        // Fetch package details from DynamoDB
+        const existingPackage: PackageTableRow | null = await getPackageById(dynamoDBClient, id);
+        if (!existingPackage) {
+            return createErrorResponse(404, 'Package not found.');
+        }
+
+        const { ID: packageId, PackageName: packageName, Version: version, s3Key: s3Key, URL: url } = existingPackage;
+        const bucketName = getEnvVariable('S3_BUCKET_NAME');
+
+        // Fetch S3 object content if S3 key exists
+        const s3Result = s3Key ? await getS3ObjectContent(s3Client, bucketName, s3Key) : { base64Content: null, fileUrl: null };
+        if (!s3Result.base64Content) {
+            return createErrorResponse(500, 'Failed to retrieve package content.');
+        }
+
+        const user: User = {
+            name: "ece30861defaultadminuser",
+            isAdmin: true,
         };
 
-        const result = await dynamoDBClient.send(new GetCommand(dynamoDBParams));
+        // Update package history in DynamoDB
+        await updatePackageHistory(
+            dynamoDBClient,
+            packageName,
+            version,
+            packageId,
+            user,
+            "DOWNLOAD"
+        );
 
-        // If the package is not found, return a 404 error
-        if (!result.Item) {
-            return {
-                statusCode: 404, // Not Found
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: `Package ${packageName} version ${version} not found.`,
-                }),
-            };
-        }
-
-        // Extract metadata and other relevant fields
-        const { s3Key, url } = result.Item;
-        const fileUrl = s3Key ? `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}` : null;
-
-        // Build the response body to match the YAML spec
-        const responseBody = {
+        // Prepare the response
+        const responseBody: Package = {
             metadata: {
                 Name: packageName,
                 Version: version,
-                ID: `${packageName}-${version}`,
+                ID: packageId,
             },
             data: {
-                Content: fileUrl,
-                URL: url || null,
+                Name: packageName,
+                Content: s3Result.base64Content,
+                URL: url,
+                JSProgram: existingPackage.JSProgram,
             },
         };
 
-        // Return the package metadata and content (or URL)
         return {
-            statusCode: 200, // OK
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-            },
+            statusCode: 200,
+            headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
             body: JSON.stringify(responseBody),
         };
-    } catch (error: unknown) {
-        return {
-            statusCode: 500, // Internal Server Error
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                message: "Failed to retrieve package.",
-                error: (error instanceof Error) ? error.message : 'Unknown error',
-            }),
-        };
+    } catch (error) {
+        console.error('Error processing request:', error);
+        return createErrorResponse(500, 'Failed to retrieve package.');
     }
 };
+
+
+// Fetch S3 object content
+async function getS3ObjectContent(
+    s3Client: S3Client,
+    bucketName: string,
+    key: string
+): Promise<{ base64Content: string | null; fileUrl: string | null }> {
+    try {
+        const s3Object: GetObjectCommandOutput = await s3Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
+        const fileUrl = `https://${bucketName}.s3.amazonaws.com/${key}`;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (s3Object.Body && typeof (s3Object.Body as any)[Symbol.asyncIterator] === 'function') {
+            const chunks: Uint8Array[] = [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            for await (const chunk of s3Object.Body as any) {
+                chunks.push(chunk);
+            }
+            const fileBuffer = Buffer.concat(chunks);
+            return { base64Content: fileBuffer.toString('base64'), fileUrl };
+        }
+
+        return { base64Content: null, fileUrl };
+    } catch (error) {
+        console.error('Error fetching S3 object:', error);
+        return { base64Content: null, fileUrl: null };
+    }
+}

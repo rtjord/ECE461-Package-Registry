@@ -13,7 +13,7 @@ export class npmAnalysis {
         this.logger = new logger(envVars);
     }
 
-    async cloneRepo(url: string, dir: string): Promise<void> {
+    async cloneRepo(url: string, dir: string, version: string): Promise<void> {
         try {
             try {
                 await fs.access(dir);
@@ -30,6 +30,8 @@ export class npmAnalysis {
                 dir,
                 url,
                 singleBranch: true,
+                depth: 1,
+                ...(version && { ref: version }) // Specify the version or branch to clone
             });
             this.logger.logInfo(`Repository ${url} cloned in directory ${dir}.`);
         } catch {
@@ -110,7 +112,7 @@ export class npmAnalysis {
     }
     
     // Main function to run the tasks in order
-    async runTasks(url: string, dest: number): Promise<npmData> {
+    async runTasks(url: string, dest: number, version: string): Promise<npmData> {
         const repoDir = './dist/repoDir'+dest.toString();
         this.logger.logDebug(`Running npm tasks in ${repoDir}...`);
         const npmData: npmData = {
@@ -134,7 +136,7 @@ export class npmAnalysis {
             }
         };
 
-        await this.cloneRepo(url, repoDir);
+        await this.cloneRepo(url, repoDir, version);
         [ npmData.latency.lastCommitDate,
           npmData.latency.documentation
         ] = await Promise.all([
@@ -308,7 +310,7 @@ export class gitAnalysis {
                 // Update count and check for more pages
                 contributorsCount += response.data.length;
                 const linkHeader = response.headers['link'];
-                hasMorePages = linkHeader && linkHeader.includes('rel="next"');
+                hasMorePages = typeof linkHeader === 'string' && linkHeader.includes('rel="next"');
                 page++;
             }
     

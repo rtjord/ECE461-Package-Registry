@@ -1,12 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+const path = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse } = require(`${path}/utils`);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    // Assuming the data is retrieved from some service or database
     const plannedTracks: string[] = ["ML inside track"];
-
-    // Return a successful response
     return {
       statusCode: 200,
       headers: {
@@ -14,18 +13,8 @@ export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayP
       },
       body: JSON.stringify({ plannedTracks })
     };
-  } catch (error: unknown) {
-    // Return an error response if something goes wrong
-    return {
-      statusCode: 500,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: "The system encountered an error while retrieving the student's track information.",
-        error: (error instanceof Error) ? error.message : 'Unknown error',
-      })
-    };
+  } catch {
+    return createErrorResponse(500, "The system encountered an error while retrieving the student's track information.");
   }
 };
 

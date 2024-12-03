@@ -1,156 +1,204 @@
-import { S3 } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
-const s3 = new S3();
-const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
+const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
+const { createErrorResponse, generatePackageID, getSecret, getScores, getEnvVariable, extractFieldFromPackageJson, getRepoUrl } = require(`${commonPath}/utils`);
+const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
+const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
+const { uploadToS3 } = require(`${commonPath}/s3`);
+const { uploadToOpenSearch } = require(`${commonPath}/opensearch`);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const interfaces = require(`${commonPath}/interfaces`);
+type PackageData = typeof interfaces.PackageData;
+type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
+type Package = typeof interfaces.Package;
+type PackageMetadata = typeof interfaces.PackageMetadata;
+type PackageRating = typeof interfaces.PackageRating;
+
+
+// Main Lambda handler function
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        // Parse the request body
-        const requestBody = JSON.parse(event.body || '{}');
+        // Initialize the AWS clients
+        const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient({ 
+            region: 'us-east-2',
+        }));
+        const s3Client = new S3Client({
+            region: 'us-east-2',
+        });
+        const secretsManagerClient = new SecretsManagerClient({
+            region: "us-east-2",
+        });
 
-        // Extract metadata and data from request body
-        const { metadata, data } = requestBody;
-
-        // Validate required fields
-        if (!metadata || !metadata.Name || !metadata.Version || !data) {
-            return {
-                statusCode: 400, // Bad Request
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: 'Missing required fields in the request body: metadata and data.',
-                }),
-            };
+        // Ensure the request body is present
+        if (!event.body) {
+            console.error('Request body is missing.');
+            return createErrorResponse(400, 'Request body is missing.');
         }
 
-        const packageName: string = metadata.Name;
-        const version: string = metadata.Version;
+        // The request body should be a PackageData object
+        const requestBody: PackageData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
-        // Ensure either Content or URL is provided, but not both
-        if (!data.Content && !data.URL) {
-            return {
-                statusCode: 400,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: 'Either Content or URL must be provided.',
-                }),
-            };
+        // Validate that exactly one of Content or URL is provided
+        if ((!requestBody.Content && !requestBody.URL) || (requestBody.Content && requestBody.URL)) {
+            console.error('Exactly one of Content or URL must be provided.');
+            return createErrorResponse(400, 'Exactly one of Content or URL must be provided.');
         }
 
-        if (data.Content && data.URL) {
-            return {
-                statusCode: 400, // Bad Request
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: 'Both Content and URL cannot be provided at the same time.',
-                }),
-            };
+        // Get the package name
+        const packageName = requestBody.Name;
+
+        // If the package name is missing, we cannot check whether the package already exists
+        // so we must return an error
+        if (!packageName) {
+            console.error('Package name is missing.');
+            return createErrorResponse(400, 'Package name is missing.');
         }
 
-        // Check if the package already exists
-        const getParams = {
-            TableName: 'PackageMetaData',
-            Key: {
-                packageName: packageName,
-                version: version,
-            },
-        };
-        const existingPackage = await dynamoDBClient.send(new GetCommand(getParams));
-
-        if (existingPackage.Item) {
-            return {
-                statusCode: 409, // Conflict
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: 'Package already exists.',
-                }),
-            };
+        // Check if any packages with the same name already exist
+        const existingPackages: PackageMetadata[] = await getPackageByName(dynamoDBClient, packageName);
+        if (existingPackages.length > 0) {
+            return createErrorResponse(409, 'Package already exists.');
         }
 
-        // Upload content to S3 if provided, otherwise use the URL
-        let s3Key: string | null = null;
-        let fileUrl: string | null = null;
+        // Initialize package version
+        let version = null;
+        
+        let packageContent: Buffer;
+        let rating: PackageRating | null = null;
 
-        if (data.Content) {
-            const fileContent = Buffer.from(data.Content, 'base64');
-            s3Key = `uploads/${packageName}-${version}.zip`;
-            const s3Params = {
-                Bucket: process.env.S3_BUCKET_NAME!,
-                Key: s3Key,
-                Body: fileContent,
-                ContentType: 'application/zip',
-            };
-            await s3.putObject(s3Params);
-            fileUrl = `https://${s3Params.Bucket}.s3.amazonaws.com/${s3Params.Key}`;
-        } else if (data.URL) {
-            fileUrl = data.URL;
+        // If Content is provided, use it directly
+        if (requestBody.Content) {
+            // Convert base64-encoded content to a Buffer
+            packageContent = Buffer.from(requestBody.Content, 'base64');
+        } else if (requestBody.URL) { // If URL is provided
+            // Get the rating of the package
+            const secret = await getSecret(secretsManagerClient, "GitHubToken");
+            const token = JSON.parse(secret) as { GitHubToken: string };
+            rating = await getScores(token.GitHubToken, requestBody.URL);
+
+            // If the rating is less than 0.5, do not upload the package
+            if (rating.NetScore < 0.5) {
+                console.log('In the future, Package should not be uploaded due to the disqualified rating.');
+                // return createErrorResponse(424, 'Package is not uploaded due to the disqualified rating.');
+            }
+            
+            // Extract the version from the NPM url, if present
+            const urlVersion: string = extractVersionFromNpmUrl(requestBody.URL);
+            
+            // Fetch the GitHub repository URL from the NPM package url
+            const repoUrl = await getRepoUrl(requestBody.URL);
+            if (!repoUrl) {
+                return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
+            }
+            // Clone the GitHub repository with the correct version and zip it
+            packageContent = await cloneAndZipRepository(repoUrl, urlVersion);
+            if (urlVersion) {
+                version = urlVersion;
+            }
+        } else {
+            return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
 
-        // Store metadata in DynamoDB
-        const dynamoDBParams = {
-            TableName: 'PackageMetaData',
-            Item: {
-                packageName: packageName,
-                version: version,
-                id: `${packageName}-${version}`,  // Use packageName and version to generate ID
-                uploadDate: Date.now(),
-                s3Key: s3Key ? s3Key : null,
-                url: data.URL ? data.URL : null,
-                dependencies: [],  // Placeholder for future use
-                busFactor: null,   // Placeholder for future use
-            },
+        // From this point on, the package content is available in the packageContent variable
+        // Extract package.json and README.md from the zip file
+        const packageJson = await extractPackageJsonFromZip(packageContent);
+        const readme = await extractReadmeFromZip(packageContent);
+
+        // If the version is not provided, try to extract it from package.json
+        if (!version && packageJson) {
+            version = extractFieldFromPackageJson(packageJson, 'version');
+        }
+
+        // If the version is still not provided, default to 1.0.0
+        version = version || '1.0.0';
+
+        // Generate a unique ID for the package
+        const packageId = generatePackageID(packageName, version);
+
+        const metadata: PackageMetadata = {
+            Name: packageName,
+            Version: version,
+            ID: packageId,
         };
 
-        await dynamoDBClient.send(new PutCommand(dynamoDBParams));
+        if (readme){
+            // upload readme to opensearch
+            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, metadata);
+        }
 
-        // Return success with the package metadata and file URL or URL
+        if (packageJson) {
+            // upload package.json to opensearch
+            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', JSON.stringify(packageJson), metadata);
+        }
+
+        if (requestBody.debloat) {
+            // Debloat the package content
+            packageContent = await debloatPackage(packageContent);
+        }
+        // Upload the package zip to S3
+        const s3Key = await uploadToS3(s3Client, packageContent, packageName, version);
+        
+        const standaloneCost = packageContent.length / (1024 * 1024);
+        // const dependenciesCost = await calculateDependenciesCost(packageJson);
+        // const totalCost = standaloneCost + dependenciesCost;
+
+        // Save the package metadata to DynamoDB
+        const row: PackageTableRow = {
+            ID: packageId,
+            PackageName: packageName,
+            Version: version,
+            URL: requestBody.URL,
+            s3Key: s3Key,
+            JSProgram: requestBody.JSProgram,
+            standaloneCost: standaloneCost,
+            // totalCost: totalCost,
+            ...(rating && { Rating: rating }),
+        };
+        await uploadPackageMetadata(dynamoDBClient, row);
+
+        // Log the package creation in the package history
+        const user: User = {
+            name: "ece30861defaultadminuser",
+            isAdmin: true,
+        };
+
+        await updatePackageHistory(dynamoDBClient, packageName, version, packageId, user, "CREATE");
+
+        const responseBody: Package = {
+            metadata: {
+                Name: packageName,
+                Version: version,
+                ID: packageId,
+            },
+            data: {
+                Name: packageName,
+                Content: packageContent.toString('base64'),
+                URL: requestBody.URL,
+                JSProgram: requestBody.JSProgram,
+            },
+        };
         return {
-            statusCode: 201, // Created
+            statusCode: 201,
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: 'Package uploaded and metadata stored successfully.',
-                metadata: {
-                    Name: packageName,
-                    Version: version,
-                    ID: `${packageName}-${version}`,
-                },
-                data: {
-                    Content: fileUrl,
-                },
-            }),
+            body: JSON.stringify(responseBody),
         };
-
-    } catch (error: unknown) {
-        // Handle any errors during the process
+    } catch (error) {
         console.error("Error during POST package:", error);
-
-        return {
-            statusCode: 500, // Internal Server Error
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                message: 'Failed to upload package.',
-                error: (error instanceof Error) ? error.message : 'Unknown error',
-            }),
-        };
+        return createErrorResponse(500, `Failed to upload package. ${error}`);
     }
 };
+
+function extractVersionFromNpmUrl(url: string): string {
+    const regex = /https:\/\/www\.npmjs\.com\/package\/([^/]+)(?:\/v\/([\d.]+))?/;
+    const match = url.match(regex);
+    return match ? match[2] : '';
+}
