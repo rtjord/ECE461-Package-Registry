@@ -55,7 +55,7 @@ describe("E2E Test for Packages List Endpoint", () => {
         const response = await axios.post(`${baseUrl}/packages`, requestBody);
         const offset: EnumerateOffset = response.headers.offset;
         const packages: PackageMetadata[] = response.data;
-
+        console.log(packages);
         expect(response.status).toBe(200);
         expect(packages).not.toBeNull();
         expect(packages.length).toBe(ids.length);

@@ -4,7 +4,7 @@ import aws4 from 'aws4';
 import axios from 'axios';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse } = require(`${commonPath}/utils`);
+const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageMetadata = typeof interfaces.PackageMetadata;
@@ -20,7 +20,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
     const RegEx = parsedBody.RegEx; // Extract the RegEx field from the request body
     // Search over package names and readmes
-    const matches = await searchReadmes('https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com', 'readmes', RegEx);
+    const matches = await searchReadmes(getEnvVariable('DOMAIN_NAME'), 'readmes', RegEx);
 
     // If there are no matching packages, return a 404 response
     if (matches.length === 0) {

@@ -83,25 +83,8 @@ Resources:
       ManagedPolicyArns: # Attach AWS Managed Policies
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
-      Policies: # Add custom inline policies
-        - PolicyName: AWSSecretsManagerGetSecretValuePolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - secretsmanager:GetSecretValue
-                Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:GitHubToken-WoSvl2"
-        - PolicyName: OpenSearchAccessPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - es:ESHttpGet
-                  - es:ESHttpPost
-                  - es:ESHttpPut
-                Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/package-readmes/*"
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
 
   DependenciesLayer:
     Type: AWS::Serverless::LayerVersion
@@ -471,6 +454,9 @@ Resources:
             Path: /package/byRegEx
             Method: post
       Role: !GetAtt PackageByRegExRole.Arn
+      Environment:
+        Variables:
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
   GetTracks:
     Type: AWS::Serverless::Function
