@@ -23,26 +23,26 @@ export async function getPackageById(dynamoDBClient: DynamoDBDocumentClient, pac
 export async function getPackageByName(dynamoDBClient: DynamoDBDocumentClient, name: string): Promise<PackageMetadata[]> {
     const tableName = "PackageMetadata";
     const indexName = "PackageNameVersionIndex";
-  
+
     try {
-      const result = await dynamoDBClient.send(
-        new QueryCommand({
-          TableName: tableName,
-          IndexName: indexName,
-          KeyConditionExpression: "PackageName = :packageName",
-          ExpressionAttributeValues: {
-            ":packageName": name,
-          },
-        })
-      );
-  
-      // If no items are found, return an empty array
-      return result.Items as PackageMetadata[] || [];
+        const result = await dynamoDBClient.send(
+            new QueryCommand({
+                TableName: tableName,
+                IndexName: indexName,
+                KeyConditionExpression: "PackageName = :packageName",
+                ExpressionAttributeValues: {
+                    ":packageName": name,
+                },
+            })
+        );
+
+        // If no items are found, return an empty array
+        return result.Items as PackageMetadata[] || [];
     } catch (error) {
-      console.error("Error querying the DynamoDB table:", error);
-      throw new Error("Failed to retrieve packages.");
+        console.error("Error querying the DynamoDB table:", error);
+        throw new Error("Failed to retrieve packages.");
     }
-  }
+}
 
 export async function getPackageHistory(dynamoDBClient: DynamoDBDocumentClient, packageName: string): Promise<PackageHistoryEntry[]> {
     const params = {

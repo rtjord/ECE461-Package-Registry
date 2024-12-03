@@ -27,7 +27,7 @@ describe('urlAnalysis', () => {
         it('should return the cleaned GitHub URL if it matches the pattern', async () => {
             const url = 'https://github.com/expressjs/express';
             const result = await analysis.evalUrl(url);
-            expect(result).toEqual([0, 'https://github.com/expressjs/express']);
+            expect(result).toEqual([0, 'https://github.com/expressjs/express', '']);
         });
 
         it('should call getRepositoryUrl if it matches the npm pattern', async () => {
@@ -36,14 +36,14 @@ describe('urlAnalysis', () => {
             jest.spyOn(analysis, 'getRepositoryUrl').mockResolvedValue(mockRepoUrl);
 
             const result = await analysis.evalUrl(url);
-            expect(result).toEqual([0, mockRepoUrl]);
+            expect(result).toEqual([0, mockRepoUrl, '']);
             expect(analysis.getRepositoryUrl).toHaveBeenCalledWith(url);
         });
 
         it('should return -1 and an empty string if the URL does not match any pattern', async () => {
             const url = 'https://example.com/invalid-url';
             const result = await analysis.evalUrl(url);
-            expect(result).toEqual([-1, '']);
+            expect(result).toEqual([-1, '', '']);
         });
 
         it('should return -1 and an empty string if getRepositoryUrl fails', async () => {
@@ -51,7 +51,7 @@ describe('urlAnalysis', () => {
             jest.spyOn(analysis, 'getRepositoryUrl').mockRejectedValue(new Error('Error fetching repository URL'));
 
             const result = await analysis.evalUrl(url);
-            expect(result).toEqual([-1, '']);
+            expect(result).toEqual([-1, '', '']);
             expect(mockLogger.logDebug).toHaveBeenCalledWith('Error fetching repository URL:', expect.any(Error));
         });
     });

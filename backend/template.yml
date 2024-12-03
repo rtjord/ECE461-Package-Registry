@@ -61,7 +61,7 @@ Resources:
       Role: !GetAtt CreateIndexRole.Arn
       Environment:
         Variables:
-          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
   
   CreateIndexCustomResource:
     Type: Custom::CreateIndex
@@ -109,9 +109,6 @@ Resources:
       LayerName: DependenciesLayer
       ContentUri: ./layers/dependencies
       CompatibleRuntimes:
-        - nodejs14.x
-        - nodejs12.x
-        - nodejs10.x
         - nodejs18.x
 
 
@@ -220,7 +217,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
-          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
       Role: !GetAtt RegistryResetRole.Arn
 
   PackageRetrieve:
@@ -273,7 +270,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
-          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
       Role: !GetAtt PackageCreateUpdateRole.Arn
 
   PackageDeleteRole:
@@ -314,7 +311,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
-          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
 
   PackageCreate:
@@ -338,7 +335,7 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
-          DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
   PackageRate:
     Type: AWS::Serverless::Function
@@ -361,6 +358,22 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetadataTable
 
+  GetCostRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
   GetCost:
     Type: AWS::Serverless::Function
     Properties:
@@ -368,7 +381,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/GetCost
       MemorySize: 128
-      Timeout: 3
+      Timeout: 180
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -378,9 +391,10 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}/cost
             Method: get
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetadataTable
+      Role: !GetAtt GetCostRole.Arn
+      Environment:
+        Variables:
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
   CreateAuthToken:
     Type: AWS::Serverless::Function
@@ -480,6 +494,9 @@ Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+  OpenSearchDomainEndpoint:
+    Description: "The endpoint of the OpenSearch domain"
+    Value: !GetAtt MyOpenSearchDomain.DomainEndpoint
 
 Parameters:
   Stage:

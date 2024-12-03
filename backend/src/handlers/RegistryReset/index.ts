@@ -13,11 +13,9 @@ import {
     ScanCommandOutput,
 } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import aws4 from "aws4";
-import axios from "axios";
-import { defaultProvider } from "@aws-sdk/credential-provider-node";
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
+const { clearDomain, createIndex } = require(`${commonPath}/opensearch`);
 
 // Lambda handler
 export const handler: APIGatewayProxyHandler = async () => {
@@ -33,6 +31,7 @@ export const handler: APIGatewayProxyHandler = async () => {
         const table1 = "PackageMetadata"; // Table with ID as primary key
         const table2 = "PackageHistoryTable"; // Table with partition and sort keys
         const bucket = getEnvVariable("S3_BUCKET_NAME");
+        const domain = getEnvVariable("DOMAIN_ENDPOINT");
 
         // Perform all operations concurrently
         await Promise.all([
@@ -42,10 +41,15 @@ export const handler: APIGatewayProxyHandler = async () => {
                 Date: item.Date,
             })),
             emptyS3Bucket(s3Client, bucket),
-            clearIndex(getEnvVariable("DOMAIN_ENDPOINT"), "readmes"),
+            await clearDomain(domain),
         ]);
 
         console.log("All resources cleared successfully.");
+
+        await createIndex(domain, "readmes");
+        await createIndex(domain, "packagejsons");
+        console.log("Indices created successfully.");
+
         return {
             statusCode: 200,
             body: JSON.stringify({ message: "Tables and bucket cleared successfully." }),
@@ -131,39 +135,4 @@ async function emptyS3Bucket(
     } while (continuationToken);
 
     console.log(`Bucket ${bucketName} emptied successfully.`);
-}
-
-async function clearIndex(domainEndpoint: string, indexName: string) {
-    const credentials = await defaultProvider()();
-
-    // Construct the delete-by-query request
-    const request = {
-        host: domainEndpoint.replace(/^https?:\/\//, ""),
-        path: `/${indexName}/_delete_by_query`,
-        service: "es",
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            query: {
-                match_all: {} // Match all documents for deletion
-            }
-        }),
-    };
-
-    aws4.sign(request, credentials);
-
-    console.log(`Clearing all documents from index: ${indexName}`);
-    try {
-        const response = await axios({
-            method: request.method,
-            url: `https://${request.host}${request.path}`,
-            headers: request.headers,
-            data: request.body,
-        });
-        console.log(`All documents cleared from index '${indexName}':`, response.data);
-    } catch (error) {
-        console.error(`Error clearing index '${indexName}':`, error);
-    }
 }

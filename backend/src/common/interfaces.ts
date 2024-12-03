@@ -90,5 +90,6 @@ export interface PackageTableRow {
     URL?: string; // Package URL
     s3Key?: string; // S3 key for package
     JSProgram?: string; // JavaScript program for sensitive modules
-    standaloneCost: number; // Standalone cost, excluding dependencies
+    standaloneCost?: number; // Standalone cost, excluding dependencies
+    totalCost?: number; // Total cost including dependencies if applicable
 }

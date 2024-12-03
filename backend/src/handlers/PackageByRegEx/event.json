@@ -1,5 +1,5 @@
 {
-  "body": "{\"RegEx\": \".*without.*\"}",
+  "body": "{\"RegEx\": \".*test-package.*\"}",
   "httpMethod": "POST",
   "headers": {
     "Content-Type": "application/json"
