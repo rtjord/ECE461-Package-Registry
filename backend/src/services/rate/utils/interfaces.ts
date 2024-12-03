@@ -65,4 +65,6 @@ export interface metricData{
     NetScore_Latency: number;
     GoodPinningPractice: number;
     GoodPinningPractice_Latency: number;
+    PullRequest: number;
+    PullRequest_Latency: number;
 }
