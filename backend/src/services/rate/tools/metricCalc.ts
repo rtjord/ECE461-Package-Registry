@@ -176,7 +176,7 @@ export class metricCalc{
             GoodPinningPractice: this.calculatePinnedDependencies(data),
             GoodPinningPractice_Latency: this.getPinnedDependenciesLatency(data.latency),
             PullRequest: 0,
-            PullRequestLatency: 0
+            PullRequest_Latency: 0
         };
     }
 }
