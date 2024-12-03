@@ -281,6 +281,6 @@ describe('metricCalcClass', () => {
         expect(result).toHaveProperty('RampUp');
         expect(result).toHaveProperty('ResponsiveMaintainer');
         expect(result).toHaveProperty('License');
-        expect(result).toHaveProperty('PinnedDependencies');
+        expect(result).toHaveProperty('GoodPinningPractice');
     });
 });
