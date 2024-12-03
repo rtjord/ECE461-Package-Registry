@@ -120,7 +120,7 @@ export async function calculateCost(packageJsonContent: string): Promise<number>
         // Step 5: Calculate the size of the zipped node_modules
         const zippedSize = zipBuffer.length / (1024 * 1024); // Convert to MB
 
-        console.log(`Size of zipped node_modules: ${zippedSize.toFixed(2)} MB`);
+        console.log(`Size of zipped node_modules: ${zippedSize.toFixed(5)} MB`);
         return zippedSize;
     } catch (error) {
         console.error("Error while calculating size:", error);
@@ -177,15 +177,15 @@ export async function calculatePackageCosts(
         const packageJsonList = await getPackageJsonFilesFromNodeModules(nodeModulesPath);
 
         // Assume each dependency is an npm package and calculate the cost
-        for (const file of packageJsonList) {
-            await calculateNpmPackageCosts(file, packageCostMap, 1);
-        }
+        // for (const file of packageJsonList) {
+        //     await calculateNpmPackageCosts(file, packageCostMap, 1);
+        // }
         // console.log(packageJsonList);
-        // await Promise.all(
-        //     packageJsonList.map(file => 
-        //         calculateNpmPackageCosts(file, packageCostMap, 1)
-        //     )
-        // );
+        await Promise.all(
+            packageJsonList.map(file => 
+                calculateNpmPackageCosts(file, packageCostMap, 1)
+            )
+        );
 
         return packageCostMap;
     } catch (error) {
@@ -233,7 +233,7 @@ export async function calculateNpmPackageCosts(
         const dependenciesCost = await calculateCost(packageJsonContent);
 
         // Step 3: Calculate standalone cost
-        const standaloneCost = totalCost - dependenciesCost;
+        const standaloneCost = Math.max(0, totalCost - dependenciesCost);
 
         console.log(`Standalone cost for ${name}@${version}: ${standaloneCost.toFixed(5)} MB`);
         console.log(`Total cost for ${name}@${version}: ${totalCost.toFixed(5)} MB`);
