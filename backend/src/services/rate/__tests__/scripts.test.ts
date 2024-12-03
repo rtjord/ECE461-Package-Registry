@@ -4,7 +4,7 @@ import { envVars } from '../utils/interfaces';
 import { getEnvVars } from '../tools/getEnvVars';
 
 // Mock Data for Testing
-const url = "https://github.com/phillips302/ECE461";
+const url = "https://github.com/axios/axios";
 
 const fakeRepoData: repoData = {
     repoName: '',
@@ -17,11 +17,21 @@ const fakeRepoData: repoData = {
     licenses: [],
     numberOfCommits: -1,
     numberOfLines: -1,
+    pullRequestMetrics: {
+        totalAdditions: 0,
+        reviewedAdditions: 0,
+        reviewedFraction: 0
+    },
     documentation: {
         hasReadme: false,
         numLines: -1,
         hasExamples: false,
-        hasDocumentation: false
+        hasDocumentation: false,
+        dependencies: {
+            total: -1,
+            fractionPinned: -1,
+            pinned: -1
+        }
     },
     latency: {
         contributors: -1,
@@ -31,7 +41,8 @@ const fakeRepoData: repoData = {
         licenses: -1,
         numberOfCommits: -1,
         numberOfLines: -1,
-        documentation: -1
+        documentation: -1,
+        pullRequests: -1
     }
 };
 
@@ -46,11 +57,17 @@ const fakeWrongRepoData: repoData = {
     licenses: [],
     numberOfCommits: -1,
     numberOfLines: -1,
+    pullRequestMetrics: undefined,
     documentation: {
         hasReadme: false,
         numLines: -1,
         hasExamples: false,
-        hasDocumentation: false
+        hasDocumentation: false,
+        dependencies: {
+            total: 0,
+            fractionPinned: 1.0,
+            pinned: 0
+        }
     },
     latency: {
         contributors: -1,
@@ -60,7 +77,8 @@ const fakeWrongRepoData: repoData = {
         licenses: -1,
         numberOfCommits: -1,
         numberOfLines: -1,
-        documentation: -1
+        documentation: -1,
+        pullRequests: -1
     }
 };
 
@@ -76,12 +94,22 @@ describe('runAnalysisClass', () => {
     // Test run analysis with good url
     it('should have a valid token', async () => {
         const result = await runAnalysisInstance.runAnalysis([url]);
-        expect(result).not.toBe([fakeRepoData]);
-    }, 15000);
+        expect(result).not.toEqual([fakeRepoData]);
+    }, 50000);
 
     // Test run analysis with bad url
-    it('should have a valid token', async () => {
+    it('have a valid token', async () => {
         const result = await runAnalysisInstance.runAnalysis(["https://pypi.org/"]);
         expect(result).toStrictEqual([fakeWrongRepoData]);
     });
+
+    it('should include dependency analysis results in the documentation field', async () => {
+        const result = await runAnalysisInstance.runAnalysis([url]);
+        console.log('Full result:', JSON.stringify(result, null, 2));
+        console.log('Documentation object:', result[0]?.documentation);
+        console.log('Dependencies:', result[0]?.documentation?.dependencies);
+        
+        expect(result[0].documentation.dependencies).toBeDefined();
+        expect(result[0].documentation.dependencies).toHaveProperty('fractionPinned');
+    }, 50000);
 });

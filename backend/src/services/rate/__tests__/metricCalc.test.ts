@@ -9,10 +9,15 @@ const fakeRepoData: repoData = {
     numberOfContributors: 400,
     numberOfOpenIssues: 10,
     numberOfClosedIssues: 20,
-    lastCommitDate: "Sat Mar 09 2024",
+    lastCommitDate: "Sat Nov 09 2024",
     licenses: [''],
     numberOfCommits: 1200,
     numberOfLines: 600,
+    pullRequestMetrics: {
+        totalAdditions: 1000,
+        reviewedAdditions: 800,
+        reviewedFraction: 0.8
+    },
     documentation: {
         hasReadme: true,
         numLines: 1000,
@@ -27,7 +32,8 @@ const fakeRepoData: repoData = {
         licenses: 0,
         numberOfCommits: 0,
         numberOfLines: 0,
-        documentation: 0
+        documentation: 0,
+        pullRequests: 0
     }
 };
 
@@ -43,6 +49,7 @@ const invalidData: repoData = {
     licenses: [''],
     numberOfCommits: -1,
     numberOfLines: -1,
+    pullRequestMetrics: undefined,
     documentation: {
         hasReadme: false,
         numLines: -1,
@@ -57,7 +64,8 @@ const invalidData: repoData = {
         licenses: -1,
         numberOfCommits: -1,
         numberOfLines: -1,
-        documentation: -1
+        documentation: -1,
+        pullRequests: -1
     }
 };
 
@@ -241,8 +249,89 @@ describe('metricCalcClass', () => {
         expect(netScore).toEqual(0);
     });
 
+    describe('calculatePinnedDependencies', () => {
+        it('should return 1.0 for a repo with no dependencies', () => {
+            fakeRepoData.dependencies = [];
+            const pinnedDependencies = metricClass.calculatePinnedDependencies(fakeRepoData);
+            expect(pinnedDependencies).toEqual(1.0);
+        });
+    
+        it('should calculate the fraction of pinned dependencies correctly', () => {
+            fakeRepoData.dependencies = [
+                { name: 'dep1', version: '1.0.0' },
+                { name: 'dep2', version: '2.3.x' },
+                { name: 'dep3', version: '^1.2.3' },
+            ];
+            const pinnedDependencies = metricClass.calculatePinnedDependencies(fakeRepoData);
+            expect(pinnedDependencies).toEqual(0.667);
+        });
+    
+        it('should return 0 for invalid dependencies', () => {
+            fakeRepoData.dependencies = undefined;
+            const pinnedDependencies = metricClass.calculatePinnedDependencies(fakeRepoData);
+            expect(pinnedDependencies).toEqual(0);
+        });
+    });
+
+    describe('Pull Request Metrics', () => {
+        beforeEach(() => {
+            // Reset fakeRepoData for each test
+            fakeRepoData.pullRequestMetrics = {
+                totalAdditions: 1000,
+                reviewedAdditions: 800,
+                reviewedFraction: 0.8
+            };
+        });
+    
+        it('should calculate PR score correctly with valid metrics', () => {
+            const prScore = metricClass.calculatePullRequestScore(fakeRepoData);
+            expect(prScore).toEqual(0.8);
+        });
+    
+        it('should return 0 for undefined PR metrics', () => {
+            fakeRepoData.pullRequestMetrics = undefined;
+            const prScore = metricClass.calculatePullRequestScore(fakeRepoData);
+            expect(prScore).toEqual(0);
+        });
+    
+        it('should return 0 for zero total additions', () => {
+            fakeRepoData.pullRequestMetrics = {
+                totalAdditions: 0,
+                reviewedAdditions: 0,
+                reviewedFraction: 0
+            };
+            const prScore = metricClass.calculatePullRequestScore(fakeRepoData);
+            expect(prScore).toEqual(0);
+        });
+    
+        it('should return correct latency value', () => {
+            fakeRepoData.latency.pullRequests = 2000; // 2 seconds in milliseconds
+            const latency = metricClass.getPullRequestLatency(fakeRepoData.latency);
+            expect(latency).toEqual(2.0);
+        });
+    
+        it('should include PR score in net score calculation', () => {
+            // Set up a scenario where we know the expected output
+            fakeRepoData.licenses = ['MIT'];
+            fakeRepoData.pullRequestMetrics = {
+                totalAdditions: 1000,
+                reviewedAdditions: 1000,
+                reviewedFraction: 1.0
+            };
+            
+            const netScore = metricClass.calculateNetScore(fakeRepoData);
+            expect(netScore).toBeGreaterThan(0);
+            expect(netScore).toBeLessThanOrEqual(1);
+        });
+    });
+
     // Test the overall getValue function
     it('Return correct values from getValue method', () => {
+        fakeRepoData.dependencies = [
+            { name: 'dep1', version: '1.0.0' },
+            { name: 'dep2', version: '2.3.x' },
+        ];
+    
         const result = metricClass.getValue(fakeRepoData);
         expect(result).toHaveProperty('URL', fakeRepoData.repoUrl);
         expect(result).toHaveProperty('NetScore');
@@ -251,5 +340,6 @@ describe('metricCalcClass', () => {
         expect(result).toHaveProperty('RampUp');
         expect(result).toHaveProperty('ResponsiveMaintainer');
         expect(result).toHaveProperty('License');
+        expect(result).toHaveProperty('GoodPinningPractice');
     });
 });

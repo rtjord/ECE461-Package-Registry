@@ -68,7 +68,8 @@ describe('npmAnalysis', () => {
                 licenses: -1,
                 numberOfCommits: -1,
                 numberOfLines: -1,
-                documentation: -1
+                documentation: -1,
+                pullRequests: -1
             }
         };
 
@@ -115,7 +116,8 @@ describe('npmAnalysis', () => {
                 licenses: -1,
                 numberOfCommits: -1,
                 numberOfLines: -1,
-                documentation: -1
+                documentation: -1,
+                pullRequests: -1
             }
         };
 
@@ -141,6 +143,55 @@ describe('npmAnalysis', () => {
             expect(mockLogger.logDebug).toHaveBeenCalledWith(`No commits found in the repository ${mockNpmData.repoUrl} in dir ./repo`);
         });
     });
+    describe('analyzeDependencies', () => {
+        it('should calculate pinned dependency fraction correctly', async () => {
+            const dir = './testRepo'; // Mock directory
+            const npmData: npmData = {
+                repoUrl: 'https://github.com/example/repo',
+                lastCommitDate: '',
+                documentation: {
+                    hasReadme: true,
+                    numLines: 100,
+                    hasExamples: false,
+                    hasDocumentation: true,
+                    dependencies: undefined, // Initially undefined
+                },
+                latency: {
+                    contributors: -1,
+                    openIssues: -1,
+                    closedIssues: -1,
+                    lastCommitDate: -1,
+                    licenses: -1,
+                    numberOfCommits: -1,
+                    numberOfLines: -1,
+                    documentation: -1,
+                    dependencies: -1,
+                    pullRequests: -1,
+                },
+            };
+    
+            // Mock reading of package.json
+            jest.spyOn(fs, 'readFile').mockResolvedValue(JSON.stringify({
+                dependencies: {
+                    'dep1': '1.0.0',
+                    'dep2': '2.3.x',
+                },
+                devDependencies: {
+                    'dep3': '^1.2.3',
+                    'dep4': '1.2.5',
+                },
+            }));
+    
+            const instance = new npmAnalysis(mockEnvVars);
+            await instance.analyzeDependencies(dir, npmData);
+    
+            expect(npmData.documentation.dependencies).toEqual({
+                total: 4,
+                pinned: 3,
+                fractionPinned: 0.75,
+            });
+        });
+    });
 
     describe('deleteRepo', () => {
         it('should delete the repository', async () => {
@@ -160,4 +211,6 @@ describe('npmAnalysis', () => {
             expect(mockLogger.logDebug).toHaveBeenCalledWith('Failed to delete repository in ./repo:');
         });
     });
+
+
 });

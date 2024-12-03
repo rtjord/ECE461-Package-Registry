@@ -41,7 +41,6 @@ export interface PackageRating {
     BusFactor: number;
     ResponsiveMaintainer: number;
     LicenseScore: number;
-    GoodPinningPractice: number;
     PullRequest: number;
     NetScore: number;
     RampUpLatency: number;
@@ -49,7 +48,6 @@ export interface PackageRating {
     BusFactorLatency: number;
     ResponsiveMaintainerLatency: number;
     LicenseScoreLatency: number;
-    GoodPinningPracticeLatency: number;
     PullRequestLatency: number;
     NetScoreLatency: number;
 }

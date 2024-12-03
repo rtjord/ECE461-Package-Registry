@@ -114,16 +114,60 @@ export class metricCalc{
         return 0;
     }
 
+    calculatePinnedDependencies(data: repoData): number {
+        //if invalid (undefined) dependencies are found
+        if(data.dependencies == undefined) {
+            return 0;
+        }
+        if (!data.dependencies || data.dependencies.length === 0) {
+            return 1.0; // Perfect score if no dependencies
+        }
+
+        
+    
+        const pinnedCount = data.dependencies.filter(dep => /^\d+\.\d+/.test(dep.version)).length;
+        const fractionPinned = pinnedCount / data.dependencies.length;
+    
+        return parseFloat(fractionPinned.toFixed(3));
+    }
+
+    getPinnedDependenciesLatency(latency: repoLatencyData): number
+    {   
+        if (latency.dependencies == undefined) {
+            return -1;
+        }
+        return parseFloat((latency.dependencies / 1000).toFixed(3));
+    }
+
+    calculatePullRequestScore(data: repoData): number {
+        if (!data.pullRequestMetrics) {
+            return 0;
+        }
+
+        return data.pullRequestMetrics.reviewedFraction;
+    }
+
+    getPullRequestLatency(latency: repoLatencyData): number {
+        return parseFloat((latency.pullRequests / 1000).toFixed(3));
+    }
+
+    
+
     calculateNetScore(data: repoData): number 
     {
         // Calculate the net score based on the individual metrics
-        const weightedScore = (0.3 * this.calculateResponsiveness(data)) + (0.25 * this.calculateCorrectness(data)) + (0.25 * this.calculateRampup(data)) + (0.2 * this.calculateBusFactor(data));
+        const weightedScore =   (0.25 * this.calculateResponsiveness(data)) +
+                                (0.2 * this.calculateCorrectness(data)) + 
+                                (0.15 * this.calculateRampup(data)) + 
+                                (0.15 * this.calculateBusFactor(data))+ 
+                                (0.1 * this.calculatePinnedDependencies(data)) +
+                                (0.15 * this.calculatePullRequestScore(data));
         return this.checkLicenseExistence(data) * parseFloat(weightedScore.toFixed(3));
     }
 
     getNetScoreLatency(latency: repoLatencyData): number 
     {
-        return parseFloat(((Math.max(latency.openIssues, latency.licenses) + latency.numberOfLines + latency.closedIssues + latency.numberOfCommits + latency.contributors) / 1000).toFixed(3));
+        return parseFloat(((Math.max(latency.openIssues, latency.licenses) + latency.numberOfLines + latency.closedIssues + latency.numberOfCommits + latency.contributors + latency.pullRequests + (latency.dependencies||0)) / 1000).toFixed(3));
         //return parseFloat((Math.max(latency.numberOfLines, latency.openIssues, latency.closedIssues, latency.licenses, latency.numberOfCommits, latency.numberOfLines, latency.documentation) / 1000).toFixed(3));
     }
 
@@ -142,10 +186,10 @@ export class metricCalc{
             ResponsiveMaintainer_Latency: parseFloat((data.latency.lastCommitDate / 1000).toFixed(3)),
             License: this.checkLicenseExistence(data),
             License_Latency: parseFloat((data.latency.licenses / 1000).toFixed(3)),
-            GoodPinningPractice: 0,
-            GoodPinningPracticeLatency: 0,
-            PullRequest: 0,
-            PullRequestLatency: 0
+            GoodPinningPractice: this.calculatePinnedDependencies(data),
+            GoodPinningPractice_Latency: this.getPinnedDependenciesLatency(data.latency),
+            PullRequest: this.calculatePullRequestScore(data),
+            PullRequest_Latency: this.getPullRequestLatency(data.latency),
         };
     }
 }
