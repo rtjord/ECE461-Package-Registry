@@ -358,6 +358,22 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetadataTable
 
+  GetCostRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+
   GetCost:
     Type: AWS::Serverless::Function
     Properties:
@@ -365,7 +381,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/GetCost
       MemorySize: 128
-      Timeout: 120
+      Timeout: 180
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -375,9 +391,7 @@ Resources:
             RestApiId: !Ref MyApi
             Path: /package/{id}/cost
             Method: get
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref PackageMetadataTable
+      Role: !GetAtt GetCostRole.Arn
       Environment:
         Variables:
           DOMAIN_ENDPOINT: "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com"

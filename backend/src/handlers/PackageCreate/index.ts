@@ -144,7 +144,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Upload the package zip to S3
         const s3Key = await uploadToS3(s3Client, packageContent, packageName, version);
         
-        // const standaloneCost = packageContent.length / (1024 * 1024);
+        const standaloneCost = packageContent.length / (1024 * 1024);
         // const dependenciesCost = await calculateDependenciesCost(packageJson);
         // const totalCost = standaloneCost + dependenciesCost;
 
@@ -156,7 +156,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             URL: requestBody.URL,
             s3Key: s3Key,
             JSProgram: requestBody.JSProgram,
-            // standaloneCost: standaloneCost,
+            standaloneCost: standaloneCost,
             // totalCost: totalCost,
             ...(rating && { Rating: rating }),
         };

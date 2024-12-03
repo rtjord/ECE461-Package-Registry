@@ -82,7 +82,7 @@ export async function retrieveFromOpenSearch(
       headers: request.headers,
     });
 
-    console.log('Document retrieved from OpenSearch:', response.data);
+    // console.log('Document retrieved from OpenSearch:', response.data);
 
     // Extract the source document from the response
     const document = response.data._source;
