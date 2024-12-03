@@ -81,7 +81,7 @@ describe("E2E Test for Get Cost Endpoint", () => {
         }
     }, timeout);
 
-    it("should return a lower cost if deblat is true", async () => {
+    it("should return a lower cost if debloat is true", async () => {
         const response = await axios.get(`${baseUrl}/package/${url_id}/cost`);
         expect(response.status).toBe(200);
         const originalCost = response.data[url_id].totalCost;

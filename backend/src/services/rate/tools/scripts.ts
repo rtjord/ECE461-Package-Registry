@@ -72,7 +72,7 @@ export class runAnalysis {
     } 
 
     async evaluateMods(url: string, index: number): Promise<repoData> {
-        const [type, cleanedUrl] = await this.urlAnalysis.evalUrl(url);
+        const [type, cleanedUrl, version] = await this.urlAnalysis.evalUrl(url);
         let repoData: repoData = {
             repoName: '',
             repoUrl: url,
@@ -113,7 +113,7 @@ export class runAnalysis {
         }
 
         const [npmData, gitData] = await Promise.all([
-            this.npmAnalysis.runTasks(cleanedUrl, index),
+            this.npmAnalysis.runTasks(cleanedUrl, index, version),
             this.gitAnalysis.runTasks(cleanedUrl)
         ]);
 

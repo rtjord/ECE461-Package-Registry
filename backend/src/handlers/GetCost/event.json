@@ -1,8 +1,8 @@
 {
-    "pathParameters": {
-      "id": "Dcj5JO-VuU1JLu1UeljI"
-    },
-    "queryStringParameters": {
-      "dependency": "false"
-    }
+  "pathParameters": {
+    "id": "AGjGiVFlgzT5KrO2p3gF"
+  },
+  "queryStringParameters": {
+    "dependency": "true"
   }
+}

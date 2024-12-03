@@ -11,35 +11,40 @@ export class urlAnalysis {
         this.logger = new logger(envVars);
     }
 
-    async evalUrl(url: string): Promise<[number, string]> {
-        const npmPattern = /^https:\/\/www\.npmjs\.com\/package\/[\w-]+$/;
+    // returns [error code, repoUrl, version]
+    async evalUrl(url: string): Promise<[number, string, string]> {
+        const npmPattern = /https:\/\/www\.npmjs\.com\/package\/([^/]+)(?:\/v\/([\d.]+))?/;;
         const gitPattern = /^https:\/\/github\.com\/[\w-]+\/[\w-]+$/;
-    
+
         if (gitPattern.test(url)) {
             const cleanedUrl = url.replace(/\.git$/, '');
-            return [0, cleanedUrl];
+            return [0, cleanedUrl, ''];
         } else if (npmPattern.test(url)) {
             try {
                 const repoUrl = await this.getRepositoryUrl(url);
-                return [0, repoUrl || ''];  // Ensure we return an empty string if repoUrl is null
+                console.log('repoUrl:', repoUrl);
+                const match = url.match(npmPattern);
+                const version = match ? match[2] || '' : '';
+                return [0, repoUrl || '', version];  // Ensure we return an empty string if repoUrl is null
             } catch (error) {
                 this.logger.logDebug('Error fetching repository URL:', error);
-                return [-1, ''];  // Return error code and empty string on failure
+                return [-1, '', ''];  // Return error code and empty string on failure
             }
         } else {
-            return [-1, ''];
+            return [-1, '', ''];
         }
     }
 
     extractPackageName(url: string): string | null {
-        const npmPattern = /^https:\/\/www\.npmjs\.com\/package\/[\w-]+$/;
+        const npmPattern = /https:\/\/www\.npmjs\.com\/package\/([^/]+)(?:\/v\/([\d.]+))?/;
         if (npmPattern.test(url)) {
-          const parts = url.split('/');
-          return parts[parts.length - 1];  // Get the last part of the URL
-        } else {
-          this.logger.logDebug('Invalid npm package URL');
-          return null;
+            const match = url.match(npmPattern);
+            if (match && match[1]) {
+                return match[1];  // Get the last part of the URL
+            }
         }
+        this.logger.logDebug('Invalid npm package URL');
+        return null;
     }
 
     async getRepositoryUrl(url: string): Promise<string | null> {
@@ -48,7 +53,7 @@ export class urlAnalysis {
             return null;  // Return null if package name extraction fails
         }
 
-        const registryUrl = 'https://registry.npmjs.org/'+packageName;
+        const registryUrl = 'https://registry.npmjs.org/' + packageName;
         return new Promise((resolve, reject) => {
             https.get(registryUrl, (res) => {
                 let data = '';
