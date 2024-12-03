@@ -88,7 +88,12 @@ export class runAnalysis {
                 hasReadme: false,
                 numLines: -1,
                 hasExamples: false,
-                hasDocumentation: false
+                hasDocumentation: false,
+                dependencies: {
+                    total: 0,
+                    fractionPinned: 1.0,
+                    pinned: 0,
+            }
             },
             latency: {
                 contributors: -1,
@@ -128,7 +133,8 @@ export class runAnalysis {
                 hasReadme: npmData.documentation.hasReadme,
                 numLines: npmData.documentation.numLines,
                 hasExamples: npmData.documentation.hasExamples,
-                hasDocumentation: npmData.documentation.hasDocumentation
+                hasDocumentation: npmData.documentation.hasDocumentation,
+                dependencies: npmData.documentation.dependencies
             },
             latency: {
                 contributors: gitData.latency.contributors,

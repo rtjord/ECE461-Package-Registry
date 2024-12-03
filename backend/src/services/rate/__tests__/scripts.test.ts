@@ -55,7 +55,12 @@ const fakeWrongRepoData: repoData = {
         hasReadme: false,
         numLines: -1,
         hasExamples: false,
-        hasDocumentation: false
+        hasDocumentation: false,
+        dependencies: {
+            total: 0,
+            fractionPinned: 1.0,
+            pinned: 0
+        }
     },
     latency: {
         contributors: -1,
@@ -92,7 +97,10 @@ describe('runAnalysisClass', () => {
 
     it('should include dependency analysis results in the documentation field', async () => {
         const result = await runAnalysisInstance.runAnalysis([url]);
-        console.log(result[0].documentation.dependencies);
+        console.log('Full result:', JSON.stringify(result, null, 2));
+        console.log('Documentation object:', result[0]?.documentation);
+        console.log('Dependencies:', result[0]?.documentation?.dependencies);
+        
         expect(result[0].documentation.dependencies).toBeDefined();
         expect(result[0].documentation.dependencies).toHaveProperty('fractionPinned');
     }, 50000);
