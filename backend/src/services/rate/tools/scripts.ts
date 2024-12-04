@@ -84,11 +84,17 @@ export class runAnalysis {
             licenses: [],
             numberOfCommits: -1,
             numberOfLines: -1,
+            pullRequestMetrics: undefined,
             documentation: {
                 hasReadme: false,
                 numLines: -1,
                 hasExamples: false,
-                hasDocumentation: false
+                hasDocumentation: false,
+                dependencies: {
+                    total: 0,
+                    fractionPinned: 1.0,
+                    pinned: 0,
+            }
             },
             latency: {
                 contributors: -1,
@@ -98,7 +104,8 @@ export class runAnalysis {
                 licenses: -1,
                 numberOfCommits: -1,
                 numberOfLines: -1,
-                documentation: -1
+                documentation: -1,
+                pullRequests: -1
             }
         };
 
@@ -124,11 +131,13 @@ export class runAnalysis {
             licenses: gitData.licenses,
             numberOfCommits: gitData.numberOfCommits,
             numberOfLines: gitData.numberOfLines,
+            pullRequestMetrics: gitData.pullRequestMetrics,
             documentation: {
                 hasReadme: npmData.documentation.hasReadme,
                 numLines: npmData.documentation.numLines,
                 hasExamples: npmData.documentation.hasExamples,
-                hasDocumentation: npmData.documentation.hasDocumentation
+                hasDocumentation: npmData.documentation.hasDocumentation,
+                dependencies: npmData.documentation.dependencies
             },
             latency: {
                 contributors: gitData.latency.contributors,
@@ -138,7 +147,9 @@ export class runAnalysis {
                 licenses: gitData.latency.licenses,
                 numberOfCommits: gitData.latency.numberOfCommits,
                 numberOfLines: gitData.latency.numberOfLines,
-                documentation: npmData.latency.documentation
+                documentation: npmData.latency.documentation,
+                dependencies: npmData.latency.dependencies,
+                pullRequests: gitData.latency.pullRequests
             }
         };
 
