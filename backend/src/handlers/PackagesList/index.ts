@@ -20,6 +20,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Parse request body
         if (!event.body) {
+            console.error("Request body is required.");
             return createErrorResponse(400, "Request body is required.");
         }
 
@@ -27,25 +28,30 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         try {
             packageQueries = JSON.parse(event.body);
         } catch {
+            console.error("Invalid JSON in request body.");
             return createErrorResponse(400, "Invalid JSON in request body.");
         }
 
         // check that each package query has a name. If there is a version, it must be a valid semver range
         for (const query of packageQueries) {
             if (!query.Name) {
+                console.error("Package name is required.");
                 return createErrorResponse(400, "Package name is required.");
             }
             if (query.Version && !semver.validRange(query.Version)) {
+                console.error(`Invalid semver range: ${query.Version}`);
                 return createErrorResponse(400, `Invalid semver range: ${query.Version}`);
             }
         }
 
         // Parse offset from query parameters
         const offset = parseOffset(event.queryStringParameters?.offset);
+        console.log('offset:', offset);
 
         // Perform package search
         const { items, newOffset } = await searchPackages(dynamoDBClient, packageQueries, offset);
-
+        console.log('items:', items);
+        console.log('newOffset:', newOffset);
         // Prepare response with updated offset
         const responseHeaders = { offset: newOffset.toString() };
         return createSuccessResponse(200, items, responseHeaders);
@@ -73,17 +79,19 @@ async function searchPackages(
 
     // Fetch all packages if a single query is "*"
     if (packageQueries.length === 1 && packageQueries[0].Name === "*") {
+        console.log("Fetching all packages");
         queryResults = await fetchAllPackages(dynamoDBClient);
+    } else {
+
+        for (const query of packageQueries) {
+            console.log(`Searching for packages with name: ${query.Name}, version: ${query.Version || "any"}`);
+            const packages: PackageMetadata[] = await fetchPackagesForQuery(dynamoDBClient, query);
+            queryResults.push(...packages);
+        }
+
+        // remove duplicates
+        queryResults = queryResults.filter((item, index) => queryResults.findIndex(i => i.ID === item.ID) === index);
     }
-
-    for (const query of packageQueries) {
-        const packages: PackageMetadata[] = await fetchPackagesForQuery(dynamoDBClient, query);
-        queryResults.push(...packages);
-    }
-
-    // remove duplicates
-    queryResults = queryResults.filter((item, index) => queryResults.findIndex(i => i.ID === item.ID) === index);
-
     // Pagination: Return only the next PAGE_SIZE results
     if (offset >= queryResults.length) {
         return { items: [], newOffset: offset };

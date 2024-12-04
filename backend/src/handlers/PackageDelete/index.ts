@@ -1,6 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { S3, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import axios from "axios";
 import aws4 from "aws4";
@@ -16,8 +16,12 @@ type PackageTableRow = typeof interfaces.PackageTableRow;
  
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
+        // Inject clients
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
-        const s3Client = new S3();
+        const s3Client = new S3Client({
+            region: 'us-east-2',
+        });
+
 
         const id = event.pathParameters?.id;
         if (!id) {
@@ -58,7 +62,7 @@ async function deletePackageFromDynamoDB(client: DynamoDBDocumentClient, id: str
 }
 
 // Delete the package file from S3
-async function deletePackageFromS3(client: S3, s3Key: string | undefined): Promise<void> {
+async function deletePackageFromS3(client: S3Client, s3Key: string): Promise<void> {
     const bucketName = getEnvVariable('S3_BUCKET_NAME');
 
     if (!s3Key) {

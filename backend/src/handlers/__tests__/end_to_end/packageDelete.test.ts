@@ -1,11 +1,11 @@
 import axios from "axios";
-import { PackageData, PackageRegEx, PackageMetadata } from "../../../common/interfaces";
+import { PackageData } from "../../../common/interfaces";
 import { baseUrl } from "./config";
 
 
-const timeout = 60000;
+const timeout = 30000;
 
-describe("E2E Test for PackageByRegEx Endpoint", () => {
+describe("E2E Test for Package Delete Endpoint", () => {
     let content_id: string;
     let url_id: string;
     beforeAll(async () => {
@@ -35,50 +35,28 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
         const response2 = await axios.post(`${baseUrl}/package`, requestBody2);
         // Get the ID of the uploaded package
         url_id = response2.data.metadata.ID;
-        console.log("content_id: ", content_id);
-        console.log("url_id: ", url_id);
 
     }, 90000);
     afterAll(async () => {
         // Reset the registry after running the tests
-        // await axios.delete(`${baseUrl}/reset`);
-    }, 90000);
+        await axios.delete(`${baseUrl}/reset`);
+    }, timeout);
     
-    it("should return a 200 status for a package that exists", async () => {
-        const requestBody: PackageRegEx = {
-            RegEx: "test-package"
-        };
-
-        const response = await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
+    it("should return a 200 status for a package uploaded via Content", async () => {
+        const response = await axios.delete(`${baseUrl}/package/${content_id}`);
         expect(response.status).toBe(200);
-
-        const expectedPackages: PackageMetadata[] = [{
-            Name: "test-package",
-            Version: "1.0.0",
-            ID: content_id
-        }];
-        const packages: PackageMetadata[] = response.data;
-        expect(packages).toEqual(expectedPackages);
 
     }, timeout);
 
-    it ("should return a 200 status for this regex", async () => {
-        const requestBody: PackageRegEx = {
-            RegEx: ".*(e|ee).*"
-        };
-
-        const response = await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
-        console.log(response.data);
+    it("should return a 200 status for a package uploaded via URL", async () => {
+        const response = await axios.delete(`${baseUrl}/package/${url_id}`);
         expect(response.status).toBe(200);
+
     }, timeout);
 
-    it("should return a 400 status for an invalid regex", async () => {
-        const requestBody: PackageRegEx = {
-            RegEx: "~("
-        };
-
+    it("should return a 404 status if the package does not exist", async () => {
         try {
-            await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
+            await axios.delete(`${baseUrl}/package/non-existant-id`);
         } catch (error) {
             if (!axios.isAxiosError(error)) {
                 throw error;
@@ -88,27 +66,9 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
             if (!response) {
                 throw error;
             }
-            expect(response.status).toBe(400);
-        }
-    }, timeout);
 
-    it("should return a 404 status for a package that does not exist", async () => {
-        const requestBody: PackageRegEx = {
-            RegEx: "ece461rules"
-        };
-
-        try {
-            await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
-        } catch (error) {
-            if (!axios.isAxiosError(error)) {
-                throw error;
-            }
-
-            const response = error.response;
-            if (!response) {
-                throw error;
-            }
             expect(response.status).toBe(404);
         }
     }, timeout);
+    // It should also return a 400 status if the package ID is missing
 });

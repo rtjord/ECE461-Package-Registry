@@ -63,6 +63,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Check if any packages with the same name already exist
         const existingPackages: PackageMetadata[] = await getPackageByName(dynamoDBClient, packageName);
         if (existingPackages.length > 0) {
+            console.error('Package already exists.');
             return createErrorResponse(409, 'Package already exists.');
         }
 
@@ -93,10 +94,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             
             // Extract the version from the NPM url, if present
             const urlVersion: string = extractVersionFromNpmUrl(requestBody.URL);
+            console.log('URL Version:', urlVersion);
             
             // Fetch the GitHub repository URL from the NPM package url
             const repoUrl = await getRepoUrl(requestBody.URL);
             if (!repoUrl) {
+                console.error('Failed to fetch GitHub repository URL from npm package.');
                 return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
             // Clone the GitHub repository with the correct version and zip it
@@ -115,11 +118,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // If the version is not provided, try to extract it from package.json
         if (!version && packageJson) {
+            console.log('Extracting version from package.json...');
             version = extractFieldFromPackageJson(packageJson, 'version');
+            console.log('Version:', version);
         }
 
         // If the version is still not provided, default to 1.0.0
         version = version || '1.0.0';
+        console.log('Final Version:', version);
 
         // Generate a unique ID for the package
         const packageId = generatePackageID(packageName, version);
@@ -132,22 +138,31 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         if (readme){
             // upload readme to opensearch
+            console.log('Uploading readme to opensearch...');
             await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, metadata);
+            console.log('Readme uploaded to opensearch.');
         }
 
         if (packageJson) {
             // upload package.json to opensearch
+            console.log('Uploading package.json to opensearch...');
             await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', JSON.stringify(packageJson), metadata);
+            console.log('Package.json uploaded to opensearch.');
         }
 
         if (requestBody.debloat) {
             // Debloat the package content
+            console.log('Debloating the package...');
             packageContent = await debloatPackage(packageContent);
+            console.log('Package debloated.');
         }
         // Upload the package zip to S3
+        console.log('Uploading package to S3...');
         const s3Key = await uploadToS3(s3Client, packageContent, packageName, version);
+        console.log('Package uploaded to S3.');
         
         const standaloneCost = packageContent.length / (1024 * 1024);
+        console.log('Standalone Cost:', standaloneCost);
         // const dependenciesCost = await calculateDependenciesCost(packageJson);
         // const totalCost = standaloneCost + dependenciesCost;
 
@@ -163,7 +178,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             // totalCost: totalCost,
             ...(rating && { Rating: rating }),
         };
+
+        console.log('Uploading package metadata to DynamoDB...');
         await uploadPackageMetadata(dynamoDBClient, row);
+        console.log('Package metadata uploaded to DynamoDB.');
 
         // Log the package creation in the package history
         const user: User = {
@@ -171,7 +189,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             isAdmin: true,
         };
 
+        console.log('Updating package history...');
         await updatePackageHistory(dynamoDBClient, packageName, version, packageId, user, "CREATE");
+        console.log('Package history updated.');
 
         const responseBody: Package = {
             metadata: {
@@ -186,6 +206,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 JSProgram: requestBody.JSProgram,
             },
         };
+        console.log('Package created:', responseBody);
         return {
             statusCode: 201,
             headers: {
@@ -195,7 +216,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             body: JSON.stringify(responseBody),
         };
     } catch (error) {
-        console.log("Error during POST package:", error);
+        console.error("Error during POST package:", error);
         return createErrorResponse(500, `Failed to upload package. ${error}`);
     }
 };

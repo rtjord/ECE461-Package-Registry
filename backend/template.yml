@@ -210,7 +210,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageRetrieve
       MemorySize: 128
-      Timeout: 10
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -240,7 +240,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageUpdate
       MemorySize: 128
-      Timeout: 60
+      Timeout: 120
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -280,7 +280,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageDelete
       MemorySize: 128
-      Timeout: 3
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -327,7 +327,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageRate
       MemorySize: 128
-      Timeout: 3
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -386,7 +386,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/CreateAuthToken
       MemorySize: 128
-      Timeout: 3
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -404,7 +404,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/PackageByNameGet
       MemorySize: 128
-      Timeout: 3
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:
@@ -465,7 +465,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/GetTracks
       MemorySize: 128
-      Timeout: 3
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:
