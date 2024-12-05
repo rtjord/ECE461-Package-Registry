@@ -14,6 +14,7 @@ export const handler = async (event: APIGatewayEvent): Promise<APIGatewayProxyRe
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
 
         const name = event.pathParameters?.name;
+        console.log('Fetching history for package:', name);
 
         if (!name) {
             console.error('Package name is required.');
