@@ -15,7 +15,7 @@ export class urlAnalysis {
     async evalUrl(url: string): Promise<[number, string, string]> {
         const npmPattern = /https:\/\/www\.npmjs\.com\/package\/([^/]+)(?:\/v\/([\d.]+))?/;;
         const gitPattern = /^https:\/\/github\.com\/[\w-]+\/[\w-]+$/;
-
+        console.log('url:', url);
         if (gitPattern.test(url)) {
             const cleanedUrl = url.replace(/\.git$/, '');
             return [0, cleanedUrl, ''];
@@ -71,6 +71,8 @@ export class urlAnalysis {
                             repoUrl = repoUrl.replace(/\.git$/, '');
                             // Convert SSH URLs to HTTPS
                             repoUrl = repoUrl.replace(/^ssh:\/\/git@github\.com/, 'https://github.com');
+                            // Convert git:// URLs to HTTPS
+                            repoUrl = repoUrl.replace(/^git:/, 'https:');
                             resolve(repoUrl);
                         } else {
                             resolve(null);  // No repository URL found

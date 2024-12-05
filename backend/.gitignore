@@ -1,6 +1,7 @@
 ## Sensitive Files ##
 files/
 *.env
+env.json
 
 ## Package Files ##
 node_modules/

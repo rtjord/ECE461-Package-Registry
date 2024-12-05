@@ -16,13 +16,16 @@ export const handler = async (event: APIGatewayEvent): Promise<APIGatewayProxyRe
         const name = event.pathParameters?.name;
 
         if (!name) {
+            console.error('Package name is required.');
             return createErrorResponse(400, 'Package name is required.');
         }
 
         const history: PackageHistoryEntry[] = await getPackageHistory(dynamoDBClient, name);
+        console.log('Package history:', history);
 
         // Check if any items were found
         if (history.length === 0) {
+            console.error(`No history found for package: ${name}`);
             return createErrorResponse(404, `No history found for package: ${name}`);
         }
 

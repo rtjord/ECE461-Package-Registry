@@ -49,6 +49,7 @@ describe("E2E Test for Package Rate Endpoint", () => {
         // expect response.data to be of type Package
         const rating: PackageRating = response.data;
         expect(rating).not.toBeNull();
+        console.log(rating);
 
     }, timeout);
     it("should return a 404 status if the package does not exist", async () => {
