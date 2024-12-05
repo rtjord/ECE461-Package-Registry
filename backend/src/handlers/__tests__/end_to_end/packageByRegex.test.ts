@@ -62,14 +62,44 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
 
     }, timeout);
 
-    it ("should return a 200 status for this regex", async () => {
+    it ("should return a 400 status for this regex", async () => {
         const requestBody: PackageRegEx = {
-            RegEx: ".*(e|ee).*"
+            RegEx: "(a{1,99999}){1,99999}$"
         };
 
-        const response = await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
-        console.log(response.data);
-        expect(response.status).toBe(200);
+        try {
+            await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
+        } catch (error) {
+            if (!axios.isAxiosError(error)) {
+                throw error;
+            }
+
+            const response = error.response;
+            if (!response) {
+                throw error;
+            }
+            expect(response.status).toBe(400);
+        }
+    }, timeout);
+
+    it ("should return a 404 status for this regex", async () => {
+        const requestBody: PackageRegEx = {
+            RegEx: "(a|aa)*$"
+        };
+
+        try {
+            await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
+        } catch (error) {
+            if (!axios.isAxiosError(error)) {
+                throw error;
+            }
+
+            const response = error.response;
+            if (!response) {
+                throw error;
+            }
+            expect(response.status).toBe(404);
+        }
     }, timeout);
 
     it("should return a 400 status for an invalid regex", async () => {

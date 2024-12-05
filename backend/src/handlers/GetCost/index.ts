@@ -78,6 +78,18 @@ export async function calculateCost(packageId: string, costMap: PackageCost): Pr
         console.log(`Package does not exist in our registry.`);
         return 0;
     }
+
+    // If the package is already in the cost map
+    if (costMap[packageId]) {
+        // If the total cost has already been calculated, return it
+        if (costMap[packageId].totalCost !== undefined) {
+            return costMap[packageId].totalCost;
+        }
+        // Otherwise, return 0 to avoid infinite recursion
+        console.log(`Circular dependency detected for ${packageRow.PackageName}@${packageRow.Version}. Skipping further calculation.`);
+        return 0;
+    }
+
     // Get the package.json content from OpenSearch
     console.log(`Retrieving package.json for ${packageRow.PackageName}@${packageRow.Version}...`);
     const { content: packageJsonContent } = await retrieveFromOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', packageId);

@@ -22,11 +22,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
     const regEx: string = parsedBody.RegEx; // Extract the RegEx field from the request body
 
-    // console.log('Checking for ReDoS vulnerability in the provided regex:', regEx);
-    // if (!detector.isSafePattern(regEx).safe) {
-    //   console.error('The provided regex is vulnerable to ReDoS attacks.');
-    //   return createErrorResponse(400, 'The provided regex is vulnerable to ReDoS attacks.');
-    // }
+    console.log('Checking for ReDoS vulnerability in the provided regex:', regEx);
+    if (quantifierIsTooLarge(regEx)) {
+      console.error('The provided regex has a quantifier that is too large.');
+      return createErrorResponse(400, 'The provided regex has a quantifier that is too large.');
+    }
 
     // Search over package names and readmes
     console.log('Searching for packages matching the regular expression:', regEx);
@@ -58,6 +58,31 @@ function isValidRegEx(RegEx: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Checks if a regex contains large quantifier ranges.
+ * @param {string} regexStr - The regex pattern as a string.
+ * @returns {boolean} - Returns true if the regex is unsafe, false otherwise.
+ */
+function quantifierIsTooLarge(regexStr: string): boolean {
+  // Pattern to match quantifiers {min,max}
+  const quantifierPattern = /\{(\d+),(\d+)\}/g;
+  let match;
+
+  // Iterate over all quantifiers in the regex
+  while ((match = quantifierPattern.exec(regexStr)) !== null) {
+    const min = parseInt(match[1], 10);
+    const max = parseInt(match[2], 10);
+
+    // Check if max exceeds the safe threshold
+    if (max > 1000) {
+      console.error(`Unsafe quantifier range detected: {${min},${max}}`);
+      return true;
+    }
+  }
+
+  return false; // Regex is safe
 }
 
 async function searchReadmes(

@@ -1,5 +1,5 @@
 {
-  "body": "{\"RegEx\": \"test-package$\"}",
+  "body": "{\"RegEx\": \"as.*dflkj\"}",
   "httpMethod": "POST",
   "headers": {
     "Content-Type": "application/json"

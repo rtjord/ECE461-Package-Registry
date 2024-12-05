@@ -44,6 +44,7 @@ export const handler = async (event: LambdaEvent, context: Context) => {
     let exists = await checkIndexExists(domainEndpoint, indexName);
 
     if (!exists) {
+      console.log(`Index '${indexName}' does not exist. Creating...`);
       await createIndex(domainEndpoint, indexName);
     } else {
       console.log(`Index '${indexName}' already exists. Skipping creation.`);
@@ -54,6 +55,7 @@ export const handler = async (event: LambdaEvent, context: Context) => {
     exists = await checkIndexExists(domainEndpoint, indexName);
 
     if (!exists) {
+      console.log(`Index '${indexName}' does not exist. Creating...`);
       await createIndex(domainEndpoint, indexName);
     } else {
       console.log(`Index '${indexName}' already exists. Skipping creation.`);
@@ -73,6 +75,7 @@ export const handler = async (event: LambdaEvent, context: Context) => {
 
   // Send response to CloudFormation
   await sendCloudFormationResponse(event.ResponseURL, response);
+  console.log("Create index operation complete.");
 };
 
 interface CloudFormationResponse {
