@@ -32,6 +32,7 @@ export const handler: APIGatewayProxyHandler = async () => {
         const bucket = getEnvVariable("S3_BUCKET_NAME");
         const domain = getEnvVariable("DOMAIN_ENDPOINT");
 
+        console.log("Clearing resources...");
         // Perform all operations concurrently
         await Promise.all([
             clearDynamoDBTable(dynamoDBClient, table1, (item) => ({ ID: item.ID })),
@@ -47,7 +48,7 @@ export const handler: APIGatewayProxyHandler = async () => {
 
         await createIndex(domain, "readmes");
         await createIndex(domain, "packagejsons");
-        console.log("Indices created successfully.");
+        console.log("Indices recreated successfully.");
 
         return {
             statusCode: 200,
