@@ -39,10 +39,10 @@ export class metricCalc {
 
         let busFactor = 0;
 
-        if (numberOfContributors < 5) busFactor = 0;
-        else if (numberOfContributors < 10) busFactor = 0.25;
-        else if (numberOfContributors < 25) busFactor = 0.5;
-        else if (numberOfContributors < 50) busFactor = 0.75;
+        if (numberOfContributors < 15) busFactor = 0;
+        else if (numberOfContributors < 50) busFactor = 0.25;
+        else if (numberOfContributors < 100) busFactor = 0.5;
+        else if (numberOfContributors < 200) busFactor = 0.75;
         else busFactor = 1;
 
         return busFactor;
