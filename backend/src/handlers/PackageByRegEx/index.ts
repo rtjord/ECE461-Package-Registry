@@ -31,8 +31,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Search over package names and readmes
     console.log('Searching for packages matching the regular expression:', regEx);
     const domainEndpoint = getEnvVariable('DOMAIN_ENDPOINT');
-    // const domainEndpoint = "https://search-package-readmes-wnvohkp2wydo2ymgjsxmmslu6u.us-east-2.es.amazonaws.com";
     const matches = await searchReadmes(domainEndpoint, 'readmes', regEx);
+    console.log('Matching packages:', matches);
 
     // If there are no matching packages, return a 404 response
     if (matches.length === 0) {

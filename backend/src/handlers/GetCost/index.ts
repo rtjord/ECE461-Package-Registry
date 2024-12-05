@@ -55,6 +55,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         console.log("Cost calculation complete.");
+        console.log("Response:", response);
         return {
             statusCode: 200,
             body: JSON.stringify(response),
@@ -64,7 +65,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         };
     } catch (error) {
         console.error("Error:", error);
-        return createErrorResponse(500, "The package rating system choked on at least one of the metrics.");
+        return createErrorResponse(500, "Error while calculating the cost.");
     }
 };
 

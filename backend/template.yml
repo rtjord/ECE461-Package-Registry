@@ -48,6 +48,7 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns: # Attach AWS Managed Policies
         - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   CreateIndex:
     Type: AWS::Serverless::Function
@@ -85,6 +86,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
         - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   DependenciesLayer:
     Type: AWS::Serverless::LayerVersion
@@ -179,6 +181,8 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
 
   RegistryReset:
     Type: AWS::Serverless::Function
@@ -272,6 +276,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   PackageDelete:
     Type: AWS::Serverless::Function
@@ -356,6 +361,7 @@ Resources:
       ManagedPolicyArns: # Attach AWS Managed Policies
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   GetCost:
     Type: AWS::Serverless::Function
@@ -435,6 +441,7 @@ Resources:
       ManagedPolicyArns: # Attach AWS Managed Policies
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   PackageByRegEx:
     Type: AWS::Serverless::Function

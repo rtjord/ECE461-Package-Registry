@@ -26,12 +26,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Extract and validate the package ID
         const id = event.pathParameters?.id;
         if (!id) {
+            console.error('Missing ID in path parameters.');
             return createErrorResponse(400, "Missing ID in path parameters.");
         }
 
         // Fetch package details from DynamoDB
         const existingPackage: PackageTableRow | null = await getPackageById(dynamoDBClient, id);
         if (!existingPackage) {
+            console.error(`Package with ID ${id} not found.`);
             return createErrorResponse(404, 'Package not found.');
         }
 
@@ -58,6 +60,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             user,
             "DOWNLOAD"
         );
+        console.log(`Updated package history for ${packageName}@${version}`);
 
         // Prepare the response
         const responseBody: Package = {
@@ -73,6 +76,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 JSProgram: existingPackage.JSProgram,
             },
         };
+
+        console.log('Response:', responseBody);
 
         return {
             statusCode: 200,

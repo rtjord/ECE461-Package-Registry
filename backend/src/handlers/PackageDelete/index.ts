@@ -33,11 +33,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             return createErrorResponse(404, `Package with ID ${id} not found.`);
         }
 
+        console.log(`Deleting package with ID: ${id}`);
         await deletePackageFromDynamoDB(dynamoDBClient, id);
+        console.log(`Deleted package metadata for ID: ${id}`);
 
         await deletePackageFromS3(s3Client, existingPackage.s3Key);
+        console.log(`Deleted package file from S3 with key: ${existingPackage.s3Key}`);
 
         await deleteDocumentById(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', id);
+        console.log(`Deleted document with ID: ${id} from OpenSearch index.`);
 
         return createSuccessResponse(existingPackage.PackageName, existingPackage.Version);
     } catch (error) {
