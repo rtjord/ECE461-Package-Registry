@@ -28,6 +28,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         // Retrieve the dependency query parameter
+        // Default to false if not provided
         const includeDependencies = event.queryStringParameters?.dependency === 'true';
 
         // Fetch the package data from DynamoDB
