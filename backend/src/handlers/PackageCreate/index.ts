@@ -113,8 +113,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // From this point on, the package content is available in the packageContent variable
         // Extract package.json and README.md from the zip file
-        const packageJson = await extractPackageJsonFromZip(packageContent);
-        const readme = await extractReadmeFromZip(packageContent);
+        const packageJson: string = await extractPackageJsonFromZip(packageContent);
+        const readme: string = await extractReadmeFromZip(packageContent);
 
         // If the version is not provided, try to extract it from package.json
         if (!version && packageJson) {
@@ -148,7 +148,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (packageJson) {
             // upload package.json to opensearch
             console.log('Uploading package.json to opensearch...');
-            await uploadToOpenSearch(domainEndpoint, 'packagejsons', JSON.stringify(packageJson), metadata);
+            await uploadToOpenSearch(domainEndpoint, 'packagejsons', packageJson, metadata);
             console.log('Package.json uploaded to opensearch.');
         }
 
