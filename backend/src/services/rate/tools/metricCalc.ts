@@ -39,10 +39,10 @@ export class metricCalc {
 
         let busFactor = 0;
 
-        if (numberOfContributors < 15) busFactor = 0;
-        else if (numberOfContributors < 50) busFactor = 0.25;
-        else if (numberOfContributors < 100) busFactor = 0.5;
-        else if (numberOfContributors < 200) busFactor = 0.75;
+        if (numberOfContributors < 5) busFactor = 0;
+        else if (numberOfContributors < 10) busFactor = 0.25;
+        else if (numberOfContributors < 25) busFactor = 0.5;
+        else if (numberOfContributors < 50) busFactor = 0.75;
         else busFactor = 1;
 
         return busFactor;
@@ -117,8 +117,6 @@ export class metricCalc {
             return 1.0; // Perfect score if no dependencies
         }
 
-
-
         const pinnedCount = data.dependencies.filter(dep => /^\d+\.\d+/.test(dep.version)).length;
         const fractionPinned = pinnedCount / data.dependencies.length;
 
@@ -144,8 +142,6 @@ export class metricCalc {
         return parseFloat((latency.pullRequests / 1000).toFixed(3));
     }
 
-
-
     calculateNetScore(data: repoData): number {
         // Calculate the net score based on the individual metrics
         const weightedScore = (0.25 * this.calculateResponsiveness(data)) +
@@ -164,81 +160,23 @@ export class metricCalc {
 
     async getValue(data: repoData): Promise<PackageRating> {
         // Run the functions concurrently and measure the latencies
-        const functions = [
-            this.calculateRampup,
-            this.calculateCorrectness,
-            this.calculateBusFactor,
-            this.calculateResponsiveness,
-            this.checkLicenseExistence,
-            this.calculatePinnedDependencies,
-            this.calculatePullRequestScore,
-        ]
-        const { latencies, results, errors } = await measureConcurrentLatencies(functions, data);
-        // calculate the netscore as the sum of the individual scores
-        const netScore = results.reduce((accumulator, currentValue) => (accumulator || 0) + (currentValue || 0), 0);
-        const netScoreLatency = latencies.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
-        
         return {
-            NetScore: netScore || 0,
-            NetScoreLatency: netScoreLatency || 0,
-            RampUp: results[0] || 0,
-            RampUpLatency: latencies[0] || 0,
-            Correctness: results[1] || 0,
-            CorrectnessLatency: latencies[1] || 0,
-            BusFactor: results[2] || 0,
-            BusFactorLatency: latencies[2] || 0,
-            ResponsiveMaintainer: results[3] || 0,
-            ResponsiveMaintainerLatency: latencies[3] || 0,
-            LicenseScore: results[4] || 0,
-            LicenseScoreLatency: latencies[4] || 0,
-            GoodPinningPractice: results[5] || 0,
-            GoodPinningPracticeLatency: latencies[5] || 0,
-            PullRequest: results[6] || 0,
-            PullRequestLatency: latencies[6] || 0,
+            NetScore: this.calculateNetScore(data),
+            NetScoreLatency: this.getNetScoreLatency(data.latency),
+            RampUp: this.calculateRampup(data),
+            RampUpLatency: this.getRampupLatency(data.latency),
+            Correctness: this.calculateCorrectness(data),
+            CorrectnessLatency: this.getCorrectnessLatency(data.latency),
+            BusFactor: this.calculateBusFactor(data),
+            BusFactorLatency: parseFloat((data.latency.contributors / 1000).toFixed(3)),
+            ResponsiveMaintainer: this.calculateResponsiveness(data),
+            ResponsiveMaintainerLatency: parseFloat((data.latency.lastCommitDate / 1000).toFixed(3)),
+            LicenseScore: this.checkLicenseExistence(data),
+            LicenseScoreLatency: parseFloat((data.latency.licenses / 1000).toFixed(3)),
+            GoodPinningPractice: this.calculatePinnedDependencies(data),
+            GoodPinningPracticeLatency: this.getPinnedDependenciesLatency(data.latency),
+            PullRequest: this.calculatePullRequestScore(data),
+            PullRequestLatency: this.getPullRequestLatency(data.latency),
         };
     }
-}
-
-/**
- * Measures the latencies of concurrent asynchronous functions.
- *
- * @param fns - An array of functions that each take an `owner` and `repo` string and return a Promise resolving to a number.
- * @param owner - The owner of the repository.
- * @param repo - The repository name.
- * @returns A Promise that resolves to an object containing:
- * - `latencies`: An array of latencies (in seconds) for each function.
- * - `results`: An array of results from each function, or `null` if an error occurred.
- * - `errors`: An array of errors from each function, or `null` if no error occurred.
- */
-export async function measureConcurrentLatencies(
-    fns: ((data: repoData) => number)[],
-    data: repoData,
-): Promise<{ latencies: number[], results: (number | null)[], errors: (any | null)[] }> {
-    const latencies: number[] = new Array(fns.length);
-    const results: (number | null)[] = new Array(fns.length);
-    const errors: (any | null)[] = new Array(fns.length);
-
-    // Create an array of promises to track each function call's latency
-    const promises = fns.map((fn, index) => (async () => {
-        const start = performance.now();
-        try {
-            const result = fn(data);
-            const end = performance.now();
-            const seconds_elapsed = Number(((end - start) / 1000).toFixed(3));
-            latencies[index] = seconds_elapsed;   // Assign to the correct index
-            results[index] = result;          // Assign to the correct index
-            errors[index] = null;             // No error
-        } catch (error) {
-            const end = performance.now();
-            const seconds_elapsed = Number(((end - start) / 1000).toFixed(3));
-            latencies[index] = seconds_elapsed;   // Assign to the correct index
-            results[index] = null;            // No result in case of error
-            errors[index] = error;            // Capture error
-        }
-    })());
-
-    // Wait for all promises to settle
-    await Promise.all(promises);
-
-    return { latencies, results, errors };
 }

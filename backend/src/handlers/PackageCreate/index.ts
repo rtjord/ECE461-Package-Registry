@@ -136,17 +136,19 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             ID: packageId,
         };
 
+        const domainEndpoint = getEnvVariable('DOMAIN_ENDPOINT');
+
         if (readme){
             // upload readme to opensearch
             console.log('Uploading readme to opensearch...');
-            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, metadata);
+            await uploadToOpenSearch(domainEndpoint, 'readmes', readme, metadata);
             console.log('Readme uploaded to opensearch.');
         }
 
         if (packageJson) {
             // upload package.json to opensearch
             console.log('Uploading package.json to opensearch...');
-            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', JSON.stringify(packageJson), metadata);
+            await uploadToOpenSearch(domainEndpoint, 'packagejsons', JSON.stringify(packageJson), metadata);
             console.log('Package.json uploaded to opensearch.');
         }
 
@@ -206,7 +208,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 JSProgram: requestBody.JSProgram,
             },
         };
-        console.log('Package created:', responseBody);
         return {
             statusCode: 201,
             headers: {

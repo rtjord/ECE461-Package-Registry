@@ -175,17 +175,22 @@ export async function calculatePackageCosts(
         const nodeModulesPath = path.join(tempDir, "node_modules");  // get the node_modules path
         // Get the package.json files for the dependencies
         const packageJsonList = await getPackageJsonFilesFromNodeModules(nodeModulesPath);
-
+        if (packageJsonList.length === 0) {
+            return packageCostMap;
+        }
         // Assume each dependency is an npm package and calculate the cost
-        // for (const file of packageJsonList) {
-        //     await calculateNpmPackageCosts(file, packageCostMap, 1);
-        // }
+        let i = 0;
+        for (const file of packageJsonList) {
+            i += 1;
+            console.log(`Processing dependency ${i} of ${packageJsonList.length}`);
+            await calculateNpmPackageCosts(file, packageCostMap, 1);
+        }
         // console.log(packageJsonList);
-        await Promise.all(
-            packageJsonList.map(file => 
-                calculateNpmPackageCosts(file, packageCostMap, 1)
-            )
-        );
+        // await Promise.all(
+        //     packageJsonList.map(file => 
+        //         calculateNpmPackageCosts(file, packageCostMap, 1)
+        //     )
+        // );
 
         return packageCostMap;
     } catch (error) {
