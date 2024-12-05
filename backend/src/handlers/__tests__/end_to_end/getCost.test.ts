@@ -6,16 +6,16 @@ import { baseUrl } from "./config";
 const timeout = 30000;
 
 describe("E2E Test for Get Cost Endpoint", () => {
-    let content_id: string;
-    let url_id: string;
+    let yazl_id: string;
+    let buffer_crc32_id: string;
     beforeAll(async () => {
         // Reset the registry before running the tests
         await axios.delete(`${baseUrl}/reset`);
 
-        // Upload a package with Content to the registry
+        // Upload yazl to the registry
         const requestBody: PackageData = {
-            Name: "test-package",
-            Content: "UEsDBBQAAAAAAKm8clkAAAAAAAAAAAAAAAATACAAdGVzdC1wYWNrYWdlLTEuMC4wL1VUDQAH/xU8Z18WPGfcFTxndXgLAAEEAAAAAAQAAAAAUEsDBBQACAAIAJy8clkAAAAAAAAAAAQBAAAfACAAdGVzdC1wYWNrYWdlLTEuMC4wL3BhY2thZ2UuanNvblVUDQAH6BU8ZwAWPGfiFTxndXgLAAEEAAAAAAQAAAAAXc89D4IwEAbgnYT/cLmBSQmsbMY4OOvI0pRTTqVtetWQGP67lK/Bbten7+XtN01gPGhUR1gBBpKwd0o/1Z1wt+CHvLA10cu8yIsNGhLt2YUFr2MY/sOd4gnZNNTnD9lgjspoS4npNhaIz0m3Fmo8eW99BcZCBBBHmm9MTY2QZUA9Byhxjg/rYvUOrfVbocM8rvpiTUamz54vR0yT4QdQSwcI9J0+op4AAAAEAQAAUEsDBBQACAAIALW8clkAAAAAAAAAACoAAAAcACAAdGVzdC1wYWNrYWdlLTEuMC4wL1JFQURNRS5tZFVUDQAHFhY8ZxYWPGf/FTxndXgLAAEEAAAAAAQAAAAAC3J1dPF1VUjLzElVSMsvUihJLS7RLUhMzk5MT1UoSy0qzszPUzDUM9AzAABQSwcI8eDIMywAAAAqAAAAUEsBAhQDFAAAAAAAqbxyWQAAAAAAAAAAAAAAABMAIAAAAAAAAAAAAP9BAAAAAHRlc3QtcGFja2FnZS0xLjAuMC9VVA0AB/8VPGdfFjxn3BU8Z3V4CwABBAAAAAAEAAAAAFBLAQIUAxQACAAIAJy8cln0nT6ingAAAAQBAAAfACAAAAAAAAAAAAC2gVEAAAB0ZXN0LXBhY2thZ2UtMS4wLjAvcGFja2FnZS5qc29uVVQNAAfoFTxnABY8Z+IVPGd1eAsAAQQAAAAABAAAAABQSwECFAMUAAgACAC1vHJZ8eDIMywAAAAqAAAAHAAgAAAAAAAAAAAAtoFcAQAAdGVzdC1wYWNrYWdlLTEuMC4wL1JFQURNRS5tZFVUDQAHFhY8ZxYWPGf/FTxndXgLAAEEAAAAAAQAAAAAUEsFBgAAAAADAAMAOAEAAPIBAAAAAA==",
+            Name: "yazl",
+            URL: "https://www.npmjs.com/package/yazl/v/3.1.0",
             debloat: false,
             JSProgram: "console.log('Hello, World!');",
         };
@@ -23,18 +23,18 @@ describe("E2E Test for Get Cost Endpoint", () => {
         const response = await axios.post(`${baseUrl}/package`, requestBody);
 
         // Get the ID of the uploaded package
-        content_id = response.data.metadata.ID;
+        yazl_id = response.data.metadata.ID;
 
         // Upload a package with a URL to the registry
         const requestBody2: PackageData = {
-            Name: "yazl",
-            URL: "https://www.npmjs.com/package/yazl/v/3.1.0",
+            Name: "buffer-crc32",
+            URL: "https://www.npmjs.com/package/buffer-crc32",
             debloat: false,
         };
 
         const response2 = await axios.post(`${baseUrl}/package`, requestBody2);
         // Get the ID of the uploaded package
-        url_id = response2.data.metadata.ID;
+        buffer_crc32_id = response2.data.metadata.ID;
 
     }, 90000);
     afterAll(async () => {
@@ -42,25 +42,27 @@ describe("E2E Test for Get Cost Endpoint", () => {
         await axios.delete(`${baseUrl}/reset`);
     }, timeout);
 
-    it("should return a 200 status for a package uploaded via content", async () => {
-        const response = await axios.get(`${baseUrl}/package/${content_id}/cost`);
+    it("should only return total cost if dependency is false", async () => {
+        const response = await axios.get(`${baseUrl}/package/${yazl_id}/cost?dependency=false`);
         expect(response.status).toBe(200);
 
-        // expect response.data to be of type Package
         const cost: PackageCost = response.data;
         expect(cost).not.toBeNull();
-        expect(cost[content_id].totalCost).toBeGreaterThan(0);
+        expect(cost[yazl_id].totalCost).toBeGreaterThan(0);
+        expect(cost[yazl_id].standaloneCost).toBeUndefined();
 
     }, timeout);
 
-    it("should return a 200 status for a package uploaded via url", async () => {
-        const response = await axios.get(`${baseUrl}/package/${url_id}/cost`);
+    it("should return standalone cost and total cost if dependency is true", async () => {
+        const response = await axios.get(`${baseUrl}/package/${yazl_id}/cost?dependency=true`);
         expect(response.status).toBe(200);
 
-        // expect response.data to be of type Package
         const cost: PackageCost = response.data;
         expect(cost).not.toBeNull();
-        expect(cost[url_id].totalCost).toBeGreaterThan(0);
+        expect(cost[yazl_id].standaloneCost).toBeGreaterThan(0);
+        expect(cost[yazl_id].totalCost).toBeGreaterThan(0);
+        expect(cost[buffer_crc32_id].standaloneCost).toBeGreaterThan(0);
+        expect(cost[buffer_crc32_id].totalCost).toBeGreaterThan(0);
 
     }, timeout);
     
@@ -82,12 +84,12 @@ describe("E2E Test for Get Cost Endpoint", () => {
     }, timeout);
 
     it("should return a lower cost if debloat is true", async () => {
-        const response = await axios.get(`${baseUrl}/package/${url_id}/cost`);
+        const response = await axios.get(`${baseUrl}/package/${yazl_id}/cost`);
         expect(response.status).toBe(200);
-        const originalCost = response.data[url_id].totalCost;
+        const originalCost = response.data[yazl_id].totalCost;
 
         // delete the package
-        await axios.delete(`${baseUrl}/package/${url_id}`);
+        await axios.delete(`${baseUrl}/package/${yazl_id}`);
         // reupload the package with debloat set to true
         const requestBody: PackageData = {
             Name: "yazl",
@@ -95,9 +97,9 @@ describe("E2E Test for Get Cost Endpoint", () => {
             debloat: true,
         };
         await axios.post(`${baseUrl}/package`, requestBody);
-        const response2 = await axios.get(`${baseUrl}/package/${url_id}/cost`);
+        const response2 = await axios.get(`${baseUrl}/package/${yazl_id}/cost`);
         expect(response2.status).toBe(200);
-        const debloatedCost = response2.data[url_id].totalCost;
+        const debloatedCost = response2.data[yazl_id].totalCost;
 
         // expect the debloated cost to be less than the original cost
         expect(debloatedCost).toBeLessThan(originalCost);

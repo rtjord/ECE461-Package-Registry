@@ -55,19 +55,19 @@ export interface envVars {
 export interface metricData{
     URL: string;
     Correctness: number;
-    Correctness_Latency: number;
+    CorrectnessLatency: number;
     BusFactor: number;
-    BusFactor_Latency: number;
+    BusFactorLatency: number;
     RampUp: number;
-    RampUp_Latency: number;
+    RampUpLatency: number;
     ResponsiveMaintainer: number;
-    ResponsiveMaintainer_Latency: number;
+    ResponsiveMaintainerLatency: number;
     License: number;
-    License_Latency: number;
+    LicenseLatency: number;
     NetScore: number;
-    NetScore_Latency: number;
+    NetScoreLatency: number;
     GoodPinningPractice: number;
-    GoodPinningPractice_Latency: number;
+    GoodPinningPracticeLatency: number;
     PullRequest: number;
-    PullRequest_Latency: number;
+    PullRequestLatency: number;
 }

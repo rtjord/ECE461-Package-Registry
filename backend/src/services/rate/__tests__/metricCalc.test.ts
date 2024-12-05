@@ -326,20 +326,19 @@ describe('metricCalcClass', () => {
     });
 
     // Test the overall getValue function
-    it('Return correct values from getValue method', () => {
+    it('Return correct values from getValue method', async () => {
         fakeRepoData.dependencies = [
             { name: 'dep1', version: '1.0.0' },
             { name: 'dep2', version: '2.3.x' },
         ];
     
-        const result = metricClass.getValue(fakeRepoData);
-        expect(result).toHaveProperty('URL', fakeRepoData.repoUrl);
+        const result = await metricClass.getValue(fakeRepoData);
         expect(result).toHaveProperty('NetScore');
         expect(result).toHaveProperty('Correctness');
         expect(result).toHaveProperty('BusFactor');
         expect(result).toHaveProperty('RampUp');
         expect(result).toHaveProperty('ResponsiveMaintainer');
-        expect(result).toHaveProperty('License');
+        expect(result).toHaveProperty('LicenseScore');
         expect(result).toHaveProperty('GoodPinningPractice');
     });
 });

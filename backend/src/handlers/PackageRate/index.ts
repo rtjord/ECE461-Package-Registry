@@ -17,20 +17,24 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Validate package ID from path parameters
         const packageId = event.pathParameters?.id;
         if (!packageId) {
+            console.error("Missing PackageID in the path parameters.");
             return createErrorResponse(400, "There is missing field(s) in the PackageID");
         }
 
         // Fetch the package data from DynamoDB
         const packageData: PackageTableRow | null = await getPackageById(dynamoDBClient, packageId);
         if (!packageData) {
+            console.error("Package does not exist.");
             return createErrorResponse(404, `Package does not exist.`);
         }
 
         const rating: PackageRating = packageData.Rating;
         if (!rating) {
+            console.error("Package rating does not exist.");
             return createErrorResponse(404, "Package rating does not exist.");
         }
 
+        console.log("Package rating:", rating);
         // Success response
         return {
             statusCode: 200,
