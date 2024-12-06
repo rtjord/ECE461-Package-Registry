@@ -9,5 +9,3 @@ node_modules/
 
 .aws-sam
 coverage/
-
-autograder_logs/
