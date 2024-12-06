@@ -160,7 +160,7 @@ export class runAnalysis {
             }
         };
 
-        console.log('RepoData:', repoData);
+        // console.log('RepoData:', repoData);
         return repoData;
     }
 }

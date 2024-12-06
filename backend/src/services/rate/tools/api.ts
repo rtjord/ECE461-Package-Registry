@@ -45,12 +45,12 @@ export class npmAnalysis {
         try {
             const oid = await git.resolveRef({ fs, dir, ref: 'HEAD' });
             const { tree } = await git.readTree({ fs, dir, oid });
-            console.log('tree', tree);
+            // console.log('tree', tree);
     
             const readmeEntry = tree.find(entry => 
                 ['readme.md', 'readme', 'readme.txt', 'readme.rst'].includes(entry.path.toLowerCase())
             );
-            console.log('readmeEntry', readmeEntry);
+            // console.log('readmeEntry', readmeEntry);
     
             let readmeContent: string | null = null;
             if (readmeEntry) {
@@ -85,7 +85,7 @@ export class npmAnalysis {
         this.logger.logDebug(`Finding time since last commit...`);
         try {
             const commits = await git.log({ fs, dir, depth: 1 });
-            console.log('commits:', commits);
+            // console.log('commits:', commits);
             const lastCommit = commits[0]; 
         
             if (lastCommit) {
@@ -101,7 +101,7 @@ export class npmAnalysis {
 
     isPinnedToMajorMinor(version: string): boolean {
         const parsed = semver.parse(version);
-        return parsed !== null && parsed.major !== null && parsed.minor !== null && !parsed.prerelease && !parsed.build;
+        return parsed !== null && parsed.major !== null && parsed.minor !== null;
     }
 
 
@@ -126,8 +126,13 @@ export class npmAnalysis {
             } else {
                 let pinnedCount = 0;
                 for (const version of Object.values(dependencies)) {
+                    // console.log(version);
                     if (this.isPinnedToMajorMinor(version as string)) {
                         pinnedCount++;
+                        // console.log("pinned");
+                    }
+                    else {
+                        // console.log("unpinned");
                     }
                 }
                 const fractionPinned = pinnedCount / totalDependencies;   
@@ -398,7 +403,7 @@ export class gitAnalysis {
             const packageJsonContentEncoded = packageJsonResponse.data.content;
             const packageJsonContent = Buffer.from(packageJsonContentEncoded, 'base64').toString('utf-8');
             const packageJson = JSON.parse(packageJsonContent);
-            console.log('packageJson:', packageJson);
+            // console.log('packageJson:', packageJson);
             if (packageJson.license) {
                 gitData.licenses = packageJson.license;
                 this.logger.logDebug(`License found in package.json for ${gitData.repoName}`);
@@ -559,10 +564,12 @@ export class gitAnalysis {
                             const reviewsResponse = await this.exponentialBackoff(() =>
                                 this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/reviews`)
                             );
+                            console.log(reviewsResponse);
 
                             // If PR has reviews, count its additions
                             if (reviewsResponse.data.length > 0) {
                                 totalReviewedAdditions += additions;
+                                console.log("reviewed");
                             }
                         } catch (prError) {
                             this.logger.logDebug(`Error processing PR ${pr.number}: ${prError}`);

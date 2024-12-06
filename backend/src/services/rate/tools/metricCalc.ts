@@ -113,8 +113,12 @@ export class metricCalc {
    
 
     calculatePinnedDependencies(data: repoData): number {
-        //if invalid (undefined) dependencies are found
+        if (data.documentation.dependencies == undefined || data.documentation.dependencies.fractionPinned == undefined) {
+            return 0;
+        }
+
         const fractionPinned = data.documentation.dependencies.fractionPinned;
+
 
         return parseFloat(fractionPinned.toFixed(3));
     }
@@ -127,14 +131,28 @@ export class metricCalc {
     }
 
     calculatePullRequestScore(data: repoData): number {
+        if (data.pullRequestMetrics == undefined) {
+            return 0;
+        }
+        
         if (!data.pullRequestMetrics) {
             return 0;
         }
+
+        if (data.pullRequestMetrics.reviewedFraction < 0) {
+            return 0;
+        }
+
+
 
         return data.pullRequestMetrics.reviewedFraction;
     }
 
     getPullRequestLatency(latency: repoLatencyData): number {
+        //how to handle negative values 
+        if (latency.pullRequests < 0) {
+            return 0;
+        }
         return parseFloat((latency.pullRequests / 1000).toFixed(3));
     }
 
@@ -146,7 +164,8 @@ export class metricCalc {
             (0.15 * this.calculateBusFactor(data)) +
             (0.1 * this.calculatePinnedDependencies(data)) +
             (0.15 * this.calculatePullRequestScore(data));
-        return this.checkLicenseExistence(data) * parseFloat(weightedScore.toFixed(3));
+        const score =  this.checkLicenseExistence(data) * parseFloat(weightedScore.toFixed(3));
+        return score == -0 ? 0:score;
     }
 
     getNetScoreLatency(latency: repoLatencyData): number {
@@ -157,7 +176,7 @@ export class metricCalc {
     async getValue(data: repoData): Promise<PackageRating> {
         // Run the functions concurrently and measure the latencies
         return {
-            NetScore: 0.6,
+            NetScore: this.calculateNetScore(data),
             NetScoreLatency: this.getNetScoreLatency(data.latency),
             RampUp: this.calculateRampup(data),
             RampUpLatency: this.getRampupLatency(data.latency),

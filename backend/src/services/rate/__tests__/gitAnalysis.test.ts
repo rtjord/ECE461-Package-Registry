@@ -2,9 +2,9 @@ import { gitAnalysis } from '../tools/api';
 import { envVars } from '../utils/interfaces';
 import { getEnvVars } from '../tools/getEnvVars';
 import { repoData } from '../utils/interfaces';
-
+import { gitData } from '../utils/interfaces';
 // Mock Data for Testing
-const url = "https://github.com/phillips302/ECE461";
+const url = "https://github.com/lodash/lodash"
 
 const fakeRepoData: repoData = {
     repoName: '',
@@ -127,75 +127,126 @@ describe('gitAnalysisClass', () => {
     // In gitAnalysis.test.ts
 
     describe('Pull Request Analysis', () => {
-        it('should fetch pull request metrics', async () => {
-            await gitAnalysisInstance.fetchPullRequests(fakeRepoData);
-            expect(fakeRepoData.pullRequestMetrics).toBeDefined();
-            if (fakeRepoData.pullRequestMetrics) {
-                expect(fakeRepoData.pullRequestMetrics.reviewedFraction).toBeGreaterThanOrEqual(0);
-                expect(fakeRepoData.pullRequestMetrics.reviewedFraction).toBeLessThanOrEqual(1);
-                expect(fakeRepoData.pullRequestMetrics.totalAdditions).toBeGreaterThanOrEqual(0);
-                expect(fakeRepoData.pullRequestMetrics.reviewedAdditions).toBeGreaterThanOrEqual(0);
-            }
-        }, 30000);
-
-        it('should handle repositories with no access or invalid repos', async () => {
-            const invalidRepo = { 
-                ...fakeRepoData, 
-                repoUrl: 'https://github.com/definitely-not-real/non-existent-repo',
-                repoOwner: 'definitely-not-real',
-                repoName: 'non-existent-repo'
+        let gitData: gitData;
+    
+        beforeEach(() => {
+            gitData = {
+                repoName: 'example-repo',
+                repoUrl: 'https://github.com/example-owner/example-repo',
+                repoOwner: 'example-owner',
+                numberOfContributors: -1,
+                numberOfOpenIssues: -1,
+                numberOfClosedIssues: -1,
+                pullRequestMetrics: {
+                    totalAdditions: -1,
+                    reviewedAdditions: -1,
+                    reviewedFraction: -1,
+                },
+                licenses: [],
+                numberOfCommits: -1,
+                numberOfLines: -1,
+                latency: {
+                    contributors: -1,
+                    openIssues: -1,
+                    closedIssues: -1,
+                    lastCommitDate: -1,
+                    licenses: -1,
+                    numberOfCommits: -1,
+                    numberOfLines: -1,
+                    documentation: -1,
+                    pullRequests: -1,
+                    dependencies: -1,
+                },
             };
-
-            // Temporarily reduce exponential backoff for this test
-            const originalBackoff = gitAnalysisInstance.exponentialBackoff;
-            gitAnalysisInstance.exponentialBackoff = async (requestFn) => {
-                try {
-                    return await requestFn();
-                } catch (error) {
-                    throw error;
-                }
-            };
-
-            await gitAnalysisInstance.fetchPullRequests(invalidRepo);
-            
-            // Restore original exponential backoff
-            gitAnalysisInstance.exponentialBackoff = originalBackoff;
-
-            expect(invalidRepo.pullRequestMetrics).toEqual({
+        });
+    
+        it('should calculate metrics for repositories with multiple pull requests', async () => {
+            jest.spyOn((gitAnalysisInstance as any).axiosInstance, 'get')
+                .mockImplementationOnce(() => Promise.resolve({ data: Array(2).fill({ number: 1, additions: 100 }) })) // PRs
+                .mockImplementationOnce(() => Promise.resolve({ data: [{}] })) // Reviews for PR #1
+                .mockImplementationOnce(() => Promise.resolve({ data: [{}] })); // Reviews for PR #2
+    
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+    
+            expect(gitData.pullRequestMetrics).toEqual({
+                totalAdditions: 200,
+                reviewedAdditions: 200,
+                reviewedFraction: 1.0,
+            });
+        });
+    
+        it('should handle repositories with no pull requests', async () => {
+            jest.spyOn((gitAnalysisInstance as any).axiosInstance, 'get').mockResolvedValueOnce({ data: [] }); // No PRs
+    
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+    
+            expect(gitData.pullRequestMetrics).toEqual({
                 totalAdditions: 0,
                 reviewedAdditions: 0,
-                reviewedFraction: 0
+                reviewedFraction: 0.0,
             });
-        }, 10000);  // Reduced timeout since we're bypassing backoff
-
-        it('should handle API errors gracefully', async () => {
-            const badRepo = { 
-                ...fakeRepoData, 
-                repoOwner: '',  // Invalid owner
-                repoName: ''    // Invalid name
-            };
-
-            // Temporarily reduce exponential backoff for this test
-            const originalBackoff = gitAnalysisInstance.exponentialBackoff;
-            gitAnalysisInstance.exponentialBackoff = async (requestFn) => {
-                try {
-                    return await requestFn();
-                } catch (error) {
-                    throw error;
-                }
-            };
-
-            await gitAnalysisInstance.fetchPullRequests(badRepo);
-
-            // Restore original exponential backoff
-            gitAnalysisInstance.exponentialBackoff = originalBackoff;
-
-            expect(badRepo.pullRequestMetrics).toEqual({
+        });
+    
+        it('should handle pull requests with no additions', async () => {
+            jest.spyOn((gitAnalysisInstance as any).axiosInstance, 'get')
+                .mockImplementationOnce(() => Promise.resolve({ data: [{ number: 1, additions: 0 }] })) // PRs
+                .mockImplementationOnce(() => Promise.resolve({ data: [{}] })); // Reviews for PR #1
+    
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+    
+            expect(gitData.pullRequestMetrics).toEqual({
                 totalAdditions: 0,
                 reviewedAdditions: 0,
-                reviewedFraction: 0
+                reviewedFraction: 0.0,
             });
-        }, 10000);  // Reduced timeout since we're bypassing backoff
+        });
+        
+    
+        it('should handle invalid API responses gracefully', async () => {
+            jest.spyOn((gitAnalysisInstance as any).axiosInstance, 'get').mockRejectedValue(new Error('API Error'));
+    
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+    
+            expect(gitData.pullRequestMetrics).toEqual({
+                totalAdditions: 0,
+                reviewedAdditions: 0,
+                reviewedFraction: 0.0,
+            });
+        });
+    
+        it('should handle large repositories efficiently', async () => {
+            const largePRs = Array.from({ length: 100 }, (_, i) => ({ number: i + 1, additions: i + 10 }));
+        
+            jest.spyOn((gitAnalysisInstance as any).axiosInstance, 'get')
+                .mockImplementation((url) => {
+                    if ((url as any).includes('/pulls')) {
+                        return Promise.resolve({ data: largePRs }); // Mock PRs
+                    }
+                    if ((url as any).includes('/reviews')) {
+                        const prNumber = parseInt((url as string).split('/').slice(-2, -1)[0], 10); // Extract PR number
+                        return Promise.resolve({
+                            data: prNumber % 2 === 0 ? [{}] : [], // Even PRs are reviewed
+                        });
+                    }
+                    return Promise.resolve({ data: [] }); // Default response
+                });
+        
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+        
+            const totalAdditions = largePRs.reduce((sum, pr) => sum + pr.additions, 0);
+            const reviewedAdditions = largePRs
+                .filter((_, i) => (i + 1) % 2 === 0) // Only even-indexed PRs are reviewed
+                .reduce((sum, pr) => sum + pr.additions, 0);
+        
+            expect(gitData.pullRequestMetrics).toEqual({
+                totalAdditions,
+                reviewedAdditions,
+                reviewedFraction: reviewedAdditions / totalAdditions,
+            });
+        });
+        
     });
+    
+    
 
 });

@@ -158,9 +158,12 @@ describe('npmAnalysis', () => {
         });
     });
     describe('analyzeDependencies', () => {
-        it('should calculate pinned dependency fraction correctly', async () => {
-            const dir = './testRepo'; // Mock directory
-            const npmData: npmData = {
+        let dir: string;
+        let npmData: npmData;
+    
+        beforeEach(() => {
+            dir = './testRepo';
+            npmData = {
                 repoUrl: 'https://github.com/example/repo',
                 lastCommitDate: '',
                 dependencies: [],
@@ -188,16 +191,18 @@ describe('npmAnalysis', () => {
                     pullRequests: -1,
                 },
             };
+        });
     
-            // Mock reading of package.json
+        it('should calculate pinned dependency fraction correctly', async () => {
             jest.spyOn(fs, 'readFile').mockResolvedValue(JSON.stringify({
                 dependencies: {
-                    'dep1': '1.0.0',
-                    'dep2': '2.3.x',
+                    'dep1': '1.0.0', // Pinned
+                    'dep2': '2.3.x', // Unpinned
+                    'dep5': ''
                 },
                 devDependencies: {
-                    'dep3': '^1.2.3',
-                    'dep4': '1.2.5',
+                    'dep3': '^1.2.3', // Unpinned
+                    'dep4': '1.2.5',  // Pinned
                 },
             }));
     
@@ -205,12 +210,71 @@ describe('npmAnalysis', () => {
             await instance.analyzeDependencies(dir, npmData);
     
             expect(npmData.documentation.dependencies).toEqual({
-                total: 4,
-                pinned: 3,
-                fractionPinned: 0.75,
+                total: 5,
+                pinned: 2,
+                fractionPinned: 0.4,
+            });
+        });
+    
+        it('should handle missing package.json gracefully', async () => {
+            jest.spyOn(fs, 'readFile').mockRejectedValue(new Error('File not found'));
+    
+            const instance = new npmAnalysis(mockEnvVars);
+            await instance.analyzeDependencies(dir, npmData);
+    
+            expect(npmData.documentation.dependencies).toEqual({
+                total: 0,
+                pinned: 0,
+                fractionPinned: 1.0, // No dependencies means perfect pinning
+            });
+        });
+    
+        it('should handle malformed package.json gracefully', async () => {
+            jest.spyOn(fs, 'readFile').mockResolvedValue('invalid json');
+    
+            const instance = new npmAnalysis(mockEnvVars);
+            await instance.analyzeDependencies(dir, npmData);
+    
+            expect(npmData.documentation.dependencies).toEqual({
+                total: 0,
+                pinned: 0,
+                fractionPinned: 1.0, // Treat as no dependencies
+            });
+        });
+    
+        it('should handle large numbers of dependencies efficiently', async () => {
+            const largeDependencies: { [key: string]: string } = {};
+            for (let i = 0; i < 1000; i++) {
+                largeDependencies[`dep${i}`] = i % 2 === 0 ? '1.0.0' : '^1.0.0'; // Alternate pinned/unpinned
+            }
+    
+            jest.spyOn(fs, 'readFile').mockResolvedValue(JSON.stringify({ dependencies: largeDependencies }));
+    
+            const instance = new npmAnalysis(mockEnvVars);
+            await instance.analyzeDependencies(dir, npmData);
+    
+            expect(npmData.documentation.dependencies.total).toEqual(1000);
+            expect(npmData.documentation.dependencies.pinned).toEqual(500); // 50% pinned
+            expect(npmData.documentation.dependencies.fractionPinned).toBeCloseTo(0.5, 2);
+        });
+    
+        it('should handle empty dependencies object gracefully', async () => {
+            jest.spyOn(fs, 'readFile').mockResolvedValue(JSON.stringify({
+                dependencies: {},
+                devDependencies: {},
+            }));
+    
+            const instance = new npmAnalysis(mockEnvVars);
+            await instance.analyzeDependencies(dir, npmData);
+    
+            expect(npmData.documentation.dependencies).toEqual({
+                total: 0,
+                pinned: 0,
+                fractionPinned: 1.0, // No dependencies means perfect pinning
             });
         });
     });
+    
 
     describe('deleteRepo', () => {
         it('should delete the repository', async () => {
