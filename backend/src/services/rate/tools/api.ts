@@ -5,6 +5,8 @@ import axios, { AxiosInstance } from 'axios';
 import { gitData, npmData } from '../utils/interfaces';
 import { logger } from './logging';
 import { envVars } from '../utils/interfaces';
+import * as semver from 'semver';
+
 
 export class npmAnalysis {
     private logger: logger;
@@ -97,23 +99,44 @@ export class npmAnalysis {
         }
     }
 
+    isPinnedToMajorMinor(version: string): boolean {
+        const parsed = semver.parse(version);
+        return parsed !== null && parsed.major !== null && parsed.minor !== null && !parsed.prerelease && !parsed.build;
+    }
+
+
     async analyzeDependencies(dir: string, npmData: npmData): Promise<void> { 
         try {
             const packageJsonPath = `${dir}/package.json`;
             const packageJson = await fs.readFile(packageJsonPath, 'utf-8');
             const packageData = JSON.parse(packageJson);
 
+
             const dependencies = {... packageData.dependencies, ... packageData.devDependencies};
-            const pinnedCount =  Object.values(dependencies).filter(version => /^\d+\.\d+/.test(version as string)).length;
+            //make sure these are strings for semver
+            
             
             const totalDependencies = Object.keys(dependencies).length;
-            const fractionPinned = totalDependencies > 0 ? pinnedCount / totalDependencies : 1.0;
-
-            npmData.documentation.dependencies = {
-                total: totalDependencies,
-                pinned: pinnedCount,
-                fractionPinned: parseFloat(fractionPinned.toFixed(3))
-            };
+            if (totalDependencies === 0) {
+                npmData.documentation.dependencies = {
+                    total: 0,
+                    pinned: 0,
+                    fractionPinned: 1.0
+                };
+            } else {
+                let pinnedCount = 0;
+                for (const version of Object.values(dependencies)) {
+                    if (this.isPinnedToMajorMinor(version as string)) {
+                        pinnedCount++;
+                    }
+                }
+                const fractionPinned = pinnedCount / totalDependencies;   
+                npmData.documentation.dependencies = {
+                    total: totalDependencies,
+                    pinned: pinnedCount,
+                    fractionPinned: parseFloat(fractionPinned.toFixed(3))
+                };
+            }
         }
         catch (error) {
             this.logger.logDebug(`Error analyzing dependencies in ${dir} for ${npmData.repoUrl}: ${error}`);
@@ -124,6 +147,8 @@ export class npmAnalysis {
             };
         }
     }
+
+
     async deleteRepo(dir: string): Promise<void> {
         this.logger.logDebug(`Deleting repository ${dir}...`);
         try {
@@ -494,15 +519,26 @@ export class gitAnalysis {
             while (hasMorePRs) {
                 try {
                     // Fetch PRs with pagination
-                    const response = await this.exponentialBackoff(() =>
-                        this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`, {
+                    // const response = await this.exponentialBackoff(() =>
+                    //     this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`, {
+                    //         params: {
+                    //             state: 'closed',
+                    //             per_page: 100,
+                    //             page: page
+                    //         }
+                    //     })
+                    // );
+                    const response = await this.axiosInstance.get(
+                        `/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`,
+                        {
                             params: {
-                                state: 'closed',
+                                state: "closed",
                                 per_page: 100,
-                                page: page
-                            }
-                        })
+                                page: page,
+                            },
+                        }
                     );
+
 
                     const prs = response.data;
                     hasMorePRs = prs.length === 100;
@@ -510,12 +546,13 @@ export class gitAnalysis {
                     // Process each PR
                     for (const pr of prs) {
                         try {
-                            // Get PR details including additions
-                            const prDetailResponse = await this.exponentialBackoff(() =>
-                                this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}`)
-                            );
+                            // // Get PR details including additions
+                            // const prDetailResponse = await this.exponentialBackoff(() =>
+                            //     this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}`)
+                            // );
 
-                            const additions = prDetailResponse.data.additions;
+                            // const additions = prDetailResponse.data.additions;
+                            const additions = pr.additions;
                             totalAdditions += additions;
 
                             // Get reviews for this PR
@@ -544,7 +581,7 @@ export class gitAnalysis {
             gitData.pullRequestMetrics = {
                 totalAdditions,
                 reviewedAdditions: totalReviewedAdditions,
-                reviewedFraction: totalAdditions > 0 ? parseFloat((totalReviewedAdditions / totalAdditions).toFixed(3)) : 0
+                reviewedFraction: totalAdditions > 0 ? parseFloat((totalReviewedAdditions / totalAdditions).toFixed(3)) : 0.0
             };
 
             this.logger.logDebug(`Pull request metrics calculated successfully for ${gitData.repoName}`);
@@ -554,7 +591,7 @@ export class gitAnalysis {
             gitData.pullRequestMetrics = {
                 totalAdditions: 0,
                 reviewedAdditions: 0,
-                reviewedFraction: 0
+                reviewedFraction: 0.0
             };
         }
     }

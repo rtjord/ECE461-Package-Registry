@@ -3,6 +3,8 @@ import { metricData } from '../utils/interfaces';
 import { repoLatencyData } from '../utils/types';
 import { PackageRating } from '../../../common/interfaces';
 
+const semver = require('semver');
+
 export class metricCalc {
 
     calculateCorrectness(data: repoData): number {
@@ -108,17 +110,11 @@ export class metricCalc {
         return 0;
     }
 
+   
+
     calculatePinnedDependencies(data: repoData): number {
         //if invalid (undefined) dependencies are found
-        if (data.dependencies == undefined) {
-            return 0;
-        }
-        if (!data.dependencies || data.dependencies.length === 0) {
-            return 1.0; // Perfect score if no dependencies
-        }
-
-        const pinnedCount = data.dependencies.filter(dep => /^\d+\.\d+/.test(dep.version)).length;
-        const fractionPinned = pinnedCount / data.dependencies.length;
+        const fractionPinned = data.documentation.dependencies.fractionPinned;
 
         return parseFloat(fractionPinned.toFixed(3));
     }
