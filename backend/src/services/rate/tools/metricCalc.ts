@@ -154,7 +154,7 @@ export class metricCalc {
     }
 
     getNetScoreLatency(latency: repoLatencyData): number {
-        return parseFloat(((Math.max(latency.openIssues, latency.licenses) + latency.numberOfLines + latency.closedIssues + latency.numberOfCommits + latency.contributors + latency.pullRequests + (latency.dependencies || 0)) / 1000).toFixed(3));
+        return parseFloat((((Math.max(latency.openIssues, latency.licenses) + latency.numberOfLines + latency.closedIssues + latency.numberOfCommits + latency.contributors + latency.pullRequests + latency.dependencies)) / 1000).toFixed(3));
         //return parseFloat((Math.max(latency.numberOfLines, latency.openIssues, latency.closedIssues, latency.licenses, latency.numberOfCommits, latency.numberOfLines, latency.documentation) / 1000).toFixed(3));
     }
 

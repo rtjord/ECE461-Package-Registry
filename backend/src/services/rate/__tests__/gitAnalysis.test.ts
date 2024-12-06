@@ -16,13 +16,23 @@ const fakeRepoData: repoData = {
     lastCommitDate: '',
     licenses: [],
     numberOfCommits: -1,
+    dependencies: [],
     numberOfLines: -1,
-    pullRequestMetrics: undefined,
+    pullRequestMetrics: {
+        totalAdditions: 0,
+        reviewedAdditions: 0,
+        reviewedFraction: 0
+    },
     documentation: {
         hasReadme: false,
         numLines: -1,
         hasExamples: false,
-        hasDocumentation: false
+        hasDocumentation: false,
+        dependencies: {
+            total: -1,
+            fractionPinned: -1,
+            pinned: -1
+        }
     },
     latency: {
         contributors: -1,
@@ -33,7 +43,8 @@ const fakeRepoData: repoData = {
         numberOfCommits: -1,
         numberOfLines: -1,
         documentation: -1,
-        pullRequests: -1
+        pullRequests: -1,
+        dependencies: -1
     }
 };
 

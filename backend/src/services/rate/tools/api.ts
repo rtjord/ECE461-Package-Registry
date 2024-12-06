@@ -150,12 +150,17 @@ export class npmAnalysis {
         const npmData: npmData = {
             repoUrl: url,
             lastCommitDate: '',
+            dependencies: [],
             documentation: {
                 hasReadme: false,
                 numLines: -1,
                 hasExamples: false,
                 hasDocumentation: false,
-                dependencies: undefined,
+                dependencies: {
+                    total: 0,
+                    pinned: 0,
+                    fractionPinned: 1.0
+                }
             },
             latency: {
                 contributors: -1,
@@ -568,6 +573,11 @@ export class gitAnalysis {
             numberOfContributors: -1,
             numberOfOpenIssues: -1,
             numberOfClosedIssues: -1,
+            pullRequestMetrics: {
+                totalAdditions: -1,
+                reviewedAdditions: -1,
+                reviewedFraction: -1
+            },
             licenses: [],
             numberOfCommits: -1,
             numberOfLines: -1,
@@ -580,7 +590,8 @@ export class gitAnalysis {
                 numberOfCommits: -1,
                 numberOfLines: -1,
                 documentation: -1,
-                pullRequests: -1
+                pullRequests: -1,
+                dependencies: -1
             }
         };
 

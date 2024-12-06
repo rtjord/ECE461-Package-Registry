@@ -54,11 +54,17 @@ describe('npmAnalysis', () => {
         const mockNpmData: npmData = {
             repoUrl: 'https://example.com/repo',
             lastCommitDate: '',
+            dependencies: [],
             documentation: {
                 hasReadme: false,
                 numLines: -1,
                 hasExamples: false,
-                hasDocumentation: false
+                hasDocumentation: false,
+                dependencies: {
+                    total: 0,
+                    fractionPinned: 1.0,
+                    pinned: 0,
+                }
             },
             latency: {
                 contributors: -1,
@@ -69,7 +75,8 @@ describe('npmAnalysis', () => {
                 numberOfCommits: -1,
                 numberOfLines: -1,
                 documentation: -1,
-                pullRequests: -1
+                pullRequests: -1,
+                dependencies: -1
             }
         };
 
@@ -102,11 +109,17 @@ describe('npmAnalysis', () => {
         const mockNpmData: npmData = {
             repoUrl: 'https://example.com/repo',
             lastCommitDate: '',
+            dependencies: [],
             documentation: {
                 hasReadme: false,
                 numLines: -1,
                 hasExamples: false,
-                hasDocumentation: false
+                hasDocumentation: false,
+                dependencies: {
+                    total: 0,
+                    fractionPinned: 1.0,
+                    pinned: 0,
+                }
             },
             latency: {
                 contributors: -1,
@@ -117,7 +130,8 @@ describe('npmAnalysis', () => {
                 numberOfCommits: -1,
                 numberOfLines: -1,
                 documentation: -1,
-                pullRequests: -1
+                pullRequests: -1,
+                dependencies: -1
             }
         };
 
@@ -149,12 +163,17 @@ describe('npmAnalysis', () => {
             const npmData: npmData = {
                 repoUrl: 'https://github.com/example/repo',
                 lastCommitDate: '',
+                dependencies: [],
                 documentation: {
                     hasReadme: true,
                     numLines: 100,
                     hasExamples: false,
                     hasDocumentation: true,
-                    dependencies: undefined, // Initially undefined
+                    dependencies: {
+                        total: -1,
+                        fractionPinned: -1,
+                        pinned: -1,
+                    },
                 },
                 latency: {
                     contributors: -1,

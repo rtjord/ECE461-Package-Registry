@@ -1,9 +1,11 @@
 import { repoData } from '../utils/interfaces';
 import { metricCalc } from '../tools/metricCalc';
+import { DependencyFailureException } from '@aws-sdk/client-opensearch';
 
 // Mock Data for testing with vaild data
 const fakeRepoData: repoData = {
     repoName: 'example-repo',
+    dependencies: [],
     repoUrl: 'https://github.com/example-repo',
     repoOwner: 'example-owner',
     numberOfContributors: 400,
@@ -22,7 +24,12 @@ const fakeRepoData: repoData = {
         hasReadme: true,
         numLines: 1000,
         hasExamples: true,
-        hasDocumentation: true
+        hasDocumentation: true,
+        dependencies: {
+            total: 0,
+            fractionPinned: 1.0,
+            pinned: 0,
+        }
     },
     latency: {
         contributors: 0,
@@ -33,7 +40,8 @@ const fakeRepoData: repoData = {
         numberOfCommits: 0,
         numberOfLines: 0,
         documentation: 0,
-        pullRequests: 0
+        pullRequests: 0,
+        dependencies  : 0
     }
 };
 
@@ -41,6 +49,7 @@ const fakeRepoData: repoData = {
 const invalidData: repoData = {
     repoName: 'example-repo',
     repoUrl: 'https://github.com/example-repo',
+    dependencies : [],
     repoOwner: 'example-owner',
     numberOfContributors: -1,
     numberOfOpenIssues: -1,
@@ -49,12 +58,21 @@ const invalidData: repoData = {
     licenses: [''],
     numberOfCommits: -1,
     numberOfLines: -1,
-    pullRequestMetrics: undefined,
+    pullRequestMetrics: {
+        totalAdditions: -1,
+        reviewedAdditions: -1,
+        reviewedFraction: -1
+    },
     documentation: {
         hasReadme: false,
         numLines: -1,
         hasExamples: false,
-        hasDocumentation: false
+        hasDocumentation: false,
+        dependencies: {
+            total: -1,
+            fractionPinned: -1,
+            pinned: -1,
+        }
     },
     latency: {
         contributors: -1,
@@ -65,7 +83,8 @@ const invalidData: repoData = {
         numberOfCommits: -1,
         numberOfLines: -1,
         documentation: -1,
-        pullRequests: -1
+        pullRequests: -1,
+        dependencies: -1
     }
 };
 
@@ -267,7 +286,7 @@ describe('metricCalcClass', () => {
         });
     
         it('should return 0 for invalid dependencies', () => {
-            fakeRepoData.dependencies = undefined;
+            fakeRepoData.dependencies = [];
             const pinnedDependencies = metricClass.calculatePinnedDependencies(fakeRepoData);
             expect(pinnedDependencies).toEqual(0);
         });
@@ -289,7 +308,11 @@ describe('metricCalcClass', () => {
         });
     
         it('should return 0 for undefined PR metrics', () => {
-            fakeRepoData.pullRequestMetrics = undefined;
+            fakeRepoData.pullRequestMetrics = {
+                totalAdditions: -1,
+                reviewedAdditions: -1,
+                reviewedFraction: -1
+            };
             const prScore = metricClass.calculatePullRequestScore(fakeRepoData);
             expect(prScore).toEqual(0);
         });

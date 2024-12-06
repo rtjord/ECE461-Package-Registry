@@ -15,6 +15,7 @@ const fakeRepoData: repoData = {
     numberOfClosedIssues: -1,
     lastCommitDate: '',
     licenses: [],
+    dependencies: [],
     numberOfCommits: -1,
     numberOfLines: -1,
     pullRequestMetrics: {
@@ -42,7 +43,8 @@ const fakeRepoData: repoData = {
         numberOfCommits: -1,
         numberOfLines: -1,
         documentation: -1,
-        pullRequests: -1
+        pullRequests: -1,
+        dependencies: -1
     }
 };
 
@@ -55,9 +57,14 @@ const fakeWrongRepoData: repoData = {
     numberOfClosedIssues: -1,
     lastCommitDate: '',
     licenses: [],
+    dependencies: [],
     numberOfCommits: -1,
     numberOfLines: -1,
-    pullRequestMetrics: undefined,
+    pullRequestMetrics: {
+        totalAdditions: 0,
+        reviewedAdditions: 0,
+        reviewedFraction: 0
+    },
     documentation: {
         hasReadme: false,
         numLines: -1,
@@ -78,7 +85,8 @@ const fakeWrongRepoData: repoData = {
         numberOfCommits: -1,
         numberOfLines: -1,
         documentation: -1,
-        pullRequests: -1
+        pullRequests: -1,
+        dependencies: -1
     }
 };
 
