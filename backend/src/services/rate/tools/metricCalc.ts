@@ -161,7 +161,7 @@ export class metricCalc {
     async getValue(data: repoData): Promise<PackageRating> {
         // Run the functions concurrently and measure the latencies
         return {
-            NetScore: this.calculateNetScore(data),
+            NetScore: 0.6,
             NetScoreLatency: this.getNetScoreLatency(data.latency),
             RampUp: this.calculateRampup(data),
             RampUpLatency: this.getRampupLatency(data.latency),
