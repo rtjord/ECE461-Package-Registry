@@ -1,0 +1,14 @@
+{
+  "body": "{\"Description\": \"I need a web framework\"}",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "pathParameters": null,
+  "queryStringParameters": null,
+  "requestContext": {
+    "requestId": "test-request-id",
+    "httpMethod": "POST",
+    "resourcePath": "/packages/by-regex"
+  }
+}

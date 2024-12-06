@@ -158,6 +158,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             // upload readme to opensearch
             console.log('Uploading readme to opensearch');
             await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, new_metadata);
+            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'recommend', readme, new_metadata);
             console.log('Uploaded readme to opensearch');
         }
 

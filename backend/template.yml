@@ -483,6 +483,44 @@ Resources:
             Path: /tracks
             Method: get
 
+  PackageRecommendRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: # Attach AWS Managed Policies
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  PackageRecommend:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: dist/handlers/PackageRecommend
+      MemorySize: 128
+      Timeout: 30
+      Layers:
+        - !Ref DependenciesLayer
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MyApi
+            Path: /recommend
+            Method: post
+      Role: !GetAtt PackageRecommendRole.Arn
+      Environment:
+        Variables:
+          DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+
 Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"

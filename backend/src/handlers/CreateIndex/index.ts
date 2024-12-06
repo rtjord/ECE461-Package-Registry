@@ -5,6 +5,7 @@ import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
+const { createKeywordIndex, createTextIndex } = require(`${commonPath}/opensearch`);
 
 interface EventResourceProperties {
   DomainEndpoint: string;
@@ -45,7 +46,7 @@ export const handler = async (event: LambdaEvent, context: Context) => {
 
     if (!exists) {
       console.log(`Index '${indexName}' does not exist. Creating...`);
-      await createIndex(domainEndpoint, indexName);
+      await createKeywordIndex(domainEndpoint, indexName);
     } else {
       console.log(`Index '${indexName}' already exists. Skipping creation.`);
     }
@@ -56,7 +57,18 @@ export const handler = async (event: LambdaEvent, context: Context) => {
 
     if (!exists) {
       console.log(`Index '${indexName}' does not exist. Creating...`);
-      await createIndex(domainEndpoint, indexName);
+      await createKeywordIndex(domainEndpoint, indexName);
+    } else {
+      console.log(`Index '${indexName}' already exists. Skipping creation.`);
+    }
+
+    indexName = "recommend";
+
+    exists = await checkIndexExists(domainEndpoint, indexName);
+
+    if (!exists) {
+      console.log(`Index '${indexName}' does not exist. Creating...`);
+      await createTextIndex(domainEndpoint, indexName);
     } else {
       console.log(`Index '${indexName}' already exists. Skipping creation.`);
     }
@@ -151,55 +163,5 @@ async function checkIndexExists(domainEndpoint: string, indexName: string): Prom
       console.error("Error checking index existence:", error);
       throw new Error(`Error checking index existence: ${error}`);
     }
-  }
-}
-
-// Function to create an index
-async function createIndex(domainEndpoint: string, indexName: string) {
-  try {
-    const mapping = {
-      mappings: {
-        properties: {
-          content: {
-            type: "keyword", // Treat README content as a single string
-          },
-          timestamp: {
-            type: "date", // ISO-8601 date format
-          },
-          metadata: {
-            properties: {
-              Name: { type: "keyword" },
-              Version: { type: "keyword" },
-              ID: { type: "keyword" },
-            },
-          },
-        },
-      },
-    };
-    const credentials = await defaultProvider()();
-    const createRequest = {
-      host: domainEndpoint.replace(/^https?:\/\//, ""),
-      path: `/${indexName}`,
-      service: "es",
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(mapping),
-    };
-
-    aws4.sign(createRequest, credentials);
-
-    await axios({
-      method: createRequest.method,
-      url: `https://${createRequest.host}${createRequest.path}`,
-      headers: createRequest.headers,
-      data: createRequest.body,
-    });
-
-    console.log(`Index '${indexName}' created successfully.`);
-  } catch (error) {
-    console.error("Error creating index:", error);
-    throw new Error(`Error creating index: ${error}`);
   }
 }

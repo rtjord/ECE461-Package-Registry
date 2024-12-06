@@ -15,7 +15,7 @@ import {
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
-const { clearDomain, createIndex } = require(`${commonPath}/opensearch`);
+const { clearDomain, createKeywordIndex, createTextIndex } = require(`${commonPath}/opensearch`);
 
 // Lambda handler
 export const handler: APIGatewayProxyHandler = async () => {
@@ -46,8 +46,9 @@ export const handler: APIGatewayProxyHandler = async () => {
 
         console.log("All resources cleared successfully.");
 
-        await createIndex(domain, "readmes");
-        await createIndex(domain, "packagejsons");
+        await createKeywordIndex(domain, "readmes");
+        await createKeywordIndex(domain, "packagejsons");
+        await createTextIndex(domain, "recommend");
         console.log("Indices recreated successfully.");
 
         return {
