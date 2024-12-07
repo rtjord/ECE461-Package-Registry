@@ -33,7 +33,7 @@ describe("E2E Test for PackageRecommend Endpoint", () => {
     }, 90000);
     afterAll(async () => {
         // Reset the registry after running the tests
-        // await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`);
     }, 90000);
 
     it("should return a list of 5 packages with express as the first", async () => {
