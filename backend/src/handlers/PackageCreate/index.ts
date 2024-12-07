@@ -5,7 +5,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, generatePackageID, getSecret, getScores, getEnvVariable, extractFieldFromPackageJson, getRepoUrl } = require(`${commonPath}/utils`);
+const { createErrorResponse, generatePackageID, getSecret, getScores, extractFieldFromPackageJson, getRepoUrl } = require(`${commonPath}/utils`);
 const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
@@ -40,6 +40,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             console.error('Request body is missing.');
             return createErrorResponse(400, 'Request body is missing.');
         }
+
+        console.log('Event body:', event.body);
 
         // The request body should be a PackageData object
         const requestBody: PackageData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
@@ -136,19 +138,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             ID: packageId,
         };
 
-        const domainEndpoint = getEnvVariable('DOMAIN_ENDPOINT');
-
         if (readme){
             // upload readme to opensearch
             console.log('Uploading readme to opensearch...');
-            await uploadToOpenSearch(domainEndpoint, 'readmes', readme, metadata);
+            await uploadToOpenSearch('readmes', readme, metadata);
+            await uploadToOpenSearch('recommend', readme, metadata, false);
             console.log('Readme uploaded to opensearch.');
         }
 
         if (packageJson) {
             // upload package.json to opensearch
             console.log('Uploading package.json to opensearch...');
-            await uploadToOpenSearch(domainEndpoint, 'packagejsons', packageJson, metadata);
+            await uploadToOpenSearch('packagejsons', packageJson, metadata);
             console.log('Package.json uploaded to opensearch.');
         }
 
@@ -165,8 +166,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         
         const standaloneCost = packageContent.length / (1024 * 1024);
         console.log('Standalone Cost:', standaloneCost);
-        // const dependenciesCost = await calculateDependenciesCost(packageJson);
-        // const totalCost = standaloneCost + dependenciesCost;
 
         // Save the package metadata to DynamoDB
         const row: PackageTableRow = {

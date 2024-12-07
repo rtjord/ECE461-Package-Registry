@@ -94,3 +94,7 @@ export interface PackageTableRow {
     totalCost?: number; // Total cost including dependencies if applicable
     Rating: PackageRating;
 }
+
+export interface RecommendationRequest {
+    Description: string; // Description of package
+}

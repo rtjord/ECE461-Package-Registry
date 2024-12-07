@@ -180,6 +180,7 @@ paths:
       operationId: PackageRetrieve
       summary: Interact with the package with this ID. (BASELINE)
       description: Return this package.
+    operationId: PackageRecommend
     post:
       requestBody:
         content:
@@ -511,9 +512,18 @@ paths:
       in: header
       required: true
   /tracks:
-    get:
+    post:
       summary: "Get the list of tracks a student has planned to implement in their code"
-
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageRegEx'
+            examples:
+              ExampleRegEx:
+                value:
+                  RegEx: .*?Underscore.*
+        required: true
       responses:
         200:
           description: Return the list of tracks the student plans to implement
@@ -535,6 +545,49 @@ paths:
 
         500:
           description: The system encountered an error while retrieving the student's track information.
+  /recommend:
+    post:
+      summary: "Return the top 5 list of recommended packages fitting a text description"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationRequest'
+            examples:
+              ExampleRegEx:
+                value:
+                  Description: A package that makes it easy to work with dates and times.
+      responses:
+        200:
+          description: Return the list of recommended packages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PackageMetadata'
+              examples:
+                ExampleResponse:
+                  value:
+                  - Version: 1.2.3
+                    Name: Moment
+                    ID: moment
+                  - Version: 2.1.0
+                    Name: Date-fns
+                    ID: date-fns
+                  - Version: 1.2.0
+                    Name: Luxon
+                    ID: luxon
+                  - Version: 1.2.0
+                    Name: Date-and-time
+                    ID: date-and-time
+                  - Version: 1.2.0
+                    Name: Time
+                    ID: time
+        400:
+          description: Missing field(s) in the request or it is formed improperly, or is invalid
+        500:
+          description: The system encountered an error while retrieving the recommended packages.
 
 
 
@@ -843,3 +896,13 @@ components:
           description: A regular expression over package names and READMEs that is
             used for searching for a package
           type: string
+    RecommendationRequest:
+      description: "Request package recommendations based on a text description."
+      type: object
+      required:
+      - Description
+      properties:
+        Description:
+          description: "Description of the package."
+          type: string
+      example: "A package that does X, Y, and Z."

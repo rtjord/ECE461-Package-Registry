@@ -2,13 +2,11 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import axios from "axios";
-import aws4 from "aws4";
-import { defaultProvider } from "@aws-sdk/credential-provider-node";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
 const { getPackageById } = require(`${commonPath}/dynamodb`);
+const { deleteFromOpenSearch } = require(`${commonPath}/opensearch`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageTableRow = typeof interfaces.PackageTableRow;
@@ -40,7 +38,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         await deletePackageFromS3(s3Client, existingPackage.s3Key);
         console.log(`Deleted package file from S3 with key: ${existingPackage.s3Key}`);
 
-        await deleteDocumentById(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', id);
+        await deleteFromOpenSearch('readmes', id);
+        await deleteFromOpenSearch('packagejsons', id);
+        await deleteFromOpenSearch('recommend', id);
         console.log(`Deleted document with ID: ${id} from OpenSearch index.`);
 
         return createSuccessResponse(existingPackage.PackageName, existingPackage.Version);
@@ -87,35 +87,35 @@ async function deletePackageFromS3(client: S3Client, s3Key: string): Promise<voi
     }
 }
 
-async function deleteDocumentById(domainEndpoint: string, indexName: string, documentId: string) {
-    const credentials = await defaultProvider()();
+// async function deleteDocumentById(domainEndpoint: string, indexName: string, documentId: string) {
+//     const credentials = await defaultProvider()();
 
-    // Construct the delete document request
-    const request = {
-        host: domainEndpoint.replace(/^https?:\/\//, ""),
-        path: `/${indexName}/_doc/${documentId}`, // Path to the specific document
-        service: "es",
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    };
+//     // Construct the delete document request
+//     const request = {
+//         host: domainEndpoint.replace(/^https?:\/\//, ""),
+//         path: `/${indexName}/_doc/${documentId}`, // Path to the specific document
+//         service: "es",
+//         method: "DELETE",
+//         headers: {
+//             "Content-Type": "application/json",
+//         },
+//     };
 
-    aws4.sign(request, credentials);
+//     aws4.sign(request, credentials);
 
-    console.log(`Deleting document with ID '${documentId}' from index: '${indexName}'`);
-    try {
-        const response = await axios({
-            method: request.method,
-            url: `https://${request.host}${request.path}`,
-            headers: request.headers,
-        });
-        console.log(`Document with ID '${documentId}' deleted from index '${indexName}':`, response.data);
-    } catch (error) {
-        console.error(`Error deleting document with ID '${documentId}' from index '${indexName}':`, error);
-        throw new Error(`Failed to delete document with ID '${documentId}' from index '${indexName}'.`);
-    }
-}
+//     console.log(`Deleting document with ID '${documentId}' from index: '${indexName}'`);
+//     try {
+//         const response = await axios({
+//             method: request.method,
+//             url: `https://${request.host}${request.path}`,
+//             headers: request.headers,
+//         });
+//         console.log(`Document with ID '${documentId}' deleted from index '${indexName}':`, response.data);
+//     } catch (error) {
+//         console.error(`Error deleting document with ID '${documentId}' from index '${indexName}':`, error);
+//         throw new Error(`Failed to delete document with ID '${documentId}' from index '${indexName}'.`);
+//     }
+// }
 
 
 // Create success response
