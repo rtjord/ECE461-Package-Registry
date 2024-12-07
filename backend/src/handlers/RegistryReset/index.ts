@@ -15,7 +15,7 @@ import {
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
-const { checkIndexExists, deleteIndex, createIndex, clearIndex } = require(`${commonPath}/opensearch`);
+const { checkIndexExists, deleteIndex, createIndex } = require(`${commonPath}/opensearch`);
 
 
 const tokenizedMapping = {
