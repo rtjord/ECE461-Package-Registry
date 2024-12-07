@@ -30,16 +30,16 @@ const tokenizedMapping = {
             timestamp: {
                 type: "date", // ISO-8601 date format
             },
-            embedding: {
-                type: "knn_vector", // K-Nearest Neighbors vector for similarity search
-                dimension: 1536, // Dimensions of the embedding vector
-                method: {
-                    engine: "lucene",
-                    space_type: "l2",
-                    name: "hnsw",
-                    parameters: {}
-                }
-            },
+            // embedding: {
+            //     type: "knn_vector", // K-Nearest Neighbors vector for similarity search
+            //     dimension: 1536, // Dimensions of the embedding vector
+            //     method: {
+            //         engine: "lucene",
+            //         space_type: "l2",
+            //         name: "hnsw",
+            //         parameters: {}
+            //     }
+            // },
             metadata: {
                 properties: {
                     Name: { type: "keyword" },

@@ -387,9 +387,9 @@ export async function searchReadmes(
 export async function recommendPackages(description: string): Promise<PackageMetadata[]> {
   try {
 
-    console.log('Generating embedding for description:', description);
-    const embedding = await generateEmbedding(description);
-    console.log('Embedding of description:', embedding);
+    // console.log('Generating embedding for description:', description);
+    // const embedding = await generateEmbedding(description);
+    // console.log('Embedding of description:', embedding);
     // const recommendationQuery = {
     //   size: 5,
     //   query: {
@@ -403,8 +403,12 @@ export async function recommendPackages(description: string): Promise<PackageMet
     // };
     const recommendationQuery = {
       "query": {
-        "match_all": {}
+        "multi_match": {
+          "query": description,
+          "fields": ["content"]
+        }
       },
+      "size": 5
     };
 
     // Prepare the OpenSearch request
@@ -421,6 +425,7 @@ export async function recommendPackages(description: string): Promise<PackageMet
       body: JSON.stringify(recommendationQuery),
     };
 
+    console.log('Recommendation request:', request.body);
     const response = await makeOpenSearchRequest(request);
     console.log('Recommendation response:', response.data);
     const packages: PackageMetadata[] = [];
@@ -432,7 +437,7 @@ export async function recommendPackages(description: string): Promise<PackageMet
   } catch (error) {
     // Error handling
     if (axios.isAxiosError(error)) {
-      console.error(`Error creating index: ${JSON.stringify(error.response?.data)}`);
+      console.error(`Error recommending packages: ${JSON.stringify(error.response?.data)}`);
     }
     return [];
   }
