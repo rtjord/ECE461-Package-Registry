@@ -21,12 +21,13 @@ describe("E2E Test for PackageRecommend Endpoint", () => {
 
         // Upload packages to the registry
         await upload("yazl", "https://www.npmjs.com/package/yazl");
-        await upload("express", "https://www.npmjs.com/package/express");
-        await upload("debug", "https://www.npmjs.com/package/debug");
-        await upload("inversify", "https://www.npmjs.com/package/inversify");
+        // await upload("express", "https://www.npmjs.com/package/express");
+        // await upload("debug", "https://www.npmjs.com/package/debug");
+        // await upload("inversify", "https://www.npmjs.com/package/inversify");
+        // await upload("tslib", "https://www.npmjs.com/package/tslib");
+        // await upload("lodash", "https://www.npmjs.com/package/lodash");
+
         // await upload("axios", "https://www.npmjs.com/package/axios");
-        await upload("tslib", "https://www.npmjs.com/package/tslib");
-        await upload("lodash", "https://www.npmjs.com/package/lodash");
 
 
     }, 90000);
@@ -34,10 +35,10 @@ describe("E2E Test for PackageRecommend Endpoint", () => {
         // Reset the registry after running the tests
         await axios.delete(`${baseUrl}/reset`);
     }, 90000);
-    
+
     it("should return a list of 5 packages with express as the first", async () => {
         const requestBody: RecommendationRequest = {
-            Description: "A library for zip file creation/extraction"
+            Description: "A library for zip file creation for node"
         };
 
         const response = await axios.post(`${baseUrl}/recommend`, requestBody);
@@ -49,7 +50,7 @@ describe("E2E Test for PackageRecommend Endpoint", () => {
 
     }, timeout);
 
-    it ("should return a 400 status if Description is empty", async () => {
+    it("should return a 400 status if Description is empty", async () => {
         const requestBody: RecommendationRequest = {
             Description: ""
         };

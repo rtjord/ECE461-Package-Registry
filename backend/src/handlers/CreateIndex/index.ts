@@ -36,6 +36,9 @@ export const handler = async (event: LambdaEvent, context: Context) => {
   try {
 
     const tokenizedMapping = {
+      settings: {
+        "index.knn": true
+      },
       mappings: {
         properties: {
           content: {
@@ -43,6 +46,16 @@ export const handler = async (event: LambdaEvent, context: Context) => {
           },
           timestamp: {
             type: "date", // ISO-8601 date format
+          },
+          embedding: {
+            type: "knn_vector", // K-Nearest Neighbors vector for similarity search
+            dimension: 1536, // Dimensions of the embedding vector
+            method: {
+              engine: "lucene",
+              space_type: "l2",
+              name: "hnsw",
+              parameters: {}
+            }
           },
           metadata: {
             properties: {
@@ -54,12 +67,11 @@ export const handler = async (event: LambdaEvent, context: Context) => {
         },
       },
     };
-
     const nonTokenizedMapping = {
       mappings: {
         properties: {
           content: {
-            type: "text", 
+            type: "text",
             index_options: "offsets",
             analyzer: "keyword", // Use the keyword analyzer to avoid tokenization
           },

@@ -28,7 +28,6 @@ Resources:
                 - !GetAtt PackageByRegExRole.Arn
                 - !GetAtt PackageRecommendRole.Arn
                 - !GetAtt GetCostRole.Arn
-                - arn:aws:iam::122610496633:role/aws-reserved/sso.amazonaws.com/us-east-2/AWSReservedSSO_AdministratorAccess_0fd429cd872b2466
             Action: "sts:AssumeRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess

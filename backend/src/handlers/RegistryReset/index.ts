@@ -15,10 +15,13 @@ import {
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
-const { deleteIndex, createIndex } = require(`${commonPath}/opensearch`);
+const { checkIndexExists, deleteIndex, createIndex } = require(`${commonPath}/opensearch`);
 
 
 const tokenizedMapping = {
+    settings: {
+        "index.knn": true
+    },
     mappings: {
         properties: {
             content: {
@@ -26,6 +29,16 @@ const tokenizedMapping = {
             },
             timestamp: {
                 type: "date", // ISO-8601 date format
+            },
+            embedding: {
+                type: "knn_vector", // K-Nearest Neighbors vector for similarity search
+                dimension: 1536, // Dimensions of the embedding vector
+                method: {
+                    engine: "lucene",
+                    space_type: "l2",
+                    name: "hnsw",
+                    parameters: {}
+                }
             },
             metadata: {
                 properties: {
@@ -86,9 +99,18 @@ export const handler: APIGatewayProxyHandler = async () => {
         ]);
 
         // await clearDomain(getEnvVariable("DOMAIN_ENDPOINT"));
-        await deleteIndex("readmes");
-        await deleteIndex("packagejsons");
-        await deleteIndex("recommend");
+        if (await checkIndexExists("readmes")) {
+            await deleteIndex("readmes");
+        }
+
+        if (await checkIndexExists("packagejsons")) {
+            await deleteIndex("packagejsons");
+        }
+
+        if (await checkIndexExists("recommend")) {
+            await deleteIndex("recommend");
+        }
+
         await createIndex("readmes", nonTokenizedMapping);
         await createIndex("packagejsons", nonTokenizedMapping);
         await createIndex("recommend", tokenizedMapping);

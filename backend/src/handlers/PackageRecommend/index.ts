@@ -9,7 +9,6 @@ type PackageMetadata = typeof interfaces.PackageMetadata;
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-
         // Parse the request body or default to an empty object if it's undefined
         const parsedBody = event.body && typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
         // Check if the body has a valid Description field

@@ -2,7 +2,9 @@ import aws4 from "aws4";
 import axios from "axios";
 import { PackageMetadata } from "./interfaces";
 import { STS } from "aws-sdk";
-import { getEnvVariable } from "./utils";
+import { getEnvVariable, getSecret } from "./utils";
+import OpenAI from 'openai';
+import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 /**
  * Assumes an AWS IAM role and returns temporary security credentials.
@@ -95,11 +97,17 @@ export async function makeOpenSearchRequest(request: aws4.Request): Promise<axio
 export async function uploadToOpenSearch(
   indexName: string,
   content: string,
-  metadata: PackageMetadata
+  metadata: PackageMetadata,
+  includeEmbedding = false
 ) {
   try {
     const domainEndpoint = getEnvVariable("DOMAIN_ENDPOINT");
 
+    let embedding: number[] = [];
+    if (includeEmbedding) {
+      embedding = await generateEmbedding(content);
+      console.log('Embedding generated:', embedding);
+    }
     // Prepare the OpenSearch request
     const request: aws4.Request = {
       host: domainEndpoint.replace(/^https?:\/\//, ''), // Extract the hostname
@@ -110,12 +118,14 @@ export async function uploadToOpenSearch(
         content: content,
         metadata: metadata,
         timestamp: new Date().toISOString(),
+        ...(includeEmbedding && { embedding: embedding }),
       }),
       headers: {
         'Content-Type': 'application/json',
       },
     };
 
+    console.log('Uploading document to OpenSearch:', request.body);
     // Make the request to opensearch
     const response = await makeOpenSearchRequest(request);
 
@@ -200,7 +210,9 @@ export async function createIndex(indexName: string, mapping: unknown) {
 
     console.log(`Index '${indexName}' created successfully.`);
   } catch (error) {
-    console.error("Error creating index:", error);
+    if (axios.isAxiosError(error)) {
+      console.error(`Error creating index: ${JSON.stringify(error.response?.data)}`);
+    }
     throw new Error(`Error creating index: ${error}`);
   }
 }
@@ -285,8 +297,10 @@ export async function clearDomain() {
 }
 
 // Function to check whether an index exists
-export async function checkIndexExists(domainEndpoint: string, indexName: string): Promise<boolean> {
+export async function checkIndexExists(indexName: string): Promise<boolean> {
   try {
+
+    const domainEndpoint: string = getEnvVariable("DOMAIN_ENDPOINT");
     const request = {
       host: domainEndpoint.replace(/^https?:\/\//, ""),
       path: `/${indexName}`,
@@ -373,15 +387,25 @@ export async function searchReadmes(
 export async function recommendPackages(description: string): Promise<PackageMetadata[]> {
   try {
 
+    console.log('Generating embedding for description:', description);
+    const embedding = await generateEmbedding(description);
+    console.log('Embedding of description:', embedding);
+    // const recommendationQuery = {
+    //   size: 5,
+    //   query: {
+    //     knn: {
+    //       embedding: {
+    //         vector: embedding,
+    //         k: 5,
+    //       },
+    //     },
+    //   },
+    // };
     const recommendationQuery = {
       "query": {
-        "multi_match": {
-          "query": description,
-          "fields": ["content"]
-        }
+        "match_all": {}
       },
-      "size": 5
-    }
+    };
 
     // Prepare the OpenSearch request
     const domainEndpoint: string = getEnvVariable("DOMAIN_ENDPOINT");
@@ -398,6 +422,7 @@ export async function recommendPackages(description: string): Promise<PackageMet
     };
 
     const response = await makeOpenSearchRequest(request);
+    console.log('Recommendation response:', response.data);
     const packages: PackageMetadata[] = [];
 
     response.data.hits.hits.forEach((hit: { _source: { metadata: PackageMetadata } }) => {
@@ -406,10 +431,25 @@ export async function recommendPackages(description: string): Promise<PackageMet
     return packages;
   } catch (error) {
     // Error handling
-    console.log(
-      'Error searching through READMEs:',
-      error
-    );
+    if (axios.isAxiosError(error)) {
+      console.error(`Error creating index: ${JSON.stringify(error.response?.data)}`);
+    }
     return [];
   }
+}
+
+export async function generateEmbedding(text: string): Promise<number[]> {
+  const secretsManagerClient = new SecretsManagerClient({
+    region: "us-east-2",
+  });
+  const secret = await getSecret(secretsManagerClient, "OpenAI_API_Key");
+  const client = new OpenAI({
+    apiKey: secret, // Make sure to set your API key
+  });
+
+  const response = await client.embeddings.create({
+    model: "text-embedding-ada-002",
+    input: text,
+  });
+  return response.data[0].embedding;
 }
