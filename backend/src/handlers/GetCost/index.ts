@@ -4,7 +4,7 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import semver from "semver";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, generatePackageID, getEnvVariable } = require(`${commonPath}/utils`);
+const { createErrorResponse, generatePackageID } = require(`${commonPath}/utils`);
 const { getPackageByName } = require(`${commonPath}/dynamodb`);
 const { getPackageById } = require(`${commonPath}/dynamodb`);
 const { retrieveFromOpenSearch } = require(`${commonPath}/opensearch`);
@@ -92,7 +92,7 @@ export async function calculateCost(packageId: string, costMap: PackageCost): Pr
 
     // Get the package.json content from OpenSearch
     console.log(`Retrieving package.json for ${packageRow.PackageName}@${packageRow.Version}...`);
-    const { content: packageJsonContent } = await retrieveFromOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', packageId);
+    const { content: packageJsonContent } = await retrieveFromOpenSearch('packagejsons', packageId);
     console.log(`Retrieved package.json for ${packageRow.PackageName}@${packageRow.Version}.`);
     const packageJson = JSON.parse(packageJsonContent);
 

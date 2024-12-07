@@ -1,5 +1,5 @@
 {
-  "body": "{\"Description\": \"I need a web framework\"}",
+  "body": "{\"Description\": \"I need a \"}",
   "httpMethod": "POST",
   "headers": {
     "Content-Type": "application/json"

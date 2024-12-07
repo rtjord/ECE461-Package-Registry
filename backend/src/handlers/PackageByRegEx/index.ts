@@ -1,11 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { defaultProvider } from '@aws-sdk/credential-provider-node';
-import aws4 from 'aws4';
-import axios from 'axios';
-// import * as detector from 'redos-detector'
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
+const { createErrorResponse } = require(`${commonPath}/utils`);
+const { searchReadmes } = require(`${commonPath}/opensearch`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageMetadata = typeof interfaces.PackageMetadata;
@@ -30,8 +27,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     // Search over package names and readmes
     console.log('Searching for packages matching the regular expression:', regEx);
-    const domainEndpoint = getEnvVariable('DOMAIN_ENDPOINT');
-    const matches = await searchReadmes(domainEndpoint, 'readmes', regEx);
+    const matches: PackageMetadata[] = await searchReadmes(regEx);
     console.log('Matching packages:', matches);
 
     // If there are no matching packages, return a 404 response
@@ -51,9 +47,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   }
 };
 
-function isValidRegEx(RegEx: string): boolean {
+/**
+ * Checks if a given string is a valid regular expression.
+ *
+ * @param regexStr - The string to be tested as a regular expression.
+ * @returns `true` if the string is a valid regular expression, `false` otherwise.
+ */
+function isValidRegEx(regexStr: string): boolean {
   try {
-    new RegExp(RegEx);  // Use RE2 to prevent ReDoS attacks
+    new RegExp(regexStr);
     return true;
   } catch {
     return false;
@@ -83,75 +85,4 @@ function quantifierIsTooLarge(regexStr: string): boolean {
   }
 
   return false; // Regex is safe
-}
-
-async function searchReadmes(
-  domainEndpoint: string,
-  indexName: string,
-  regEx: string
-): Promise<PackageMetadata[]> {
-  try {
-    // Get AWS credentials
-    const credentials = await defaultProvider()();
-
-    const regexQuery = {
-      query: {
-        bool: {
-          should: [
-            {
-              regexp: {
-                content: {
-                  value: regEx, // Your regex pattern
-                },
-              },
-            },
-            {
-              regexp: {
-                "metadata.Name": {
-                  value: regEx, // Same or different regex pattern
-                },
-              },
-            },
-          ],
-        },
-      },
-      timeout: "2s"
-    };
-
-    // Prepare the OpenSearch request
-    const request = {
-      host: domainEndpoint.replace(/^https?:\/\//, ""),
-      path: `/${indexName}/_search`,
-      service: "es",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(regexQuery)
-    };
-
-    // Sign the request using aws4
-    aws4.sign(request, credentials);
-
-    // Send the request using axios
-    const response = await axios({
-      method: request.method,
-      url: `https://${request.host}${request.path}`, // Construct full URL
-      headers: request.headers,
-      data: request.body, // Attach request body
-    });
-    const packages: string[] = [];
-
-    response.data.hits.hits.forEach((hit: { _source: PackageMetadata }) => {
-      packages.push(hit._source.metadata);
-    });
-    return packages;
-  } catch (error) {
-    // Error handling
-    console.log(
-      'Error searching through READMEs:',
-      error
-    );
-    return [];
-  }
 }

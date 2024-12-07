@@ -1,11 +1,8 @@
-import axios from "axios";
-import aws4 from "aws4";
 import https from "https";
-import { defaultProvider } from "@aws-sdk/credential-provider-node";
+import { Context } from 'aws-lambda';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { getEnvVariable } = require(`${commonPath}/utils`);
-const { createKeywordIndex, createTextIndex } = require(`${commonPath}/opensearch`);
+const { checkIndexExists, createIndex } = require(`${commonPath}/opensearch`);
 
 interface EventResourceProperties {
   DomainEndpoint: string;
@@ -23,8 +20,6 @@ interface LambdaEvent {
   LogicalResourceId: string;
 }
 
-import { Context } from 'aws-lambda';
-
 export const handler = async (event: LambdaEvent, context: Context) => {
   console.log("Received event:", JSON.stringify(event, null, 2));
 
@@ -39,36 +34,75 @@ export const handler = async (event: LambdaEvent, context: Context) => {
   };
 
   try {
-    const domainEndpoint = getEnvVariable("DOMAIN_ENDPOINT");
-    let indexName = "readmes";
 
-    let exists = await checkIndexExists(domainEndpoint, indexName);
+    const tokenizedMapping = {
+      mappings: {
+        properties: {
+          content: {
+            type: "text", // Treat content as a single string
+          },
+          timestamp: {
+            type: "date", // ISO-8601 date format
+          },
+          metadata: {
+            properties: {
+              Name: { type: "keyword" },
+              Version: { type: "keyword" },
+              ID: { type: "keyword" },
+            },
+          },
+        },
+      },
+    };
+
+    const nonTokenizedMapping = {
+      mappings: {
+        properties: {
+          content: {
+            type: "text", 
+            index_options: "offsets",
+            analyzer: "keyword", // Use the keyword analyzer to avoid tokenization
+          },
+          timestamp: {
+            type: "date", // ISO-8601 date format
+          },
+          metadata: {
+            properties: {
+              Name: { type: "keyword" },
+              Version: { type: "keyword" },
+              ID: { type: "keyword" },
+            },
+          },
+        },
+      },
+    };
+
+    let indexName = "readmes";
+    let exists = await checkIndexExists(indexName);
 
     if (!exists) {
       console.log(`Index '${indexName}' does not exist. Creating...`);
-      await createKeywordIndex(domainEndpoint, indexName);
+      await createIndex(indexName, nonTokenizedMapping);
     } else {
       console.log(`Index '${indexName}' already exists. Skipping creation.`);
     }
 
     indexName = "packagejsons";
-
-    exists = await checkIndexExists(domainEndpoint, indexName);
+    exists = await checkIndexExists(indexName);
 
     if (!exists) {
       console.log(`Index '${indexName}' does not exist. Creating...`);
-      await createKeywordIndex(domainEndpoint, indexName);
+      await createIndex(indexName, nonTokenizedMapping);
     } else {
       console.log(`Index '${indexName}' already exists. Skipping creation.`);
     }
 
     indexName = "recommend";
-
-    exists = await checkIndexExists(domainEndpoint, indexName);
+    exists = await checkIndexExists(indexName);
 
     if (!exists) {
       console.log(`Index '${indexName}' does not exist. Creating...`);
-      await createTextIndex(domainEndpoint, indexName);
+      await createIndex(indexName, tokenizedMapping);
     } else {
       console.log(`Index '${indexName}' already exists. Skipping creation.`);
     }
@@ -130,38 +164,4 @@ async function sendCloudFormationResponse(responseUrl: string, response: CloudFo
     request.write(responseBody);
     request.end();
   });
-}
-
-// Function to check whether an index exists
-async function checkIndexExists(domainEndpoint: string, indexName: string): Promise<boolean> {
-  try {
-    const credentials = await defaultProvider()();
-    const checkRequest = {
-      host: domainEndpoint.replace(/^https?:\/\//, ""),
-      path: `/${indexName}`,
-      service: "es",
-      method: "HEAD",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    aws4.sign(checkRequest, credentials);
-
-    const response = await axios({
-      method: checkRequest.method,
-      url: `https://${checkRequest.host}${checkRequest.path}`,
-      headers: checkRequest.headers,
-    });
-
-    return response.status === 200;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
-      console.log(`Index '${indexName}' does not exist.`);
-      return false;
-    } else {
-      console.error("Error checking index existence:", error);
-      throw new Error(`Error checking index existence: ${error}`);
-    }
-  }
 }

@@ -8,6 +8,30 @@ Resources:
     Properties:
       StageName: !Ref Stage
       EndpointConfiguration: REGIONAL
+
+  OpenSearchAdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - "es.amazonaws.com" # Required for OpenSearch to assume the role
+                - "lambda.amazonaws.com" # Allow Lambda to assume the role
+              AWS: 
+                - !GetAtt CreateIndexRole.Arn
+                - !GetAtt PackageCreateUpdateRole.Arn
+                - !GetAtt RegistryResetRole.Arn
+                - !GetAtt PackageDeleteRole.Arn
+                - !GetAtt PackageByRegExRole.Arn
+                - !GetAtt PackageRecommendRole.Arn
+                - !GetAtt GetCostRole.Arn
+                - arn:aws:iam::122610496633:role/aws-reserved/sso.amazonaws.com/us-east-2/AWSReservedSSO_AdministratorAccess_0fd429cd872b2466
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
   
   MyOpenSearchDomain:
     Type: AWS::OpenSearchService::Domain
@@ -26,13 +50,21 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !GetAtt PackageCreateUpdateRole.Arn
+              AWS: 
+                - !GetAtt OpenSearchAdminRole.Arn
             Action: "es:*"
-            Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/package-readmes/*"
+            Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/*"
       EncryptionAtRestOptions:
         Enabled: true
       NodeToNodeEncryptionOptions:
         Enabled: true
+      DomainEndpointOptions:
+        EnforceHTTPS: true
+      AdvancedSecurityOptions:
+        Enabled: true
+        InternalUserDatabaseEnabled: false # Disable OpenSearch internal users (optional)
+        MasterUserOptions:
+          MasterUserARN: !GetAtt OpenSearchAdminRole.Arn # Reference the defined role
 
   CreateIndexRole:
     Type: AWS::IAM::Role
@@ -63,11 +95,13 @@ Resources:
       Environment:
         Variables:
           DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          OPEN_SEARCH_ROLE: !GetAtt OpenSearchAdminRole.Arn
   
   CreateIndexCustomResource:
     Type: Custom::CreateIndex
     Properties:
       ServiceToken: !GetAtt CreateIndex.Arn
+      Version: 1
 
   PackageCreateUpdateRole:
     Type: AWS::IAM::Role
@@ -95,7 +129,6 @@ Resources:
       ContentUri: ./layers/dependencies
       CompatibleRuntimes:
         - nodejs18.x
-
 
   PackageMetadataTable:
     Type: AWS::DynamoDB::Table
@@ -183,7 +216,6 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonOpenSearchServiceFullAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-
   RegistryReset:
     Type: AWS::Serverless::Function
     Properties:
@@ -205,6 +237,7 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
           DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          OPEN_SEARCH_ROLE: !GetAtt OpenSearchAdminRole.Arn
       Role: !GetAtt RegistryResetRole.Arn
 
   PackageRetrieve:
@@ -258,6 +291,7 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
           DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          OPEN_SEARCH_ROLE: !GetAtt OpenSearchAdminRole.Arn
       Role: !GetAtt PackageCreateUpdateRole.Arn
 
   PackageDeleteRole:
@@ -300,6 +334,7 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
           DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          OPEN_SEARCH_ROLE: !GetAtt OpenSearchAdminRole.Arn
 
 
   PackageCreate:
@@ -324,6 +359,7 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Sub "package-files-${Stage}"
           DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          OPEN_SEARCH_ROLE: !GetAtt OpenSearchAdminRole.Arn
 
   PackageRate:
     Type: AWS::Serverless::Function
@@ -384,6 +420,7 @@ Resources:
       Environment:
         Variables:
           DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          OPEN_SEARCH_ROLE: !GetAtt OpenSearchAdminRole.Arn
 
   CreateAuthToken:
     Type: AWS::Serverless::Function
@@ -464,6 +501,7 @@ Resources:
       Environment:
         Variables:
           DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          OPEN_SEARCH_ROLE: !GetAtt OpenSearchAdminRole.Arn
 
   GetTracks:
     Type: AWS::Serverless::Function
@@ -520,6 +558,7 @@ Resources:
       Environment:
         Variables:
           DOMAIN_ENDPOINT: !GetAtt MyOpenSearchDomain.DomainEndpoint
+          OPEN_SEARCH_ROLE: !GetAtt OpenSearchAdminRole.Arn
 
 Outputs:
   ApiUrl:
