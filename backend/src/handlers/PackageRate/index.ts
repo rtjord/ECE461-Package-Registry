@@ -4,11 +4,12 @@ import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { createErrorResponse } = require(`${commonPath}/utils`);
-const { getPackageById } = require(`${commonPath}/dynamodb`);
+const { getPackageById, updatePackageHistory } = require(`${commonPath}/dynamodb`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
 type PackageRating = typeof interfaces.PackageRating;
 type PackageTableRow = typeof interfaces.PackageTableRow;
+type User = typeof interfaces.User;
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
@@ -35,6 +36,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         console.log("Package rating:", rating);
+        const user: User = {
+            name: "ece30861defaultadminuser",
+            isAdmin: true,
+        };
+        await updatePackageHistory(dynamoDBClient, packageData.Name, packageData.Version, packageId, user, "RATE");
         // Success response
         return {
             statusCode: 200,

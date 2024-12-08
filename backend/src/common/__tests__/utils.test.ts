@@ -77,7 +77,7 @@ describe("Function Tests", () => {
 
       expect(scores).toHaveProperty("NetScore");
       expect(scores.NetScore).not.toBe(-1); // Ensure scores were calculated
-    });
+    }, 20000);
 
     it("should return empty scores for an invalid URL", async () => {
       const token = process.env.GITHUB_TOKEN || ""; // Replace with a valid token

@@ -44,8 +44,8 @@ export async function getPackageByName(dynamoDBClient: DynamoDBDocumentClient, n
         );
 
         const output = result.Items?.map(item => {
-            const { PackageName, ...rest } = item;
-            return { ...rest, Name: PackageName };
+            const { PackageName, Version, ID } = item;
+            return { Name: PackageName, Version: Version, ID: ID };
         }) as PackageMetadata[];
         // If no items are found, return an empty array
         return output || [];

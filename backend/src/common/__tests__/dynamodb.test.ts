@@ -20,6 +20,7 @@ describe("DynamoDB Functions", () => {
         ID: testPackageId,
         PackageName: testPackageName,
         Version: "1.0.0",
+        standaloneCost: 0.0,
     };
     const testPackageMetadata: PackageMetadata = {
         Name: testPackageName,
@@ -75,7 +76,7 @@ describe("DynamoDB Functions", () => {
     });
 
     test("uploadPackageMetadata should add a new package metadata entry", async () => {
-        const newMetadata: PackageTableRow = { ID: "new-id", PackageName: "new-package", Version: "1.0.0" };
+        const newMetadata: PackageTableRow = { ID: "new-id", PackageName: "new-package", Version: "1.0.0", standaloneCost: 0.0 };
         await uploadPackageMetadata(dynamoDBClient, newMetadata);
 
         const result = await getPackageById(dynamoDBClient, "new-id");
