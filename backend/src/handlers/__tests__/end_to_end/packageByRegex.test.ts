@@ -41,7 +41,7 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
     }, 90000);
     afterAll(async () => {
         // Reset the registry after running the tests
-        // await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`);
     }, 90000);
     
     it("should return a 200 status for a package that exists", async () => {

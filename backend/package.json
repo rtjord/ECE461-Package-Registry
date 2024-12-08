@@ -41,6 +41,7 @@
     "@aws-sdk/client-opensearch": "^3.699.0",
     "@aws-sdk/client-s3": "^3.685.0",
     "@aws-sdk/client-secrets-manager": "^3.699.0",
+    "@aws-sdk/credential-providers": "^3.699.0",
     "@aws-sdk/lib-dynamodb": "^3.685.0",
     "@opensearch-project/opensearch": "^2.13.0",
     "archiver": "^7.0.1",
