@@ -40,7 +40,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             name: "ece30861defaultadminuser",
             isAdmin: true,
         };
-        await updatePackageHistory(dynamoDBClient, packageData.Name, packageData.Version, packageId, user, "RATE");
+        await updatePackageHistory(dynamoDBClient, packageData.PackageName, packageData.Version, packageId, user, "RATE");
         // Success response
         return {
             statusCode: 200,

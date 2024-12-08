@@ -7,7 +7,7 @@ const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
 const { clearDynamoDBTable } = require(`${commonPath}/dynamodb`);
 const { emptyS3Bucket } = require(`${commonPath}/s3`);
-const { checkIndexExists, deleteIndex, createIndex } = require(`${commonPath}/opensearch`);
+const { checkIndexExists, deleteIndex, createIndex, clearIndex } = require(`${commonPath}/opensearch`);
 
 
 const tokenizedMapping = {
@@ -91,24 +91,24 @@ export const handler: APIGatewayProxyHandler = async () => {
         ]);
 
         // await clearDomain(getEnvVariable("DOMAIN_ENDPOINT"));
-        if (await checkIndexExists("readmes")) {
-            await deleteIndex("readmes");
-        }
+        // if (await checkIndexExists("readmes")) {
+        //     await deleteIndex("readmes");
+        // }
 
-        if (await checkIndexExists("packagejsons")) {
-            await deleteIndex("packagejsons");
-        }
+        // if (await checkIndexExists("packagejsons")) {
+        //     await deleteIndex("packagejsons");
+        // }
 
-        if (await checkIndexExists("recommend")) {
-            await deleteIndex("recommend");
-        }
+        // if (await checkIndexExists("recommend")) {
+        //     await deleteIndex("recommend");
+        // }
 
-        await createIndex("readmes", nonTokenizedMapping);
-        await createIndex("packagejsons", nonTokenizedMapping);
-        await createIndex("recommend", tokenizedMapping);
-        // await clearIndex("readmes");
-        // await clearIndex("packagejsons");
-        // await clearIndex("recommend");
+        // await createIndex("readmes", nonTokenizedMapping);
+        // await createIndex("packagejsons", nonTokenizedMapping);
+        // await createIndex("recommend", tokenizedMapping);
+        await clearIndex("readmes");
+        await clearIndex("packagejsons");
+        await clearIndex("recommend");
         console.log("All resources cleared successfully.");
 
         return {
