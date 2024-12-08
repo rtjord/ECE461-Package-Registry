@@ -15,3 +15,5 @@ dist/
 *.log
 
 .serverless/
+
+opensearch_queries.ts

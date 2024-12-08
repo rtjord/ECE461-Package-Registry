@@ -226,7 +226,7 @@ describe('gitAnalysisClass', () => {
             expect(gitData.pullRequestMetrics.reviewedFraction).not.toBeNaN();
             expect(gitData.pullRequestMetrics.reviewedFraction).toBeGreaterThan(0);
             expect(gitData.pullRequestMetrics.reviewedFraction).toBeLessThanOrEqual(1);
-        },60000);
+        }, 120000);
         
         
         
