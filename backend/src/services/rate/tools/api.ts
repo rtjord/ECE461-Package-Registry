@@ -520,13 +520,13 @@ export class gitAnalysis {
         let totalAdditions = 0;
 
         try {
-            // Fetch up to 100 pull requests in a single request
+            // Fetch up to 20 pull requests in a single request
             const response: AxiosResponse<GitHubPR[]> = await this.axiosInstance.get(
                 `/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`,
                 {
                     params: {
                         state: "closed",
-                        per_page: 100, // Fetch up to 100 PRs
+                        per_page: 20, // Fetch up to 10 PRs
                     },
                 }
             );
