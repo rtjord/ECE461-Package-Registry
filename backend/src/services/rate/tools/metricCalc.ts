@@ -3,6 +3,8 @@ import { metricData } from '../utils/interfaces';
 import { repoLatencyData } from '../utils/types';
 import { PackageRating } from '../../../common/interfaces';
 
+const semver = require('semver');
+
 export class metricCalc {
 
     calculateCorrectness(data: repoData): number {
@@ -108,17 +110,15 @@ export class metricCalc {
         return 0;
     }
 
+   
+
     calculatePinnedDependencies(data: repoData): number {
-        //if invalid (undefined) dependencies are found
-        if (data.dependencies == undefined) {
+        if (data.documentation.dependencies == undefined || data.documentation.dependencies.fractionPinned == undefined) {
             return 0;
         }
-        if (!data.dependencies || data.dependencies.length === 0) {
-            return 1.0; // Perfect score if no dependencies
-        }
 
-        const pinnedCount = data.dependencies.filter(dep => /^\d+\.\d+/.test(dep.version)).length;
-        const fractionPinned = pinnedCount / data.dependencies.length;
+        const fractionPinned = data.documentation.dependencies.fractionPinned;
+
 
         return parseFloat(fractionPinned.toFixed(3));
     }
@@ -131,14 +131,28 @@ export class metricCalc {
     }
 
     calculatePullRequestScore(data: repoData): number {
+        if (data.pullRequestMetrics == undefined) {
+            return 0;
+        }
+        
         if (!data.pullRequestMetrics) {
             return 0;
         }
+
+        if (data.pullRequestMetrics.reviewedFraction < 0) {
+            return 0;
+        }
+
+
 
         return data.pullRequestMetrics.reviewedFraction;
     }
 
     getPullRequestLatency(latency: repoLatencyData): number {
+        //how to handle negative values 
+        if (latency.pullRequests < 0) {
+            return 0;
+        }
         return parseFloat((latency.pullRequests / 1000).toFixed(3));
     }
 
@@ -150,18 +164,19 @@ export class metricCalc {
             (0.15 * this.calculateBusFactor(data)) +
             (0.1 * this.calculatePinnedDependencies(data)) +
             (0.15 * this.calculatePullRequestScore(data));
-        return this.checkLicenseExistence(data) * parseFloat(weightedScore.toFixed(3));
+        const score =  this.checkLicenseExistence(data) * parseFloat(weightedScore.toFixed(3));
+        return score == -0 ? 0:score;
     }
 
     getNetScoreLatency(latency: repoLatencyData): number {
-        return parseFloat(((Math.max(latency.openIssues, latency.licenses) + latency.numberOfLines + latency.closedIssues + latency.numberOfCommits + latency.contributors + latency.pullRequests + (latency.dependencies || 0)) / 1000).toFixed(3));
+        return parseFloat((((Math.max(latency.openIssues, latency.licenses) + latency.numberOfLines + latency.closedIssues + latency.numberOfCommits + latency.contributors + latency.pullRequests + latency.dependencies)) / 1000).toFixed(3));
         //return parseFloat((Math.max(latency.numberOfLines, latency.openIssues, latency.closedIssues, latency.licenses, latency.numberOfCommits, latency.numberOfLines, latency.documentation) / 1000).toFixed(3));
     }
 
     async getValue(data: repoData): Promise<PackageRating> {
         // Run the functions concurrently and measure the latencies
         return {
-            NetScore: 0.6,
+            NetScore: this.calculateNetScore(data),
             NetScoreLatency: this.getNetScoreLatency(data.latency),
             RampUp: this.calculateRampup(data),
             RampUpLatency: this.getRampupLatency(data.latency),

@@ -72,7 +72,7 @@ export class runAnalysis {
     } 
 
     async evaluateMods(url: string, index: number): Promise<repoData> {
-        const [type, cleanedUrl, version] = await this.urlAnalysis.evalUrl(url);
+        const [status, cleanedUrl, version] = await this.urlAnalysis.evalUrl(url);
         let repoData: repoData = {
             repoName: '',
             repoUrl: url,
@@ -81,10 +81,15 @@ export class runAnalysis {
             numberOfOpenIssues: -1,
             numberOfClosedIssues: -1,
             lastCommitDate: '',
+            dependencies: [],
             licenses: [],
             numberOfCommits: -1,
             numberOfLines: -1,
-            pullRequestMetrics: undefined,
+            pullRequestMetrics: {
+                totalAdditions: -1,
+                reviewedAdditions: -1,
+                reviewedFraction: -1
+            },
             documentation: {
                 hasReadme: false,
                 numLines: -1,
@@ -105,13 +110,15 @@ export class runAnalysis {
                 numberOfCommits: -1,
                 numberOfLines: -1,
                 documentation: -1,
-                pullRequests: -1
+                pullRequests: -1,
+                dependencies: -1
             }
         };
 
-        if (type === -1 || cleanedUrl === '') {
+        if (status === -1 || cleanedUrl === '') {
             this.logger.logDebug(`Invalid URL - ${url}`);
-            return repoData;
+            throw new Error(`Invalid URL - ${url}`);
+            // return repoData;
         }
 
         const [npmData, gitData] = await Promise.all([
@@ -131,6 +138,7 @@ export class runAnalysis {
             licenses: gitData.licenses,
             numberOfCommits: gitData.numberOfCommits,
             numberOfLines: gitData.numberOfLines,
+            dependencies: npmData.dependencies,
             pullRequestMetrics: gitData.pullRequestMetrics,
             documentation: {
                 hasReadme: npmData.documentation.hasReadme,
@@ -152,8 +160,6 @@ export class runAnalysis {
                 pullRequests: gitData.latency.pullRequests
             }
         };
-
-        console.log('RepoData:', repoData);
         return repoData;
     }
 }
