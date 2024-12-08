@@ -3,11 +3,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+type SearchType = 'id' | 'name' | 'regex' | 'smart';
+
 export default function Home() {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState('');
 
-  const handleSearch = (type: 'regular' | 'smart') => (e: React.FormEvent) => {
+  const handleSearch = (type: SearchType) => (e: React.FormEvent) => {
     e.preventDefault();
     
     // Create the search URL with parameters
@@ -35,24 +37,38 @@ export default function Home() {
               type="search"
               id="search-input"
               className="w-full p-3 border border-gray-300 rounded-md"
-              placeholder="Enter package name or describe what you're looking for..."
+              placeholder="Enter package name, ID, or search pattern..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               aria-label="Search packages"
             />
           </div>
 
-          <div className="flex gap-4 flex-col sm:flex-row">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
-              onClick={handleSearch('regular')}
-              className="flex-1 bg-blue-500 text-white py-3 px-6 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-              aria-label="Regular search"
+              onClick={handleSearch('id')}
+              className="bg-blue-500 text-white py-3 px-6 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              aria-label="Search by ID"
             >
-              Search
+              Search by ID
+            </button>
+            <button
+              onClick={handleSearch('name')}
+              className="bg-purple-500 text-white py-3 px-6 rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
+              aria-label="Search by Name"
+            >
+              Search by Name
+            </button>
+            <button
+              onClick={handleSearch('regex')}
+              className="bg-indigo-500 text-white py-3 px-6 rounded-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+              aria-label="Search by Regex"
+            >
+              Search by Regex
             </button>
             <button
               onClick={handleSearch('smart')}
-              className="flex-1 bg-green-500 text-white py-3 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+              className="bg-green-500 text-white py-3 px-6 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
               aria-label="Smart search"
             >
               Smart Search
