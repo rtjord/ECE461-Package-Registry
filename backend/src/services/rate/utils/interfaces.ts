@@ -25,6 +25,11 @@ export interface repoData {
     latency: repoLatencyData;
     pullRequestMetrics: PullRequestMetrics;
 }
+export interface GitHubPR {
+    number: number; // Pull request number
+    additions: number; // Number of additions in the PR
+    [key: string]: any; // To accommodate any other fields returned by the API
+}
 
 export interface gitData {
     repoName: string;

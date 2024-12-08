@@ -6,6 +6,7 @@ import { gitData, npmData } from '../utils/interfaces';
 import { logger } from './logging';
 import { envVars } from '../utils/interfaces';
 import * as semver from 'semver';
+import { GitHubPR } from '../utils/interfaces'; // Adjust the path as necessary
 
 
 export class npmAnalysis {
@@ -443,6 +444,10 @@ export class gitAnalysis {
         }
     }
 
+    private async delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     //retrieve total number of lines 
     async fetchLines(gitData: gitData): Promise<void> {
         this.logger.logDebug(`Fetching lines of code for ${gitData.repoName}...`);
@@ -508,100 +513,88 @@ export class gitAnalysis {
     }
         // Add to api.ts in gitAnalysis class
 
-    async fetchPullRequests(gitData: gitData): Promise<void> {
-        this.logger.logDebug(`Fetching pull requests for ${gitData.repoName}...`);
-        try {
-            // Validate owner and repo name first
-            if (!gitData.repoOwner || !gitData.repoName) {
-                throw new Error('Invalid repository owner or name');
-            }
-
-            let page = 1;
-            let totalReviewedAdditions = 0;
-            let totalAdditions = 0;
-            let hasMorePRs = true;
-
-            while (hasMorePRs) {
+        async fetchPullRequests(gitData: gitData): Promise<void> {
+            this.logger.logDebug(`Fetching pull requests for ${gitData.repoName}...`);
+        
+            try {
+                if (!gitData.repoOwner || !gitData.repoName) {
+                    throw new Error('Invalid repository owner or name');
+                }
+        
+                let totalReviewedAdditions = 0;
+                let totalAdditions = 0;
+        
                 try {
-                    // Fetch PRs with pagination
-                    // const response = await this.exponentialBackoff(() =>
-                    //     this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`, {
-                    //         params: {
-                    //             state: 'closed',
-                    //             per_page: 100,
-                    //             page: page
-                    //         }
-                    //     })
-                    // );
-                    const response = await this.axiosInstance.get(
+                    // Fetch up to 100 pull requests in a single request
+                    const response = await this.axiosInstance.get<GitHubPR[]>(
                         `/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`,
                         {
                             params: {
                                 state: "closed",
-                                per_page: 100,
-                                page: page,
+                                per_page: 100, // Fetch up to 100 PRs
                             },
                         }
                     );
-
-
+        
                     const prs = response.data;
-                    hasMorePRs = prs.length === 100;
-
-                    // Process each PR
+        
                     for (const pr of prs) {
                         try {
-                            // // Get PR details including additions
-                            // const prDetailResponse = await this.exponentialBackoff(() =>
-                            //     this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}`)
-                            // );
-
-                            // const additions = prDetailResponse.data.additions;
-                            const additions = pr.additions;
+                            //fetch the files response
+                            const filesResponse = await this.exponentialBackoff(() =>
+                                this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/files`)
+                            );
+                            const files = filesResponse.data;
+                            let additions = 0;
+                            for (const file of files) {
+                                additions += file.additions;
+                            }
                             totalAdditions += additions;
 
-                            // Get reviews for this PR
+
+                            // Fetch reviews for this PR
                             const reviewsResponse = await this.exponentialBackoff(() =>
                                 this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/reviews`)
                             );
-                            console.log(reviewsResponse);
-
-                            // If PR has reviews, count its additions
+        
                             if (reviewsResponse.data.length > 0) {
                                 totalReviewedAdditions += additions;
-                                console.log("reviewed");
+                                this.logger.logDebug(`PR #${pr.number} has reviews.`);
+                                this.logger.logDebug(`Total reviewed additions: ${totalReviewedAdditions}`);
                             }
                         } catch (prError) {
-                            this.logger.logDebug(`Error processing PR ${pr.number}: ${prError}`);
-                            continue; // Skip this PR and continue with others
+                            this.logger.logDebug(`Error processing PR ${pr.number}:`, prError);
+                            continue;
                         }
                     }
-
-                    page++;
-                } catch (pageError) {
-                    this.logger.logDebug(`Error fetching page ${page}: ${pageError}`);
-                    break; // Stop processing if we can't fetch a page
+                } catch (error) {
+                    this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}:`, error);
                 }
+        
+                // Calculate metrics
+                this.logger.logInfo(`Pull request metrics  for ${gitData.repoName} are: ${totalReviewedAdditions}, ${totalAdditions}, ${totalReviewedAdditions / totalAdditions}`);
+
+                gitData.pullRequestMetrics = {
+                    totalAdditions,
+                    reviewedAdditions: totalReviewedAdditions,
+                    reviewedFraction: totalAdditions > 0
+                        ? parseFloat((totalReviewedAdditions / totalAdditions).toFixed(3))
+                        : 0.0,
+                };
+        
+                this.logger.logDebug(`Pull request metrics calculated successfully for ${gitData.repoName}`);
+                this.logger.logInfo(`Pull request metrics  for ${gitData.repoName} are: ${gitData.pullRequestMetrics.reviewedAdditions}, ${gitData.pullRequestMetrics.totalAdditions}, ${gitData.pullRequestMetrics.reviewedFraction}`);
+            } catch (error) {
+                this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}:`, error);
+                gitData.pullRequestMetrics = {
+                    totalAdditions: 0,
+                    reviewedAdditions: 0,
+                    reviewedFraction: 0.0,
+                };
             }
-
-            // Set the metrics with calculated values
-            gitData.pullRequestMetrics = {
-                totalAdditions,
-                reviewedAdditions: totalReviewedAdditions,
-                reviewedFraction: totalAdditions > 0 ? parseFloat((totalReviewedAdditions / totalAdditions).toFixed(3)) : 0.0
-            };
-
-            this.logger.logDebug(`Pull request metrics calculated successfully for ${gitData.repoName}`);
-        } catch (error) {
-            this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}: ${error}`);
-            // Set default values in case of error
-            gitData.pullRequestMetrics = {
-                totalAdditions: 0,
-                reviewedAdditions: 0,
-                reviewedFraction: 0.0
-            };
         }
-    }
+        
+        
     private async executeTasks(task: (gitData: gitData) => Promise<void>, gitData: gitData): Promise<number> {
         const startTime = performance.now();
         await task(gitData);
@@ -652,7 +645,7 @@ export class gitAnalysis {
             gitData.latency.numberOfLines = await this.executeTasks(this.fetchLines.bind(this), gitData)
             gitData.latency.numberOfCommits = await this.executeTasks(this.fetchCommits.bind(this), gitData);
             gitData.latency.contributors = await this.executeTasks(this.fetchContributors.bind(this), gitData);
-
+            gitData.latency.pullRequests = await this.executeTasks(this.fetchPullRequests.bind(this), gitData);
             this.logger.logInfo(`All git tasks completed in order for ${gitData.repoUrl}`);
             return gitData;
         }
