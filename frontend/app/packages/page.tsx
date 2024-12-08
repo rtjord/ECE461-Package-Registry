@@ -1,20 +1,12 @@
-"use client"; // Mark this as a Client Component
+"use client";
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 interface Package {
-    id: string;
-    name: string;
-    description: string;
-    version: string;
-    author: string;
-    metrics: {
-        busFactor: number;
-        correctness: number;
-        rampUp: number;
-        license: string;
-    };
+    ID: string;
+    Name: string;
+    Version: string;
 }
 
 export default function PackageDirectory() {
@@ -29,56 +21,23 @@ export default function PackageDirectory() {
             setError(null);
 
             try {
-                // TODO: Replace with actual API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Dummy data for demonstration
-                const dummyPackages: Package[] = [
-                    {
-                        id: '1',
-                        name: 'express',
-                        description: 'Fast, unopinionated, minimalist web framework for Node.js',
-                        version: '4.18.2',
-                        author: 'TJ Holowaychuk',
-                        metrics: {
-                            busFactor: 0.9,
-                            correctness: 0.95,
-                            rampUp: 0.8,
-                            license: 'MIT',
-                        },
+                const response = await fetch('/api/search-proxy?type=regex', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
                     },
-                    {
-                        id: '2',
-                        name: 'lodash',
-                        description: 'A modern JavaScript utility library delivering modularity, performance & extras',
-                        version: '4.17.21',
-                        author: 'John-David Dalton',
-                        metrics: {
-                            busFactor: 0.85,
-                            correctness: 0.9,
-                            rampUp: 0.75,
-                            license: 'MIT',
-                        },
-                    },
-                    {
-                        id: '3',
-                        name: 'react',
-                        description: 'A JavaScript library for building user interfaces',
-                        version: '18.2.0',
-                        author: 'Meta Open Source',
-                        metrics: {
-                            busFactor: 0.95,
-                            correctness: 0.98,
-                            rampUp: 0.85,
-                            license: 'MIT',
-                        },
-                    },
-                ];
+                    body: JSON.stringify({ query: '.' })
+                });
 
-                setPackages(dummyPackages);
-            } catch (error: unknown) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to fetch packages';
-                setError(errorMessage);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch packages: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                setPackages(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error('Error fetching packages:', error);
+                setError(error instanceof Error ? error.message : 'Failed to fetch packages');
             } finally {
                 setIsLoading(false);
             }
@@ -89,9 +48,9 @@ export default function PackageDirectory() {
 
     const sortedPackages = [...packages].sort((a, b) => {
         if (sortBy === 'name') {
-            return a.name.localeCompare(b.name);
+            return a.Name.localeCompare(b.Name);
         }
-        return a.author.localeCompare(b.author);
+        return a.Name.localeCompare(b.Name);
     });
 
     return (
@@ -133,35 +92,13 @@ export default function PackageDirectory() {
 
                         <ul className="space-y-6">
                             {sortedPackages.map((pkg) => (
-                                <li key={pkg.id} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors">
-                                    <Link href={`/packages/${pkg.name}`} className="block">
+                                <li key={pkg.ID} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors">
+                                    <Link href={`/packages/${pkg.ID}`} className="block">
                                         <div className="flex justify-between items-start mb-2">
                                             <h2 className="text-xl font-semibold text-blue-600 hover:underline">
-                                                {pkg.name}
+                                                {pkg.Name}
                                             </h2>
-                                            <span className="text-sm text-gray-500">v{pkg.version}</span>
-                                        </div>
-                                        <p className="text-gray-600 mb-4">{pkg.description}</p>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                                            <div>
-                                                <span className="text-gray-500">Bus Factor:</span>
-                                                <span className="ml-2">{pkg.metrics.busFactor.toFixed(2)}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-500">Correctness:</span>
-                                                <span className="ml-2">{pkg.metrics.correctness.toFixed(2)}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-500">Ramp Up:</span>
-                                                <span className="ml-2">{pkg.metrics.rampUp.toFixed(2)}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-gray-500">License:</span>
-                                                <span className="ml-2">{pkg.metrics.license}</span>
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 text-sm text-gray-500">
-                                            <span className="font-medium">Author:</span> {pkg.author}
+                                            <span className="text-sm text-gray-500">v{pkg.Version}</span>
                                         </div>
                                     </Link>
                                 </li>
