@@ -222,7 +222,7 @@ Resources:
       Runtime: nodejs18.x
       CodeUri: dist/handlers/RegistryReset
       MemorySize: 128
-      Timeout: 120
+      Timeout: 30
       Layers:
         - !Ref DependenciesLayer
       Events:

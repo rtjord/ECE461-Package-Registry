@@ -1,8 +1,8 @@
 import * as fs from 'fs/promises';
 import * as git from 'isomorphic-git';
 import * as http from 'isomorphic-git/http/node';
-import axios, { AxiosInstance } from 'axios';
-import { gitData, npmData } from '../utils/interfaces';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { gitData, GitHubFile, GitHubReview, npmData } from '../utils/interfaces';
 import { logger } from './logging';
 import { envVars } from '../utils/interfaces';
 import * as semver from 'semver';
@@ -46,11 +46,11 @@ export class npmAnalysis {
         try {
             const oid = await git.resolveRef({ fs, dir, ref: 'HEAD' });
             const { tree } = await git.readTree({ fs, dir, oid });
-    
-            const readmeEntry = tree.find(entry => 
+
+            const readmeEntry = tree.find(entry =>
                 ['readme.md', 'readme', 'readme.txt', 'readme.rst'].includes(entry.path.toLowerCase())
             );
-    
+
             let readmeContent: string | null = null;
             if (readmeEntry) {
                 // Found a README file in the repository
@@ -61,14 +61,14 @@ export class npmAnalysis {
                 this.logger.logInfo(`No README file found in the repository tree. Trying to fetch via package URL...`);
                 const readmeUrl = `${npmData.repoUrl}#readme`; // Construct URL to fetch README
                 const response = await fetch(readmeUrl);
-    
+
                 if (response.ok) {
                     readmeContent = await response.text();
                 } else {
                     this.logger.logDebug(`Could not retrieve README from package URL ${readmeUrl} in ${dir}`);
                 }
             }
-    
+
             if (readmeContent) {
                 npmData.documentation.hasReadme = true;
                 npmData.documentation.numLines = readmeContent.split('\n').length;
@@ -78,17 +78,17 @@ export class npmAnalysis {
         } catch {
             this.logger.logDebug(`Error retrieving the README content for ${npmData.repoUrl} in ${dir}`);
         }
-    } 
+    }
 
     async lastCommitDate(dir: string, npmData: npmData): Promise<void> {
         this.logger.logDebug(`Finding time since last commit...`);
         try {
             const commits = await git.log({ fs, dir, depth: 1 });
-            const lastCommit = commits[0]; 
-        
+            const lastCommit = commits[0];
+
             if (lastCommit) {
-              const lastCommitDate = new Date(lastCommit.commit.author.timestamp * 1000);
-              npmData.lastCommitDate = lastCommitDate.toDateString();
+                const lastCommitDate = new Date(lastCommit.commit.author.timestamp * 1000);
+                npmData.lastCommitDate = lastCommitDate.toDateString();
             } else {
                 this.logger.logDebug(`No commits found in the repository ${npmData.repoUrl} in dir ${dir}`);
             }
@@ -103,17 +103,17 @@ export class npmAnalysis {
     }
 
 
-    async analyzeDependencies(dir: string, npmData: npmData): Promise<void> { 
+    async analyzeDependencies(dir: string, npmData: npmData): Promise<void> {
         try {
             const packageJsonPath = `${dir}/package.json`;
             const packageJson = await fs.readFile(packageJsonPath, 'utf-8');
             const packageData = JSON.parse(packageJson);
 
 
-            const dependencies = {... packageData.dependencies, ... packageData.devDependencies};
+            const dependencies = { ...packageData.dependencies, ...packageData.devDependencies };
             //make sure these are strings for semver
-            
-            
+
+
             const totalDependencies = Object.keys(dependencies).length;
             if (totalDependencies === 0) {
                 npmData.documentation.dependencies = {
@@ -133,7 +133,7 @@ export class npmAnalysis {
                         // console.log("unpinned");
                     }
                 }
-                const fractionPinned = pinnedCount / totalDependencies;   
+                const fractionPinned = pinnedCount / totalDependencies;
                 npmData.documentation.dependencies = {
                     total: totalDependencies,
                     pinned: pinnedCount,
@@ -168,11 +168,11 @@ export class npmAnalysis {
         const endTime = performance.now();
         return endTime - startTime;
     }
-    
-    
+
+
     // Main function to run the tasks in order
     async runTasks(url: string, dest: number, version: string): Promise<npmData> {
-        const repoDir = './dist/repoDir'+dest.toString();
+        const repoDir = './dist/repoDir' + dest.toString();
         console.log('Running npm tasks in', repoDir);
         this.logger.logDebug(`Running npm tasks in ${repoDir}...`);
         const npmData: npmData = {
@@ -206,8 +206,8 @@ export class npmAnalysis {
         };
 
         await this.cloneRepo(url, repoDir, version);
-        [ npmData.latency.lastCommitDate,
-          npmData.latency.documentation
+        [npmData.latency.lastCommitDate,
+        npmData.latency.documentation
         ] = await Promise.all([
             this.executeTasks(this.lastCommitDate.bind(this), repoDir, npmData),
             this.executeTasks(this.getReadmeContent.bind(this), repoDir, npmData)
@@ -215,7 +215,7 @@ export class npmAnalysis {
 
         npmData.latency.dependencies = await this.executeTasks(this.analyzeDependencies.bind(this), repoDir, npmData);
         await this.deleteRepo(repoDir);
-    
+
         this.logger.logInfo(`All npm tasks completed in order within dir ${repoDir}`);
         return npmData;
     }
@@ -225,7 +225,7 @@ export class gitAnalysis {
     private axiosInstance: AxiosInstance;
     private logger: logger;
     private token: string;
-    
+
     //axios instance using tokens, loglevel, logfile from .env
     constructor(envVars: envVars) {
         this.logger = new logger(envVars);
@@ -299,7 +299,7 @@ export class gitAnalysis {
     ): Promise<T> {
         let retryCount = 0;
         let delay = initialDelay;
-    
+
         while (retryCount <= maxRetries) {
             try {
                 // Try the request function
@@ -316,10 +316,10 @@ export class gitAnalysis {
                 delay *= 2;  // Exponential backoff: double the delay
             }
         }
-    
+
         throw new Error(`Failed to complete the request after ${maxRetries} retries`);
     }
-    
+
     //retrieve data for closed issues
     async fetchClosedIssues(gitData: gitData): Promise<void> {
         this.logger.logDebug(`Fetching closed issues for ${gitData.repoName}...`);
@@ -359,12 +359,12 @@ export class gitAnalysis {
     //retrieve data for number of contributors
     async fetchContributors(gitData: gitData): Promise<void> {
         this.logger.logDebug(`Fetching contributors for ${gitData.repoName}...`);
-    
+
         try {
             let page = 1;
             let contributorsCount = 0;
             let hasMorePages = true;
-    
+
             // Fetch contributors with pagination and exponential backoff
             while (hasMorePages) {
                 const endpoint = `/repos/${gitData.repoOwner}/${gitData.repoName}/contributors`;
@@ -372,27 +372,27 @@ export class gitAnalysis {
                     per_page: 100,  // Fetch up to 100 contributors per page
                     page: page
                 };
-    
+
                 // Use exponential backoff to handle retries on failure
                 const response = await this.exponentialBackoff(() =>
                     this.axiosInstance.get(endpoint, { params })
                 );
-    
+
                 // Update count and check for more pages
                 contributorsCount += response.data.length;
                 const linkHeader = response.headers['link'];
                 hasMorePages = typeof linkHeader === 'string' && linkHeader.includes('rel="next"');
                 page++;
             }
-    
+
             this.logger.logDebug(`Contributors Count fetched successfully for ${gitData.repoName}`);
             gitData.numberOfContributors = contributorsCount;
-    
+
         } catch (error) {
             this.logger.logDebug(`Error fetching number of contributors for ${gitData.repoName}`, error);
         }
     }
-    
+
     async fetchLicense(gitData: gitData): Promise<void> {
         this.logger.logDebug(`Fetching license for ${gitData.repoName}...`);
         try {
@@ -507,90 +507,103 @@ export class gitAnalysis {
             this.logger.logDebug(`Error fetching number of lines for ${gitData.repoName}`, error);
         }
     }
-        // Add to api.ts in gitAnalysis class
+    // Add to api.ts in gitAnalysis class
 
-        async fetchPullRequests(gitData: gitData): Promise<void> {
-            this.logger.logDebug(`Fetching pull requests for ${gitData.repoName}...`);
-        
-            try {
-                if (!gitData.repoOwner || !gitData.repoName) {
-                    throw new Error('Invalid repository owner or name');
+    async fetchPullRequests(gitData: gitData): Promise<void> {
+        this.logger.logDebug(`Fetching pull requests for ${gitData.repoName}...`);
+
+        if (!gitData.repoOwner || !gitData.repoName) {
+            throw new Error("Invalid repository owner or name");
+        }
+
+        let totalReviewedAdditions = 0;
+        let totalAdditions = 0;
+
+        try {
+            // Fetch up to 100 pull requests in a single request
+            const response: AxiosResponse<GitHubPR[]> = await this.axiosInstance.get(
+                `/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`,
+                {
+                    params: {
+                        state: "closed",
+                        per_page: 100, // Fetch up to 100 PRs
+                    },
                 }
-        
-                let totalReviewedAdditions = 0;
-                let totalAdditions = 0;
-        
-                try {
-                    // Fetch up to 100 pull requests in a single request
-                    const response = await this.axiosInstance.get<GitHubPR[]>(
-                        `/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`,
-                        {
-                            params: {
-                                state: "closed",
-                                per_page: 100, // Fetch up to 100 PRs
-                            },
-                        }
-                    );
-        
-                    const prs = response.data;
-        
-                    for (const pr of prs) {
-                        try {
-                            //fetch the files response
-                            const filesResponse = await this.exponentialBackoff(() =>
-                                this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/files`)
-                            );
-                            const files = filesResponse.data;
-                            let additions = 0;
-                            for (const file of files) {
-                                additions += file.additions;
-                            }
-                            totalAdditions += additions;
+            );
 
+            const prs: GitHubPR[] = response.data;
 
-                            // Fetch reviews for this PR
-                            const reviewsResponse = await this.exponentialBackoff(() =>
-                                this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/reviews`)
-                            );
-        
-                            if (reviewsResponse.data.length > 0) {
-                                totalReviewedAdditions += additions;
-                                this.logger.logDebug(`PR #${pr.number} has reviews.`);
-                                this.logger.logDebug(`Total reviewed additions: ${totalReviewedAdditions}`);
-                            }
-                        } catch (prError) {
-                            this.logger.logDebug(`Error processing PR ${pr.number}:`, prError);
-                            continue;
-                        }
+            // Process PRs in parallel
+            const prMetrics = await Promise.all(
+                prs.map(async (pr): Promise<{ additions: number; reviewedAdditions: number }> => {
+                    try {
+                        // Fetch PR files and reviews concurrently
+                        const [filesResponse, reviewsResponse]: [
+                            AxiosResponse<GitHubFile[]>,
+                            AxiosResponse<GitHubReview[]>
+                        ] = await Promise.all([
+                            this.exponentialBackoff(() =>
+                                this.axiosInstance.get<GitHubFile[]>(
+                                    `/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/files`
+                                )
+                            ),
+                            this.exponentialBackoff(() =>
+                                this.axiosInstance.get<GitHubReview[]>(
+                                    `/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/reviews`
+                                )
+                            ),
+                        ]);
+
+                        const files: GitHubFile[] = filesResponse.data;
+                        const reviews: GitHubReview[] = reviewsResponse.data;
+
+                        // Calculate additions for this PR
+                        const additions = files.reduce(
+                            (sum: number, file: GitHubFile) => sum + file.additions,
+                            0
+                        );
+
+                        const reviewedAdditions = reviews.length > 0 ? additions : 0;
+
+                        return { additions, reviewedAdditions };
+                    } catch (prError) {
+                        this.logger.logDebug(`Error processing PR ${pr.number}:`, prError);
+                        return { additions: 0, reviewedAdditions: 0 };
                     }
-                } catch (error) {
-                    this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}:`, error);
-                }
-        
-                // Calculate metrics
-                this.logger.logInfo(`Pull request metrics  for ${gitData.repoName} are: ${totalReviewedAdditions}, ${totalAdditions}, ${totalReviewedAdditions / totalAdditions}`);
+                })
+            );
 
-                gitData.pullRequestMetrics = {
-                    totalAdditions,
-                    reviewedAdditions: totalReviewedAdditions,
-                    reviewedFraction: totalAdditions > 0
+            // Aggregate metrics
+            for (const metric of prMetrics) {
+                totalAdditions += metric.additions;
+                totalReviewedAdditions += metric.reviewedAdditions;
+            }
+
+            // Calculate and store metrics
+            gitData.pullRequestMetrics = {
+                totalAdditions,
+                reviewedAdditions: totalReviewedAdditions,
+                reviewedFraction:
+                    totalAdditions > 0
                         ? parseFloat((totalReviewedAdditions / totalAdditions).toFixed(3))
                         : 0.0,
-                };
-        
-                this.logger.logDebug(`Pull request metrics calculated successfully for ${gitData.repoName}`);
-                this.logger.logInfo(`Pull request metrics  for ${gitData.repoName} are: ${gitData.pullRequestMetrics.reviewedAdditions}, ${gitData.pullRequestMetrics.totalAdditions}, ${gitData.pullRequestMetrics.reviewedFraction}`);
-            } catch (error) {
-                this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}:`, error);
-                gitData.pullRequestMetrics = {
-                    totalAdditions: 0,
-                    reviewedAdditions: 0,
-                    reviewedFraction: 0.0,
-                };
-            }
+            };
+
+            this.logger.logInfo(
+                `Pull request metrics for ${gitData.repoName}: ${gitData.pullRequestMetrics.reviewedAdditions}, ${gitData.pullRequestMetrics.totalAdditions}, ${gitData.pullRequestMetrics.reviewedFraction}`
+            );
+            this.logger.logDebug(`Pull request metrics calculated successfully for ${gitData.repoName}`);
+        } catch (error) {
+            this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}:`, error);
+            gitData.pullRequestMetrics = {
+                totalAdditions: 0,
+                reviewedAdditions: 0,
+                reviewedFraction: 0.0,
+            };
         }
-        
-        
+    }
+
+
     private async executeTasks(task: (gitData: gitData) => Promise<void>, gitData: gitData): Promise<number> {
         const startTime = performance.now();
         await task(gitData);
@@ -598,7 +611,7 @@ export class gitAnalysis {
         return endTime - startTime;
     }
 
-    async runTasks(url: string): Promise<gitData> { 
+    async runTasks(url: string): Promise<gitData> {
         const gitData: gitData = {
             repoName: '',
             repoUrl: url,
@@ -631,8 +644,8 @@ export class gitAnalysis {
         this.logger.logDebug(`Running git tasks for ${gitData.repoUrl}...`);
         if (await this.checkConnection(url)) {
             await this.getOwnerAndRepo(gitData);
-            [ gitData.latency.openIssues,
-              gitData.latency.licenses,
+            [gitData.latency.openIssues,
+            gitData.latency.licenses,
             ] = await Promise.all([
                 this.executeTasks(this.fetchOpenIssues.bind(this), gitData),
                 this.executeTasks(this.fetchLicense.bind(this), gitData),

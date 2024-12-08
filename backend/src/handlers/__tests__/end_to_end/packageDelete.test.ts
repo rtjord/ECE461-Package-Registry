@@ -10,7 +10,7 @@ describe("E2E Test for Package Delete Endpoint", () => {
     let url_id: string;
     beforeAll(async () => {
         // Reset the registry before running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
 
         // Upload a package with Content to the registry
         const requestBody: PackageData = {
@@ -39,7 +39,7 @@ describe("E2E Test for Package Delete Endpoint", () => {
     }, 90000);
     afterAll(async () => {
         // Reset the registry after running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
     }, timeout);
     
     it("should return a 200 status for a package uploaded via Content", async () => {

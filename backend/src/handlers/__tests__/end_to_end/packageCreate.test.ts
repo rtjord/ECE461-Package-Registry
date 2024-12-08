@@ -9,11 +9,11 @@ describe("E2E Test for Package Create Endpoint", () => {
 
     beforeAll(async () => {
         // Reset the registry before running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
     }, timeout);
     afterAll(async () => {
         // Reset the registry after running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
     }, timeout);
     it("should return a 201 status for a package with Content set", async () => {
         const requestBody: PackageData = {
