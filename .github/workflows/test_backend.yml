@@ -42,6 +42,12 @@ jobs:
         working-directory: backend
         run: npm run lint
 
+      - name: Configure AWS Credentials for Development Account
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::122610496633:role/GitHubDeployRole
+          aws-region: us-east-2
+
       - name: Run Backend Tests
         working-directory: backend
         run: npm run test
