@@ -5,6 +5,9 @@ import axios, { AxiosInstance } from 'axios';
 import { gitData, npmData } from '../utils/interfaces';
 import { logger } from './logging';
 import { envVars } from '../utils/interfaces';
+import * as semver from 'semver';
+import { GitHubPR } from '../utils/interfaces'; // Adjust the path as necessary
+
 
 export class npmAnalysis {
     private logger: logger;
@@ -43,12 +46,12 @@ export class npmAnalysis {
         try {
             const oid = await git.resolveRef({ fs, dir, ref: 'HEAD' });
             const { tree } = await git.readTree({ fs, dir, oid });
-            console.log('tree', tree);
+            // console.log('tree', tree);
     
             const readmeEntry = tree.find(entry => 
                 ['readme.md', 'readme', 'readme.txt', 'readme.rst'].includes(entry.path.toLowerCase())
             );
-            console.log('readmeEntry', readmeEntry);
+            // console.log('readmeEntry', readmeEntry);
     
             let readmeContent: string | null = null;
             if (readmeEntry) {
@@ -83,7 +86,7 @@ export class npmAnalysis {
         this.logger.logDebug(`Finding time since last commit...`);
         try {
             const commits = await git.log({ fs, dir, depth: 1 });
-            console.log('commits:', commits);
+            // console.log('commits:', commits);
             const lastCommit = commits[0]; 
         
             if (lastCommit) {
@@ -97,23 +100,49 @@ export class npmAnalysis {
         }
     }
 
+    isPinnedToMajorMinor(version: string): boolean {
+        const parsed = semver.parse(version);
+        return parsed !== null && parsed.major !== null && parsed.minor !== null;
+    }
+
+
     async analyzeDependencies(dir: string, npmData: npmData): Promise<void> { 
         try {
             const packageJsonPath = `${dir}/package.json`;
             const packageJson = await fs.readFile(packageJsonPath, 'utf-8');
             const packageData = JSON.parse(packageJson);
 
+
             const dependencies = {... packageData.dependencies, ... packageData.devDependencies};
-            const pinnedCount =  Object.values(dependencies).filter(version => /^\d+\.\d+/.test(version as string)).length;
+            //make sure these are strings for semver
+            
             
             const totalDependencies = Object.keys(dependencies).length;
-            const fractionPinned = totalDependencies > 0 ? pinnedCount / totalDependencies : 1.0;
-
-            npmData.documentation.dependencies = {
-                total: totalDependencies,
-                pinned: pinnedCount,
-                fractionPinned: parseFloat(fractionPinned.toFixed(3))
-            };
+            if (totalDependencies === 0) {
+                npmData.documentation.dependencies = {
+                    total: 0,
+                    pinned: 0,
+                    fractionPinned: 1.0
+                };
+            } else {
+                let pinnedCount = 0;
+                for (const version of Object.values(dependencies)) {
+                    // console.log(version);
+                    if (this.isPinnedToMajorMinor(version as string)) {
+                        pinnedCount++;
+                        // console.log("pinned");
+                    }
+                    else {
+                        // console.log("unpinned");
+                    }
+                }
+                const fractionPinned = pinnedCount / totalDependencies;   
+                npmData.documentation.dependencies = {
+                    total: totalDependencies,
+                    pinned: pinnedCount,
+                    fractionPinned: parseFloat(fractionPinned.toFixed(3))
+                };
+            }
         }
         catch (error) {
             this.logger.logDebug(`Error analyzing dependencies in ${dir} for ${npmData.repoUrl}: ${error}`);
@@ -124,6 +153,8 @@ export class npmAnalysis {
             };
         }
     }
+
+
     async deleteRepo(dir: string): Promise<void> {
         this.logger.logDebug(`Deleting repository ${dir}...`);
         try {
@@ -150,12 +181,17 @@ export class npmAnalysis {
         const npmData: npmData = {
             repoUrl: url,
             lastCommitDate: '',
+            dependencies: [],
             documentation: {
                 hasReadme: false,
                 numLines: -1,
                 hasExamples: false,
                 hasDocumentation: false,
-                dependencies: undefined,
+                dependencies: {
+                    total: 0,
+                    pinned: 0,
+                    fractionPinned: 1.0
+                }
             },
             latency: {
                 contributors: -1,
@@ -368,7 +404,7 @@ export class gitAnalysis {
             const packageJsonContentEncoded = packageJsonResponse.data.content;
             const packageJsonContent = Buffer.from(packageJsonContentEncoded, 'base64').toString('utf-8');
             const packageJson = JSON.parse(packageJsonContent);
-            console.log('packageJson:', packageJson);
+            // console.log('packageJson:', packageJson);
             if (packageJson.license) {
                 gitData.licenses = packageJson.license;
                 this.logger.logDebug(`License found in package.json for ${gitData.repoName}`);
@@ -406,6 +442,10 @@ export class gitAnalysis {
         } catch (error) {
             this.logger.logDebug(`Error fetching number of commits for ${gitData.repoName}`, error);
         }
+    }
+
+    private async delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     //retrieve total number of lines 
@@ -473,86 +513,88 @@ export class gitAnalysis {
     }
         // Add to api.ts in gitAnalysis class
 
-    async fetchPullRequests(gitData: gitData): Promise<void> {
-        this.logger.logDebug(`Fetching pull requests for ${gitData.repoName}...`);
-        try {
-            // Validate owner and repo name first
-            if (!gitData.repoOwner || !gitData.repoName) {
-                throw new Error('Invalid repository owner or name');
-            }
-
-            let page = 1;
-            let totalReviewedAdditions = 0;
-            let totalAdditions = 0;
-            let hasMorePRs = true;
-
-            while (hasMorePRs) {
+        async fetchPullRequests(gitData: gitData): Promise<void> {
+            this.logger.logDebug(`Fetching pull requests for ${gitData.repoName}...`);
+        
+            try {
+                if (!gitData.repoOwner || !gitData.repoName) {
+                    throw new Error('Invalid repository owner or name');
+                }
+        
+                let totalReviewedAdditions = 0;
+                let totalAdditions = 0;
+        
                 try {
-                    // Fetch PRs with pagination
-                    const response = await this.exponentialBackoff(() =>
-                        this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`, {
+                    // Fetch up to 100 pull requests in a single request
+                    const response = await this.axiosInstance.get<GitHubPR[]>(
+                        `/repos/${gitData.repoOwner}/${gitData.repoName}/pulls`,
+                        {
                             params: {
-                                state: 'closed',
-                                per_page: 100,
-                                page: page
-                            }
-                        })
+                                state: "closed",
+                                per_page: 100, // Fetch up to 100 PRs
+                            },
+                        }
                     );
-
+        
                     const prs = response.data;
-                    hasMorePRs = prs.length === 100;
-
-                    // Process each PR
+        
                     for (const pr of prs) {
                         try {
-                            // Get PR details including additions
-                            const prDetailResponse = await this.exponentialBackoff(() =>
-                                this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}`)
+                            //fetch the files response
+                            const filesResponse = await this.exponentialBackoff(() =>
+                                this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/files`)
                             );
-
-                            const additions = prDetailResponse.data.additions;
+                            const files = filesResponse.data;
+                            let additions = 0;
+                            for (const file of files) {
+                                additions += file.additions;
+                            }
                             totalAdditions += additions;
 
-                            // Get reviews for this PR
+
+                            // Fetch reviews for this PR
                             const reviewsResponse = await this.exponentialBackoff(() =>
                                 this.axiosInstance.get(`/repos/${gitData.repoOwner}/${gitData.repoName}/pulls/${pr.number}/reviews`)
                             );
-
-                            // If PR has reviews, count its additions
+        
                             if (reviewsResponse.data.length > 0) {
                                 totalReviewedAdditions += additions;
+                                this.logger.logDebug(`PR #${pr.number} has reviews.`);
+                                this.logger.logDebug(`Total reviewed additions: ${totalReviewedAdditions}`);
                             }
                         } catch (prError) {
-                            this.logger.logDebug(`Error processing PR ${pr.number}: ${prError}`);
-                            continue; // Skip this PR and continue with others
+                            this.logger.logDebug(`Error processing PR ${pr.number}:`, prError);
+                            continue;
                         }
                     }
-
-                    page++;
-                } catch (pageError) {
-                    this.logger.logDebug(`Error fetching page ${page}: ${pageError}`);
-                    break; // Stop processing if we can't fetch a page
+                } catch (error) {
+                    this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}:`, error);
                 }
+        
+                // Calculate metrics
+                this.logger.logInfo(`Pull request metrics  for ${gitData.repoName} are: ${totalReviewedAdditions}, ${totalAdditions}, ${totalReviewedAdditions / totalAdditions}`);
+
+                gitData.pullRequestMetrics = {
+                    totalAdditions,
+                    reviewedAdditions: totalReviewedAdditions,
+                    reviewedFraction: totalAdditions > 0
+                        ? parseFloat((totalReviewedAdditions / totalAdditions).toFixed(3))
+                        : 0.0,
+                };
+        
+                this.logger.logDebug(`Pull request metrics calculated successfully for ${gitData.repoName}`);
+                this.logger.logInfo(`Pull request metrics  for ${gitData.repoName} are: ${gitData.pullRequestMetrics.reviewedAdditions}, ${gitData.pullRequestMetrics.totalAdditions}, ${gitData.pullRequestMetrics.reviewedFraction}`);
+            } catch (error) {
+                this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}:`, error);
+                gitData.pullRequestMetrics = {
+                    totalAdditions: 0,
+                    reviewedAdditions: 0,
+                    reviewedFraction: 0.0,
+                };
             }
-
-            // Set the metrics with calculated values
-            gitData.pullRequestMetrics = {
-                totalAdditions,
-                reviewedAdditions: totalReviewedAdditions,
-                reviewedFraction: totalAdditions > 0 ? parseFloat((totalReviewedAdditions / totalAdditions).toFixed(3)) : 0
-            };
-
-            this.logger.logDebug(`Pull request metrics calculated successfully for ${gitData.repoName}`);
-        } catch (error) {
-            this.logger.logDebug(`Error fetching pull requests for ${gitData.repoName}: ${error}`);
-            // Set default values in case of error
-            gitData.pullRequestMetrics = {
-                totalAdditions: 0,
-                reviewedAdditions: 0,
-                reviewedFraction: 0
-            };
         }
-    }
+        
+        
     private async executeTasks(task: (gitData: gitData) => Promise<void>, gitData: gitData): Promise<number> {
         const startTime = performance.now();
         await task(gitData);
@@ -568,6 +610,11 @@ export class gitAnalysis {
             numberOfContributors: -1,
             numberOfOpenIssues: -1,
             numberOfClosedIssues: -1,
+            pullRequestMetrics: {
+                totalAdditions: -1,
+                reviewedAdditions: -1,
+                reviewedFraction: -1
+            },
             licenses: [],
             numberOfCommits: -1,
             numberOfLines: -1,
@@ -580,7 +627,8 @@ export class gitAnalysis {
                 numberOfCommits: -1,
                 numberOfLines: -1,
                 documentation: -1,
-                pullRequests: -1
+                pullRequests: -1,
+                dependencies: -1
             }
         };
 
@@ -597,7 +645,7 @@ export class gitAnalysis {
             gitData.latency.numberOfLines = await this.executeTasks(this.fetchLines.bind(this), gitData)
             gitData.latency.numberOfCommits = await this.executeTasks(this.fetchCommits.bind(this), gitData);
             gitData.latency.contributors = await this.executeTasks(this.fetchContributors.bind(this), gitData);
-
+            gitData.latency.pullRequests = await this.executeTasks(this.fetchPullRequests.bind(this), gitData);
             this.logger.logInfo(`All git tasks completed in order for ${gitData.repoUrl}`);
             return gitData;
         }

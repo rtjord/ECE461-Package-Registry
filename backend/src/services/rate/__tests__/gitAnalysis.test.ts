@@ -2,9 +2,9 @@ import { gitAnalysis } from '../tools/api';
 import { envVars } from '../utils/interfaces';
 import { getEnvVars } from '../tools/getEnvVars';
 import { repoData } from '../utils/interfaces';
-
+import { gitData } from '../utils/interfaces';
 // Mock Data for Testing
-const url = "https://github.com/phillips302/ECE461";
+const url = "https://github.com/bendrucker/smallest"
 
 const fakeRepoData: repoData = {
     repoName: '',
@@ -16,13 +16,23 @@ const fakeRepoData: repoData = {
     lastCommitDate: '',
     licenses: [],
     numberOfCommits: -1,
+    dependencies: [],
     numberOfLines: -1,
-    pullRequestMetrics: undefined,
+    pullRequestMetrics: {
+        totalAdditions: 0,
+        reviewedAdditions: 0,
+        reviewedFraction: 0
+    },
     documentation: {
         hasReadme: false,
         numLines: -1,
         hasExamples: false,
-        hasDocumentation: false
+        hasDocumentation: false,
+        dependencies: {
+            total: -1,
+            fractionPinned: -1,
+            pinned: -1
+        }
     },
     latency: {
         contributors: -1,
@@ -33,7 +43,8 @@ const fakeRepoData: repoData = {
         numberOfCommits: -1,
         numberOfLines: -1,
         documentation: -1,
-        pullRequests: -1
+        pullRequests: -1,
+        dependencies: -1
     }
 };
 
@@ -116,75 +127,111 @@ describe('gitAnalysisClass', () => {
     // In gitAnalysis.test.ts
 
     describe('Pull Request Analysis', () => {
-        it('should fetch pull request metrics', async () => {
-            await gitAnalysisInstance.fetchPullRequests(fakeRepoData);
-            expect(fakeRepoData.pullRequestMetrics).toBeDefined();
-            if (fakeRepoData.pullRequestMetrics) {
-                expect(fakeRepoData.pullRequestMetrics.reviewedFraction).toBeGreaterThanOrEqual(0);
-                expect(fakeRepoData.pullRequestMetrics.reviewedFraction).toBeLessThanOrEqual(1);
-                expect(fakeRepoData.pullRequestMetrics.totalAdditions).toBeGreaterThanOrEqual(0);
-                expect(fakeRepoData.pullRequestMetrics.reviewedAdditions).toBeGreaterThanOrEqual(0);
-            }
-        }, 30000);
-
-        it('should handle repositories with no access or invalid repos', async () => {
-            const invalidRepo = { 
-                ...fakeRepoData, 
-                repoUrl: 'https://github.com/definitely-not-real/non-existent-repo',
-                repoOwner: 'definitely-not-real',
-                repoName: 'non-existent-repo'
+        let gitData: gitData;
+    
+        beforeEach(() => {
+            gitData = {
+                repoName: 'example-repo',
+                repoUrl: 'https://github.com/example-owner/example-repo',
+                repoOwner: 'example-owner',
+                numberOfContributors: -1,
+                numberOfOpenIssues: -1,
+                numberOfClosedIssues: -1,
+                pullRequestMetrics: {
+                    totalAdditions: -1,
+                    reviewedAdditions: -1,
+                    reviewedFraction: -1,
+                },
+                licenses: [],
+                numberOfCommits: -1,
+                numberOfLines: -1,
+                latency: {
+                    contributors: -1,
+                    openIssues: -1,
+                    closedIssues: -1,
+                    lastCommitDate: -1,
+                    licenses: -1,
+                    numberOfCommits: -1,
+                    numberOfLines: -1,
+                    documentation: -1,
+                    pullRequests: -1,
+                    dependencies: -1,
+                },
             };
+        });
+    
 
-            // Temporarily reduce exponential backoff for this test
-            const originalBackoff = gitAnalysisInstance.exponentialBackoff;
-            gitAnalysisInstance.exponentialBackoff = async (requestFn) => {
-                try {
-                    return await requestFn();
-                } catch (error) {
-                    throw error;
-                }
-            };
+    
+        it('should handle repositories with no pull requests', async () => {
+            jest.spyOn((gitAnalysisInstance as any).axiosInstance, 'get')
+                .mockImplementationOnce(() => Promise.resolve({ data: [{ number: 1 }] })) // PRs
+                .mockImplementationOnce(() => Promise.resolve({ data: [{ additions: 0 }] })) // Files for PR #1
+                .mockImplementationOnce(() => Promise.resolve({ data: [{}] })); // Reviews for PR #1
 
-            await gitAnalysisInstance.fetchPullRequests(invalidRepo);
-            
-            // Restore original exponential backoff
-            gitAnalysisInstance.exponentialBackoff = originalBackoff;
-
-            expect(invalidRepo.pullRequestMetrics).toEqual({
+        
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+    
+            expect(gitData.pullRequestMetrics).toEqual({
                 totalAdditions: 0,
                 reviewedAdditions: 0,
-                reviewedFraction: 0
+                reviewedFraction: 0.0,
             });
-        }, 10000);  // Reduced timeout since we're bypassing backoff
-
-        it('should handle API errors gracefully', async () => {
-            const badRepo = { 
-                ...fakeRepoData, 
-                repoOwner: '',  // Invalid owner
-                repoName: ''    // Invalid name
-            };
-
-            // Temporarily reduce exponential backoff for this test
-            const originalBackoff = gitAnalysisInstance.exponentialBackoff;
-            gitAnalysisInstance.exponentialBackoff = async (requestFn) => {
-                try {
-                    return await requestFn();
-                } catch (error) {
-                    throw error;
-                }
-            };
-
-            await gitAnalysisInstance.fetchPullRequests(badRepo);
-
-            // Restore original exponential backoff
-            gitAnalysisInstance.exponentialBackoff = originalBackoff;
-
-            expect(badRepo.pullRequestMetrics).toEqual({
+        });
+    
+        it('should handle pull requests with no additions', async () => {
+            jest.spyOn((gitAnalysisInstance as any).axiosInstance, 'get')
+            .mockImplementationOnce(() => Promise.resolve({ data: [{ number: 1 }] })) // PRs
+            .mockImplementationOnce(() => Promise.resolve({ data: [{ additions: 0 }] })) // Files for PR #1
+            .mockImplementationOnce(() => Promise.resolve({ data: [{}] })); // Reviews for PR #1
+        
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+    
+            expect(gitData.pullRequestMetrics).toEqual({
                 totalAdditions: 0,
                 reviewedAdditions: 0,
-                reviewedFraction: 0
+                reviewedFraction: 0.0,
             });
-        }, 10000);  // Reduced timeout since we're bypassing backoff
+        });
+        
+    
+        it('should handle invalid API responses gracefully', async () => {
+            jest.spyOn((gitAnalysisInstance as any).axiosInstance, 'get').mockRejectedValue(new Error('API Error'));
+    
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+    
+            expect(gitData.pullRequestMetrics).toEqual({
+                totalAdditions: 0,
+                reviewedAdditions: 0,
+                reviewedFraction: 0.0,
+            });
+        });
+    
+        it('should handle real large repositories', async () => {
+            // Set the real repository details
+            gitData.repoName = 'react';
+            gitData.repoOwner = 'facebook';
+            gitData.repoUrl = 'https://github.com/facebook/react';
+        
+            // Call fetchPullRequests directly
+            await gitAnalysisInstance.fetchPullRequests(gitData);
+        
+            // Log the results for debugging
+            console.log('Pull Request Metrics:', gitData.pullRequestMetrics);
+        
+            // Ensure valid results
+            expect(gitData.pullRequestMetrics.totalAdditions).not.toBeNaN();
+            expect(gitData.pullRequestMetrics.totalAdditions).toBeGreaterThan(0);
+            expect(gitData.pullRequestMetrics.reviewedAdditions).not.toBeNaN();
+            expect(gitData.pullRequestMetrics.reviewedAdditions).toBeGreaterThan(0);
+            expect(gitData.pullRequestMetrics.reviewedFraction).not.toBeNaN();
+            expect(gitData.pullRequestMetrics.reviewedFraction).toBeGreaterThan(0);
+            expect(gitData.pullRequestMetrics.reviewedFraction).toBeLessThanOrEqual(1);
+        }, 120000);
+        
+        
+        
     });
+    
+    
 
 });
