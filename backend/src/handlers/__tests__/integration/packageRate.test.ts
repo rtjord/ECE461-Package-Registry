@@ -1,11 +1,12 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { handler } from '../../PackageRate';
-import { getPackageById } from '../../../common/dynamodb';
+import { getPackageById, updatePackageHistory } from '../../../common/dynamodb';
 import { PackageRating, PackageTableRow } from '../../../common/interfaces';
 
 
 jest.mock('../../../common/dynamodb', () => ({
     getPackageById: jest.fn(),
+    updatePackageHistory: jest.fn(),
 }));
 
 describe('Lambda Function - Handler', () => {
@@ -81,7 +82,7 @@ describe('Lambda Function - Handler', () => {
         };
 
         (getPackageById as jest.Mock).mockResolvedValue(mockRow);
-
+        (updatePackageHistory as jest.Mock).mockResolvedValue(null);
         const result = await handler(mockEvent);
 
         expect(result.statusCode).toBe(200);
