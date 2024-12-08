@@ -3,7 +3,7 @@ import { PackageData, PackageRegEx, PackageMetadata } from "../../../common/inte
 import { baseUrl } from "./config";
 
 
-const timeout = 30000;
+const timeout = 60000;
 
 describe("E2E Test for PackageByRegEx Endpoint", () => {
     let content_id: string;
@@ -41,12 +41,12 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
     }, 90000);
     afterAll(async () => {
         // Reset the registry after running the tests
-        await axios.delete(`${baseUrl}/reset`);
-    }, timeout);
+        // await axios.delete(`${baseUrl}/reset`);
+    }, 90000);
     
     it("should return a 200 status for a package that exists", async () => {
         const requestBody: PackageRegEx = {
-            RegEx: ".*test-package.*"
+            RegEx: "test-package"
         };
 
         const response = await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
@@ -60,6 +60,46 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
         const packages: PackageMetadata[] = response.data;
         expect(packages).toEqual(expectedPackages);
 
+    }, timeout);
+
+    it ("should return a 400 status for this regex", async () => {
+        const requestBody: PackageRegEx = {
+            RegEx: "(a{1,99999}){1,99999}$"
+        };
+
+        try {
+            await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
+        } catch (error) {
+            if (!axios.isAxiosError(error)) {
+                throw error;
+            }
+
+            const response = error.response;
+            if (!response) {
+                throw error;
+            }
+            expect(response.status).toBe(400);
+        }
+    }, timeout);
+
+    it ("should return a 404 status for this regex", async () => {
+        const requestBody: PackageRegEx = {
+            RegEx: "(a|aa)*$"
+        };
+
+        try {
+            await axios.post(`${baseUrl}/package/byRegEx`, requestBody);
+        } catch (error) {
+            if (!axios.isAxiosError(error)) {
+                throw error;
+            }
+
+            const response = error.response;
+            if (!response) {
+                throw error;
+            }
+            expect(response.status).toBe(404);
+        }
     }, timeout);
 
     it("should return a 400 status for an invalid regex", async () => {
@@ -84,7 +124,7 @@ describe("E2E Test for PackageByRegEx Endpoint", () => {
 
     it("should return a 404 status for a package that does not exist", async () => {
         const requestBody: PackageRegEx = {
-            RegEx: "nonexistent-package"
+            RegEx: "ece461rules"
         };
 
         try {

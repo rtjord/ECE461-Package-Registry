@@ -6,16 +6,18 @@ import { baseUrl } from "./config";
 const timeout = 30000;
 
 describe("E2E Test for Get Cost Endpoint", () => {
-    let content_id: string;
-    let url_id: string;
+    let yazl_id: string;
+    let buffer_crc32_id: string;
+    let circular1_id: string;
+    let circular2_id: string;
     beforeAll(async () => {
         // Reset the registry before running the tests
         await axios.delete(`${baseUrl}/reset`);
 
-        // Upload a package with Content to the registry
+        // Upload yazl to the registry
         const requestBody: PackageData = {
-            Name: "test-package",
-            Content: "UEsDBBQAAAAAAKm8clkAAAAAAAAAAAAAAAATACAAdGVzdC1wYWNrYWdlLTEuMC4wL1VUDQAH/xU8Z18WPGfcFTxndXgLAAEEAAAAAAQAAAAAUEsDBBQACAAIAJy8clkAAAAAAAAAAAQBAAAfACAAdGVzdC1wYWNrYWdlLTEuMC4wL3BhY2thZ2UuanNvblVUDQAH6BU8ZwAWPGfiFTxndXgLAAEEAAAAAAQAAAAAXc89D4IwEAbgnYT/cLmBSQmsbMY4OOvI0pRTTqVtetWQGP67lK/Bbten7+XtN01gPGhUR1gBBpKwd0o/1Z1wt+CHvLA10cu8yIsNGhLt2YUFr2MY/sOd4gnZNNTnD9lgjspoS4npNhaIz0m3Fmo8eW99BcZCBBBHmm9MTY2QZUA9Byhxjg/rYvUOrfVbocM8rvpiTUamz54vR0yT4QdQSwcI9J0+op4AAAAEAQAAUEsDBBQACAAIALW8clkAAAAAAAAAACoAAAAcACAAdGVzdC1wYWNrYWdlLTEuMC4wL1JFQURNRS5tZFVUDQAHFhY8ZxYWPGf/FTxndXgLAAEEAAAAAAQAAAAAC3J1dPF1VUjLzElVSMsvUihJLS7RLUhMzk5MT1UoSy0qzszPUzDUM9AzAABQSwcI8eDIMywAAAAqAAAAUEsBAhQDFAAAAAAAqbxyWQAAAAAAAAAAAAAAABMAIAAAAAAAAAAAAP9BAAAAAHRlc3QtcGFja2FnZS0xLjAuMC9VVA0AB/8VPGdfFjxn3BU8Z3V4CwABBAAAAAAEAAAAAFBLAQIUAxQACAAIAJy8cln0nT6ingAAAAQBAAAfACAAAAAAAAAAAAC2gVEAAAB0ZXN0LXBhY2thZ2UtMS4wLjAvcGFja2FnZS5qc29uVVQNAAfoFTxnABY8Z+IVPGd1eAsAAQQAAAAABAAAAABQSwECFAMUAAgACAC1vHJZ8eDIMywAAAAqAAAAHAAgAAAAAAAAAAAAtoFcAQAAdGVzdC1wYWNrYWdlLTEuMC4wL1JFQURNRS5tZFVUDQAHFhY8ZxYWPGf/FTxndXgLAAEEAAAAAAQAAAAAUEsFBgAAAAADAAMAOAEAAPIBAAAAAA==",
+            Name: "yazl",
+            URL: "https://www.npmjs.com/package/yazl/v/3.1.0",
             debloat: false,
             JSProgram: "console.log('Hello, World!');",
         };
@@ -23,18 +25,36 @@ describe("E2E Test for Get Cost Endpoint", () => {
         const response = await axios.post(`${baseUrl}/package`, requestBody);
 
         // Get the ID of the uploaded package
-        content_id = response.data.metadata.ID;
+        yazl_id = response.data.metadata.ID;
 
         // Upload a package with a URL to the registry
         const requestBody2: PackageData = {
-            Name: "yazl",
-            URL: "https://www.npmjs.com/package/yazl/v/3.1.0",
+            Name: "buffer-crc32",
+            URL: "https://www.npmjs.com/package/buffer-crc32",
             debloat: false,
         };
 
         const response2 = await axios.post(`${baseUrl}/package`, requestBody2);
         // Get the ID of the uploaded package
-        url_id = response2.data.metadata.ID;
+        buffer_crc32_id = response2.data.metadata.ID;
+
+        // Upload circular1 to the registry
+        const requestBody3: PackageData = {
+            Name: "circular1",
+            Content: "UEsDBBQAAAAAAG9whVkAAAAAAAAAAAAAAAAQACAAY2lyY3VsYXIxLTEuMC4wL1VUDQAHAvlRZ875UWfi+FFndXgLAAEEAAAAAAQAAAAAUEsDBBQACAAIAJdwhVkAAAAAAAAAACQBAAAcACAAY2lyY3VsYXIxLTEuMC4wL3BhY2thZ2UuanNvblVUDQAHTvlRZ075UWcC+VFndXgLAAEEAAAAAAQAAAAATY8xD4IwEIV3Ev7DpQOTIeDIZoyDs44sTTnlFNqmLYbE8N9tS0XHe9+9u/feeQbAJB+RNcAEGTEN3NRsF/UXGktKBlSXVVkluUMrDGmX0BWtA83Fk98xbYycIiLZ4Vw+bJJXm/Uk/vWK896wiKJX0LKTMco0IBUEAFajoBth1zIoCsCZHNQsWJf1IJ9cr8wW4rCOKxtIoLSx1/ly3KJr9JmkIPyP8S2+/1WNX/JsybMPUEsHCAuoi1+xAAAAJAEAAFBLAwQUAAgACAB5cIVZAAAAAAAAAAAzAAAAGQAgAGNpcmN1bGFyMS0xLjAuMC9SRUFETUUubWRVVA0ABxb5UWcW+VFnAvlRZ3V4CwABBAAAAAAEAAAAAAtydXTxdVVIy8xJVUjLL1JIzixKLs1JLFJISS1IzUtJzUuuVDBSKEstKs7Mz1Mw1DPQMwAAUEsHCF/kfYg1AAAAMwAAAFBLAQIUAxQAAAAAAG9whVkAAAAAAAAAAAAAAAAQACAAAAAAAAAAAAD/QQAAAABjaXJjdWxhcjEtMS4wLjAvVVQNAAcC+VFnzvlRZ+L4UWd1eAsAAQQAAAAABAAAAABQSwECFAMUAAgACACXcIVZC6iLX7EAAAAkAQAAHAAgAAAAAAAAAAAAtoFOAAAAY2lyY3VsYXIxLTEuMC4wL3BhY2thZ2UuanNvblVUDQAHTvlRZ075UWcC+VFndXgLAAEEAAAAAAQAAAAAUEsBAhQDFAAIAAgAeXCFWV/kfYg1AAAAMwAAABkAIAAAAAAAAAAAALaBaQEAAGNpcmN1bGFyMS0xLjAuMC9SRUFETUUubWRVVA0ABxb5UWcW+VFnAvlRZ3V4CwABBAAAAAAEAAAAAFBLBQYAAAAAAwADAC8BAAAFAgAAAAA=",
+            debloat: false,
+        };
+        const response3 = await axios.post(`${baseUrl}/package`, requestBody3);
+        circular1_id = response3.data.metadata.ID;
+
+        // Upload circular2 to the registry
+        const requestBody4: PackageData = {
+            Name: "circular2",
+            Content: "UEsDBBQAAAAAAG5whVkAAAAAAAAAAAAAAAAQACAAY2lyY3VsYXIyLTEuMC4wL1VUDQAHAflRZ9j5UWf4+FFndXgLAAEEAAAAAAQAAAAAUEsDBBQACAAIAJtwhVkAAAAAAAAAACQBAAAcACAAY2lyY3VsYXIyLTEuMC4wL3BhY2thZ2UuanNvblVUDQAHVvlRZ1b5UWcB+VFndXgLAAEEAAAAAAQAAAAATY8xD4IwEIV3Ev7DpQOTIeDIZoyDs44sTTnlFNqmLYbE8N9tS0XHe9+9u/feeQbAJB+RNcAEGTEN3OzZLuovNJaUDKguq7JKcodWGNIuoStaB5qLJ79j2hg5RUSyw7l82CSvNutJ/OsV571hEUWvoGUnY5RpQCoIAKxGQTfCrmVQFIAzOahZsC7rQT65XpktxGEdVzaQQGljr/PluEXX6DNJQfgf41u8/lWNX/JsybMPUEsHCG+FnauxAAAAJAEAAFBLAwQUAAgACAB0cIVZAAAAAAAAAAAzAAAAGQAgAGNpcmN1bGFyMi0xLjAuMC9SRUFETUUubWRVVA0ABw35UWcO+VFnAflRZ3V4CwABBAAAAAAEAAAAAAtydXTxdVVIy8xJVUjLL1JIzixKLs1JLFJISS1IzUtJzUuuVDBUKEstKs7Mz1Mw1DPQMwAAUEsHCCaOAJk1AAAAMwAAAFBLAQIUAxQAAAAAAG5whVkAAAAAAAAAAAAAAAAQACAAAAAAAAAAAAD/QQAAAABjaXJjdWxhcjItMS4wLjAvVVQNAAcB+VFn2PlRZ/j4UWd1eAsAAQQAAAAABAAAAABQSwECFAMUAAgACACbcIVZb4Wdq7EAAAAkAQAAHAAgAAAAAAAAAAAAtoFOAAAAY2lyY3VsYXIyLTEuMC4wL3BhY2thZ2UuanNvblVUDQAHVvlRZ1b5UWcB+VFndXgLAAEEAAAAAAQAAAAAUEsBAhQDFAAIAAgAdHCFWSaOAJk1AAAAMwAAABkAIAAAAAAAAAAAALaBaQEAAGNpcmN1bGFyMi0xLjAuMC9SRUFETUUubWRVVA0ABw35UWcO+VFnAflRZ3V4CwABBAAAAAAEAAAAAFBLBQYAAAAAAwADAC8BAAAFAgAAAAA=",
+            debloat: false,
+        };
+        const response4 = await axios.post(`${baseUrl}/package`, requestBody4);
+        circular2_id = response4.data.metadata.ID;
 
     }, 90000);
     afterAll(async () => {
@@ -42,25 +62,40 @@ describe("E2E Test for Get Cost Endpoint", () => {
         await axios.delete(`${baseUrl}/reset`);
     }, timeout);
 
-    it("should return a 200 status for a package uploaded via content", async () => {
-        const response = await axios.get(`${baseUrl}/package/${content_id}/cost`);
+    it("should only return total cost if dependency is false", async () => {
+        const response = await axios.get(`${baseUrl}/package/${yazl_id}/cost?dependency=false`);
         expect(response.status).toBe(200);
 
-        // expect response.data to be of type Package
         const cost: PackageCost = response.data;
         expect(cost).not.toBeNull();
-        expect(cost[content_id].totalCost).toBeGreaterThan(0);
+        expect(cost[yazl_id].totalCost).toBeGreaterThan(0);
+        expect(cost[yazl_id].standaloneCost).toBeUndefined();
 
     }, timeout);
 
-    it("should return a 200 status for a package uploaded via url", async () => {
-        const response = await axios.get(`${baseUrl}/package/${url_id}/cost`);
+    it("should return standalone cost and total cost if dependency is true", async () => {
+        const response = await axios.get(`${baseUrl}/package/${yazl_id}/cost?dependency=true`);
         expect(response.status).toBe(200);
 
-        // expect response.data to be of type Package
         const cost: PackageCost = response.data;
         expect(cost).not.toBeNull();
-        expect(cost[url_id].totalCost).toBeGreaterThan(0);
+        expect(cost[yazl_id].standaloneCost).toBeGreaterThan(0);
+        expect(cost[yazl_id].totalCost).toBeGreaterThan(0);
+        expect(cost[buffer_crc32_id].standaloneCost).toBeGreaterThan(0);
+        expect(cost[buffer_crc32_id].totalCost).toBeGreaterThan(0);
+
+    }, timeout);
+
+    it("should handle circular dependencies", async () => {
+        const response = await axios.get(`${baseUrl}/package/${circular1_id}/cost?dependency=true`);
+        expect(response.status).toBe(200);
+
+        const cost: PackageCost = response.data;
+        expect(cost).not.toBeNull();
+        expect(cost[circular1_id].standaloneCost).toBeGreaterThan(0);
+        expect(cost[circular1_id].totalCost).toBeGreaterThan(0);
+        expect(cost[circular2_id].standaloneCost).toBeGreaterThan(0);
+        expect(cost[circular2_id].totalCost).toBeGreaterThan(0);
 
     }, timeout);
     
@@ -82,12 +117,12 @@ describe("E2E Test for Get Cost Endpoint", () => {
     }, timeout);
 
     it("should return a lower cost if debloat is true", async () => {
-        const response = await axios.get(`${baseUrl}/package/${url_id}/cost`);
+        const response = await axios.get(`${baseUrl}/package/${yazl_id}/cost`);
         expect(response.status).toBe(200);
-        const originalCost = response.data[url_id].totalCost;
+        const originalCost = response.data[yazl_id].totalCost;
 
         // delete the package
-        await axios.delete(`${baseUrl}/package/${url_id}`);
+        await axios.delete(`${baseUrl}/package/${yazl_id}`);
         // reupload the package with debloat set to true
         const requestBody: PackageData = {
             Name: "yazl",
@@ -95,9 +130,9 @@ describe("E2E Test for Get Cost Endpoint", () => {
             debloat: true,
         };
         await axios.post(`${baseUrl}/package`, requestBody);
-        const response2 = await axios.get(`${baseUrl}/package/${url_id}/cost`);
+        const response2 = await axios.get(`${baseUrl}/package/${yazl_id}/cost`);
         expect(response2.status).toBe(200);
-        const debloatedCost = response2.data[url_id].totalCost;
+        const debloatedCost = response2.data[yazl_id].totalCost;
 
         // expect the debloated cost to be less than the original cost
         expect(debloatedCost).toBeLessThan(originalCost);

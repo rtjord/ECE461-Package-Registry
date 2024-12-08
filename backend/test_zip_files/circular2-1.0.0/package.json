@@ -1,0 +1,14 @@
+{
+  "name": "circular2",
+  "version": "1.0.0",
+  "description": "Test package",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Test Author",
+  "license": "ISC",
+  "dependencies": {
+    "circular1": "1.0.0"
+  }
+}

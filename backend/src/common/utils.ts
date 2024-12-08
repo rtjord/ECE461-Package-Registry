@@ -4,10 +4,11 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand
 } from "@aws-sdk/client-secrets-manager";
-import { metricData, repoData, envVars } from "../services/rate/utils/interfaces";
+import { repoData, envVars } from "../services/rate/utils/interfaces";
 import { runAnalysis } from "../services/rate/tools/scripts";
 import { metricCalc } from "../services/rate/tools/metricCalc";
 import { urlAnalysis } from "../services/rate/tools/urlOps";
+import { PackageRating } from "../common/interfaces";
 
 // Function to create a consistent error response
 export const createErrorResponse = (statusCode: number, message: string): APIGatewayProxyResult => {
@@ -43,7 +44,7 @@ export async function getSecret(client: SecretsManagerClient, secret_name: strin
   return secret;
 }
 
-export async function getScores(token: string, url: string): Promise<metricData> {
+export async function getScores(token: string, url: string): Promise<PackageRating> {
   const envVars: envVars = {
     token: token,
     logLevel: 1,
@@ -55,28 +56,27 @@ export async function getScores(token: string, url: string): Promise<metricData>
     const repoData: repoData[] = await runAnalysisClass.runAnalysis([url]);
     const repo = repoData[0];
     const metricCalcClass = new metricCalc();
-    const result: metricData = metricCalcClass.getValue(repo);
+    const result: PackageRating = await metricCalcClass.getValue(repo);
 
     return result;
   } catch (error) {
-    const emptyResult: metricData = {
-      URL: url,
+    const emptyResult: PackageRating = {
       NetScore: -1,
-      NetScore_Latency: -1,
+      NetScoreLatency: -1,
       RampUp: -1,
-      RampUp_Latency: -1,
+      RampUpLatency: -1,
       Correctness: -1,
-      Correctness_Latency: -1,
+      CorrectnessLatency: -1,
       BusFactor: -1,
-      BusFactor_Latency: -1,
+      BusFactorLatency: -1,
       ResponsiveMaintainer: -1,
-      ResponsiveMaintainer_Latency: -1,
-      License: -1,
-      License_Latency: -1,
-      PullRequest: -1,
+      ResponsiveMaintainerLatency: -1,
+      LicenseScore: -1,
+      LicenseScoreLatency: -1,
       GoodPinningPractice: -1,
-      GoodPinningPractice_Latency: -1,
-      PullRequest_Latency: -1
+      GoodPinningPracticeLatency: -1,
+      PullRequest: -1,
+      PullRequestLatency: -1,
   };
     console.log('Error calculating score:', error);
     return emptyResult;

@@ -15,7 +15,63 @@ import {
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
-const { clearDomain, createIndex } = require(`${commonPath}/opensearch`);
+const { checkIndexExists, deleteIndex, createIndex } = require(`${commonPath}/opensearch`);
+
+
+const tokenizedMapping = {
+    settings: {
+        "index.knn": true
+    },
+    mappings: {
+        properties: {
+            content: {
+                type: "text", // Treat content as a single string
+            },
+            timestamp: {
+                type: "date", // ISO-8601 date format
+            },
+            // embedding: {
+            //     type: "knn_vector", // K-Nearest Neighbors vector for similarity search
+            //     dimension: 1536, // Dimensions of the embedding vector
+            //     method: {
+            //         engine: "lucene",
+            //         space_type: "l2",
+            //         name: "hnsw",
+            //         parameters: {}
+            //     }
+            // },
+            metadata: {
+                properties: {
+                    Name: { type: "keyword" },
+                    Version: { type: "keyword" },
+                    ID: { type: "keyword" },
+                },
+            },
+        },
+    },
+};
+
+const nonTokenizedMapping = {
+    mappings: {
+        properties: {
+            content: {
+                type: "text",
+                index_options: "offsets",
+                analyzer: "keyword", // Use the keyword analyzer to avoid tokenization
+            },
+            timestamp: {
+                type: "date", // ISO-8601 date format
+            },
+            metadata: {
+                properties: {
+                    Name: { type: "keyword" },
+                    Version: { type: "keyword" },
+                    ID: { type: "keyword" },
+                },
+            },
+        },
+    },
+};
 
 // Lambda handler
 export const handler: APIGatewayProxyHandler = async () => {
@@ -24,15 +80,14 @@ export const handler: APIGatewayProxyHandler = async () => {
         const dynamoDBClient = DynamoDBDocumentClient.from(new DynamoDBClient());
         const s3Client = new S3Client({
             region: 'us-east-2',
-            useArnRegion: false, // Ignore ARN regions and stick to 'us-east-2'
         });
 
         // Define table and bucket names
         const table1 = "PackageMetadata"; // Table with ID as primary key
         const table2 = "PackageHistoryTable"; // Table with partition and sort keys
         const bucket = getEnvVariable("S3_BUCKET_NAME");
-        const domain = getEnvVariable("DOMAIN_ENDPOINT");
 
+        console.log("Clearing resources...");
         // Perform all operations concurrently
         await Promise.all([
             clearDynamoDBTable(dynamoDBClient, table1, (item) => ({ ID: item.ID })),
@@ -41,14 +96,28 @@ export const handler: APIGatewayProxyHandler = async () => {
                 Date: item.Date,
             })),
             emptyS3Bucket(s3Client, bucket),
-            await clearDomain(domain),
         ]);
 
-        console.log("All resources cleared successfully.");
+        // await clearDomain(getEnvVariable("DOMAIN_ENDPOINT"));
+        if (await checkIndexExists("readmes")) {
+            await deleteIndex("readmes");
+        }
 
-        await createIndex(domain, "readmes");
-        await createIndex(domain, "packagejsons");
-        console.log("Indices created successfully.");
+        if (await checkIndexExists("packagejsons")) {
+            await deleteIndex("packagejsons");
+        }
+
+        if (await checkIndexExists("recommend")) {
+            await deleteIndex("recommend");
+        }
+
+        await createIndex("readmes", nonTokenizedMapping);
+        await createIndex("packagejsons", nonTokenizedMapping);
+        await createIndex("recommend", tokenizedMapping);
+        // await clearIndex("readmes");
+        // await clearIndex("packagejsons");
+        // await clearIndex("recommend");
+        console.log("All resources cleared successfully.");
 
         return {
             statusCode: 200,

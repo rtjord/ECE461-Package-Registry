@@ -6,10 +6,11 @@ export interface npmData {
     repoUrl: string;
     lastCommitDate: string;
     documentation: documentationData;
+    dependencies: Dependency[];
     latency: repoLatencyData;
 }
 export interface repoData {
-    dependencies?: Dependency[];
+    dependencies: Dependency[];
     repoName: string;
     repoUrl: string;
     repoOwner: string;
@@ -22,7 +23,12 @@ export interface repoData {
     numberOfLines: number;
     documentation: documentationData;
     latency: repoLatencyData;
-    pullRequestMetrics?: PullRequestMetrics;
+    pullRequestMetrics: PullRequestMetrics;
+}
+export interface GitHubPR {
+    number: number; // Pull request number
+    additions: number; // Number of additions in the PR
+    [key: string]: any; // To accommodate any other fields returned by the API
 }
 
 export interface gitData {
@@ -36,7 +42,7 @@ export interface gitData {
     numberOfCommits: number;
     numberOfLines: number;
     latency: repoLatencyData;
-    pullRequestMetrics?: PullRequestMetrics;
+    pullRequestMetrics: PullRequestMetrics;
 }
 
 export interface npmData {
@@ -55,19 +61,19 @@ export interface envVars {
 export interface metricData{
     URL: string;
     Correctness: number;
-    Correctness_Latency: number;
+    CorrectnessLatency: number;
     BusFactor: number;
-    BusFactor_Latency: number;
+    BusFactorLatency: number;
     RampUp: number;
-    RampUp_Latency: number;
+    RampUpLatency: number;
     ResponsiveMaintainer: number;
-    ResponsiveMaintainer_Latency: number;
+    ResponsiveMaintainerLatency: number;
     License: number;
-    License_Latency: number;
+    LicenseLatency: number;
     NetScore: number;
-    NetScore_Latency: number;
+    NetScoreLatency: number;
     GoodPinningPractice: number;
-    GoodPinningPractice_Latency: number;
+    GoodPinningPracticeLatency: number;
     PullRequest: number;
-    PullRequest_Latency: number;
+    PullRequestLatency: number;
 }

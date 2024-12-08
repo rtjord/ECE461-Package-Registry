@@ -1,6 +1,7 @@
 ## Sensitive Files ##
 files/
 *.env
+env.json
 
 ## Package Files ##
 node_modules/
@@ -14,3 +15,5 @@ dist/
 *.log
 
 .serverless/
+
+opensearch_queries.ts

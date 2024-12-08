@@ -5,7 +5,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, generatePackageID, getSecret, getScores, getEnvVariable, getRepoUrl } = require(`${commonPath}/utils`);
+const { createErrorResponse, generatePackageID, getSecret, getScores, getRepoUrl } = require(`${commonPath}/utils`);
 const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata, getPackageById } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
@@ -37,14 +37,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Extract packageName and version from the path (assuming package id is passed in the path)
         const oldId = event.pathParameters?.id;
+        console.log('Path ID:', oldId);
 
         if (!oldId || !event.body) {
+            console.error('Missing ID or request body.');
             return createErrorResponse(400, 'Missing ID or request body.');
         }
 
         // The request body should be a Package object
         const requestBody: Package = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-
+        console.log('Request body:', requestBody);
         // In this metadata, the name of must match name of the old package
         // the version must be a new version number
         // the ID must be the same as the old package
@@ -55,11 +57,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         // Check that the ID in the request body matches the ID in the path
         if (metadata.ID !== oldId) {
+            console.error('ID in the request body does not match the ID in the path.');
             return createErrorResponse(400, 'ID in the request body does not match the ID in the path.');
         }
 
         // Check that exactly one of Content or URL is provided
         if ((!data.Content && !data.URL) || (data.Content && data.URL)) {
+            console.error('Exactly one of Content or URL must be provided.');
             return createErrorResponse(400, 'Exactly one of Content or URL must be provided.');
         }
 
@@ -68,22 +72,27 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Check if any package with the give id already exists
         const existingPackage = await getPackageById(dynamoDBClient, oldId);
         if (!existingPackage) {
+            console.error(`Package with id ${oldId} not found.`);
             return createErrorResponse(404, 'Package not found.');
         }
 
         if (metadata.Name !== existingPackage.PackageName) {
+            console.error(`New name ${metadata.Name} does not match the existing package name ${existingPackage.PackageName}.`);
             return createErrorResponse(400, 'Package name in the metadata does not match the existing package name.');
         }
 
         // Get all previous versions of the package
         const previousVersions: PackageMetadata[] = await getPackageByName(dynamoDBClient, metadata.Name);
+        console.log('Previous versions:', previousVersions);
 
         // Check if the new version is valid
         for (const version of previousVersions) {
             if (version.Version === metadata.Version) {
+                console.error('Package version already exists.');
                 return createErrorResponse(400, 'Package version already exists.');
             }
             if (!isNewVersionValid(version.Version, metadata.Version)) {
+                console.error('Invalid new version number.');
                 return createErrorResponse(400, 'Invalid new version number.');
             }
         }
@@ -96,6 +105,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (data.Content) {
             // Convert base64-encoded content to a Buffer
             fileContent = Buffer.from(data.Content, 'base64');
+            console.log("Converted content to buffer.");
         } else if (data.URL) {
             // Get the rating of the package
             const secret = await getSecret(secretsManagerClient, "GitHubToken");
@@ -110,20 +120,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
             // Extract the version from the NPM url, if present
             // If a GitHub url is provided, the urlVersion will be empty
-            console.log('extracting version from npm url:', data.URL);
             const urlVersion: string = extractVersionFromNpmUrl(data.URL);
+            console.log('URL version:', urlVersion);
             // If the version is provided in the URL, it must match the version in the metadata
             if (urlVersion && urlVersion != metadata.Version) {
+                console.error(`Url version ${urlVersion} does not match the version in the metadata ${metadata.Version}.`);
                 return createErrorResponse(400, 'Version in the URL does not match the version in the metadata.');
             }
 
             // Fetch the GitHub repository URL from the GitHub/NPM package url
             const repoUrl = await getRepoUrl(data.URL);
             if (!repoUrl) {
+                console.error('Failed to fetch GitHub repository URL from npm package.');
                 return createErrorResponse(400, 'Failed to fetch GitHub repository URL from npm package.');
             }
             // Clone the GitHub repository with the correct version and zip it
             fileContent = await cloneAndZipRepository(repoUrl, urlVersion);
+            console.log("Cloned and zipped repository.");
         } else {
             return createErrorResponse(400, 'Invalid request. No valid content or URL provided.');
         }
@@ -141,25 +154,32 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             Version: metadata.Version,
             ID: packageId,
         };
+
         if (readme){
             // upload readme to opensearch
-            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, new_metadata);
+            console.log('Uploading readme to opensearch');
+            await uploadToOpenSearch('readmes', readme, new_metadata);
+            // don't upload to recommendation index to avoid multiple versions of the same package
+            // being returned by the /recommend endpoint
+            console.log('Uploaded readme to opensearch');
         }
 
         if (packageJson) {
             // upload package.json to opensearch
-            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', JSON.stringify(packageJson), new_metadata);
+            console.log('Uploading package.json to opensearch');
+            await uploadToOpenSearch('packagejsons', JSON.stringify(packageJson), new_metadata);
+            console.log('Uploaded package.json to opensearch');
         }
 
         // Upload the package zip to S3
         if (data.debloat) {
             // Debloat the package content
+            console.log('Debloating the package content.');
             fileContent = await debloatPackage(fileContent);
+            console.log('Debloating complete.');
         }
         const s3Key = await uploadToS3(s3Client, fileContent, metadata.Name, metadata.Version);
-        // const standaloneCost = fileContent.length / (1024 * 1024);
-        // const dependenciesCost = await calculateDependenciesCost(packageJson);
-        // const totalCost = standaloneCost + dependenciesCost;
+        const standaloneCost = fileContent.length / (1024 * 1024);
 
         // Save the package metadata to DynamoDB
         const row: PackageTableRow = {
@@ -169,8 +189,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             URL: data.URL,
             s3Key: s3Key,
             JSProgram: data.JSProgram,
-            // standaloneCost: standaloneCost,
-            // totalCost: totalCost,
+            standaloneCost: standaloneCost,
             ...(rating && { Rating: rating }),
         };
         await uploadPackageMetadata(dynamoDBClient, row);
@@ -181,7 +200,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             isAdmin: true,
         };
 
+        console.log('Updating package history.');
         await updatePackageHistory(dynamoDBClient, metadata.Name, metadata.Version, packageId, user, "UPDATE");
+        console.log('Package history updated.');
 
         const responseBody: Package = {
             metadata: {
@@ -227,6 +248,7 @@ export function isNewVersionValid(oldVersion: string, newVersion: string): boole
             (num) => isNaN(num) || num < 0
         )
     ) {
+        console.error('Invalid version number format.');
         throw new Error("Invalid version number format.");
     }
 

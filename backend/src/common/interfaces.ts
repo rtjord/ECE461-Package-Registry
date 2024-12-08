@@ -36,20 +36,22 @@ export interface PackageCost {
 }
 
 export interface PackageRating {
-    RampUp: number;
-    Correctness: number;
-    BusFactor: number;
-    ResponsiveMaintainer: number;
-    LicenseScore: number;
-    PullRequest: number;
     NetScore: number;
-    RampUpLatency: number;
-    CorrectnessLatency: number;
-    BusFactorLatency: number;
-    ResponsiveMaintainerLatency: number;
-    LicenseScoreLatency: number;
-    PullRequestLatency: number;
     NetScoreLatency: number;
+    RampUp: number;
+    RampUpLatency: number;
+    Correctness: number;
+    CorrectnessLatency: number;
+    BusFactor: number;
+    BusFactorLatency: number;
+    ResponsiveMaintainer: number;
+    ResponsiveMaintainerLatency: number;
+    LicenseScore: number;
+    LicenseScoreLatency: number;
+    GoodPinningPractice: number;
+    GoodPinningPracticeLatency: number;
+    PullRequest: number;
+    PullRequestLatency: number;
 }
 
 export interface PackageHistoryEntry {
@@ -90,4 +92,9 @@ export interface PackageTableRow {
     JSProgram?: string; // JavaScript program for sensitive modules
     standaloneCost?: number; // Standalone cost, excluding dependencies
     totalCost?: number; // Total cost including dependencies if applicable
+    Rating: PackageRating;
+}
+
+export interface RecommendationRequest {
+    Description: string; // Description of package
 }

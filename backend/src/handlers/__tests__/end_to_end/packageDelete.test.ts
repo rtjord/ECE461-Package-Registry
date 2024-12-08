@@ -1,11 +1,11 @@
 import axios from "axios";
-import { PackageData, PackageRating } from "../../../common/interfaces";
+import { PackageData } from "../../../common/interfaces";
 import { baseUrl } from "./config";
 
 
 const timeout = 30000;
 
-describe("E2E Test for Package Rate Endpoint", () => {
+describe("E2E Test for Package Delete Endpoint", () => {
     let content_id: string;
     let url_id: string;
     beforeAll(async () => {
@@ -42,35 +42,21 @@ describe("E2E Test for Package Rate Endpoint", () => {
         await axios.delete(`${baseUrl}/reset`);
     }, timeout);
     
-    it("should return a 200 status for a package with a rating", async () => {
-        const response = await axios.get(`${baseUrl}/package/${url_id}/rate`);
+    it("should return a 200 status for a package uploaded via Content", async () => {
+        const response = await axios.delete(`${baseUrl}/package/${content_id}`);
         expect(response.status).toBe(200);
 
-        // expect response.data to be of type Package
-        const rating: PackageRating = response.data;
-        expect(rating).not.toBeNull();
-        console.log(rating);
+    }, timeout);
+
+    it("should return a 200 status for a package uploaded via URL", async () => {
+        const response = await axios.delete(`${baseUrl}/package/${url_id}`);
+        expect(response.status).toBe(200);
 
     }, timeout);
+
     it("should return a 404 status if the package does not exist", async () => {
         try {
-            await axios.get(`${baseUrl}/package/non-existant-id/rate`);
-        } catch (error) {
-            if (!axios.isAxiosError(error)) {
-                throw error;
-            }
-
-            const response = error.response;
-            if (!response) {
-                throw error;
-            }
-
-            expect(response.status).toBe(404);
-        }
-    }, timeout);
-    it("should return a 404 status if the package does not have a rating", async () => {
-        try {
-            await axios.get(`${baseUrl}/package/${content_id}/rate`);
+            await axios.delete(`${baseUrl}/package/non-existant-id`);
         } catch (error) {
             if (!axios.isAxiosError(error)) {
                 throw error;
@@ -85,5 +71,4 @@ describe("E2E Test for Package Rate Endpoint", () => {
         }
     }, timeout);
     // It should also return a 400 status if the package ID is missing
-    // It does this when using sam local invoke, but I'm not sure how to test it here
 });

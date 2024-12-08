@@ -55,7 +55,6 @@ describe("E2E Test for Packages List Endpoint", () => {
         const response = await axios.post(`${baseUrl}/packages`, requestBody);
         const offset: EnumerateOffset = response.headers.offset;
         const packages: PackageMetadata[] = response.data;
-        console.log(packages);
         expect(response.status).toBe(200);
         expect(packages).not.toBeNull();
         expect(packages.length).toBe(ids.length);
@@ -75,6 +74,23 @@ describe("E2E Test for Packages List Endpoint", () => {
         // convert ids.length to string to compare with the ID of the fetched packages
         expect(offset).toBe(String(packages.length));
 
+    }, timeout);
+
+    it("should return 400 status when an invalid SemVer range is provided", async () => {
+        const requestBody: PackageQuery[] = [{ Name: "test-package", Version: ">=1.0.1 <1.2.0 <1.3.0" }];
+        try {
+            await axios.post(`${baseUrl}/packages`, requestBody);
+        } catch (error) {
+            if (!axios.isAxiosError(error)) {
+                throw error;
+            }
+            const response = error.response;
+            if (!response) {
+                throw error;
+            }
+
+            expect(response.status).toBe(400);
+        }
     }, timeout);
 
 });

@@ -3,6 +3,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const handler = async (_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const message = "This system does not support authentication.";
+    console.log(message);
     return {
       statusCode: 501,
       headers: {

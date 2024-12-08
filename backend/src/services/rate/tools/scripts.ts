@@ -81,10 +81,15 @@ export class runAnalysis {
             numberOfOpenIssues: -1,
             numberOfClosedIssues: -1,
             lastCommitDate: '',
+            dependencies: [],
             licenses: [],
             numberOfCommits: -1,
             numberOfLines: -1,
-            pullRequestMetrics: undefined,
+            pullRequestMetrics: {
+                totalAdditions: -1,
+                reviewedAdditions: -1,
+                reviewedFraction: -1
+            },
             documentation: {
                 hasReadme: false,
                 numLines: -1,
@@ -105,7 +110,8 @@ export class runAnalysis {
                 numberOfCommits: -1,
                 numberOfLines: -1,
                 documentation: -1,
-                pullRequests: -1
+                pullRequests: -1,
+                dependencies: -1
             }
         };
 
@@ -131,6 +137,7 @@ export class runAnalysis {
             licenses: gitData.licenses,
             numberOfCommits: gitData.numberOfCommits,
             numberOfLines: gitData.numberOfLines,
+            dependencies: npmData.dependencies,
             pullRequestMetrics: gitData.pullRequestMetrics,
             documentation: {
                 hasReadme: npmData.documentation.hasReadme,
@@ -153,6 +160,7 @@ export class runAnalysis {
             }
         };
 
+        // console.log('RepoData:', repoData);
         return repoData;
     }
 }
