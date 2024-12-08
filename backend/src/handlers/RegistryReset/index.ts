@@ -10,62 +10,6 @@ const { emptyS3Bucket } = require(`${commonPath}/s3`);
 const { clearIndex } = require(`${commonPath}/opensearch`);
 
 
-// const tokenizedMapping = {
-//     settings: {
-//         "index.knn": true
-//     },
-//     mappings: {
-//         properties: {
-//             content: {
-//                 type: "text", // Treat content as a single string
-//             },
-//             timestamp: {
-//                 type: "date", // ISO-8601 date format
-//             },
-//             // embedding: {
-//             //     type: "knn_vector", // K-Nearest Neighbors vector for similarity search
-//             //     dimension: 1536, // Dimensions of the embedding vector
-//             //     method: {
-//             //         engine: "lucene",
-//             //         space_type: "l2",
-//             //         name: "hnsw",
-//             //         parameters: {}
-//             //     }
-//             // },
-//             metadata: {
-//                 properties: {
-//                     Name: { type: "keyword" },
-//                     Version: { type: "keyword" },
-//                     ID: { type: "keyword" },
-//                 },
-//             },
-//         },
-//     },
-// };
-
-// const nonTokenizedMapping = {
-//     mappings: {
-//         properties: {
-//             content: {
-//                 type: "text",
-//                 index_options: "offsets",
-//                 analyzer: "keyword", // Use the keyword analyzer to avoid tokenization
-//             },
-//             timestamp: {
-//                 type: "date", // ISO-8601 date format
-//             },
-//             metadata: {
-//                 properties: {
-//                     Name: { type: "keyword" },
-//                     Version: { type: "keyword" },
-//                     ID: { type: "keyword" },
-//                 },
-//             },
-//         },
-//     },
-// };
-
-// Lambda handler
 export const handler: APIGatewayProxyHandler = async () => {
     try {
         // Inject clients
@@ -90,22 +34,6 @@ export const handler: APIGatewayProxyHandler = async () => {
             emptyS3Bucket(s3Client, bucket),
         ]);
 
-        // await clearDomain(getEnvVariable("DOMAIN_ENDPOINT"));
-        // if (await checkIndexExists("readmes")) {
-        //     await deleteIndex("readmes");
-        // }
-
-        // if (await checkIndexExists("packagejsons")) {
-        //     await deleteIndex("packagejsons");
-        // }
-
-        // if (await checkIndexExists("recommend")) {
-        //     await deleteIndex("recommend");
-        // }
-
-        // await createIndex("readmes", nonTokenizedMapping);
-        // await createIndex("packagejsons", nonTokenizedMapping);
-        // await createIndex("recommend", tokenizedMapping);
         await clearIndex("readmes");
         await clearIndex("packagejsons");
         await clearIndex("recommend");
