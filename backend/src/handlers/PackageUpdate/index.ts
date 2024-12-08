@@ -5,7 +5,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, generatePackageID, getSecret, getScores, getEnvVariable, getRepoUrl } = require(`${commonPath}/utils`);
+const { createErrorResponse, generatePackageID, getSecret, getScores, getRepoUrl } = require(`${commonPath}/utils`);
 const { debloatPackage, cloneAndZipRepository, extractPackageJsonFromZip, extractReadmeFromZip } = require(`${commonPath}/zip`);
 const { getPackageByName, updatePackageHistory, uploadPackageMetadata, getPackageById } = require(`${commonPath}/dynamodb`);
 const { uploadToS3 } = require(`${commonPath}/s3`);
@@ -154,17 +154,20 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             Version: metadata.Version,
             ID: packageId,
         };
+
         if (readme){
             // upload readme to opensearch
             console.log('Uploading readme to opensearch');
-            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'readmes', readme, new_metadata);
+            await uploadToOpenSearch('readmes', readme, new_metadata);
+            // don't upload to recommendation index to avoid multiple versions of the same package
+            // being returned by the /recommend endpoint
             console.log('Uploaded readme to opensearch');
         }
 
         if (packageJson) {
             // upload package.json to opensearch
             console.log('Uploading package.json to opensearch');
-            await uploadToOpenSearch(getEnvVariable('DOMAIN_ENDPOINT'), 'packagejsons', JSON.stringify(packageJson), new_metadata);
+            await uploadToOpenSearch('packagejsons', JSON.stringify(packageJson), new_metadata);
             console.log('Uploaded package.json to opensearch');
         }
 
