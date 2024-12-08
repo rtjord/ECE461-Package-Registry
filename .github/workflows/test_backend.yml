@@ -12,6 +12,7 @@ permissions:
   repository-projects: read
   issues: read
   pull-requests: read
+  id-token: write   # This is required for requesting the JWT
 
 jobs:
   test-backend:
