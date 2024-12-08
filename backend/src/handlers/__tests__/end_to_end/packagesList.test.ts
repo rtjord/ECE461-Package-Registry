@@ -9,7 +9,7 @@ describe("E2E Test for Packages List Endpoint", () => {
     const ids: string[] = [];
     beforeAll(async () => {
         // Reset the registry before running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
 
         // Upload a package with Content to the registry
         const requestBody: PackageData = {
@@ -47,7 +47,7 @@ describe("E2E Test for Packages List Endpoint", () => {
     }, 240000);
     afterAll(async () => {
         // Reset the registry after running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
     }, timeout);
     
     it("should fetch all packages and return 200 status", async () => {

@@ -31,6 +31,17 @@ export interface GitHubPR {
     [key: string]: any; // To accommodate any other fields returned by the API
 }
 
+export interface GitHubFile {
+    additions: number;
+    [key: string]: any; // Additional optional fields
+}
+
+export interface GitHubReview {
+    id: number;
+    state: string;
+    [key: string]: any; // Additional optional fields
+}
+
 export interface gitData {
     repoName: string;
     repoUrl: string;
