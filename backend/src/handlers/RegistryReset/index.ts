@@ -7,63 +7,63 @@ const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
 const { getEnvVariable } = require(`${commonPath}/utils`);
 const { clearDynamoDBTable } = require(`${commonPath}/dynamodb`);
 const { emptyS3Bucket } = require(`${commonPath}/s3`);
-const { checkIndexExists, deleteIndex, createIndex, clearIndex } = require(`${commonPath}/opensearch`);
+const { clearIndex } = require(`${commonPath}/opensearch`);
 
 
-const tokenizedMapping = {
-    settings: {
-        "index.knn": true
-    },
-    mappings: {
-        properties: {
-            content: {
-                type: "text", // Treat content as a single string
-            },
-            timestamp: {
-                type: "date", // ISO-8601 date format
-            },
-            // embedding: {
-            //     type: "knn_vector", // K-Nearest Neighbors vector for similarity search
-            //     dimension: 1536, // Dimensions of the embedding vector
-            //     method: {
-            //         engine: "lucene",
-            //         space_type: "l2",
-            //         name: "hnsw",
-            //         parameters: {}
-            //     }
-            // },
-            metadata: {
-                properties: {
-                    Name: { type: "keyword" },
-                    Version: { type: "keyword" },
-                    ID: { type: "keyword" },
-                },
-            },
-        },
-    },
-};
+// const tokenizedMapping = {
+//     settings: {
+//         "index.knn": true
+//     },
+//     mappings: {
+//         properties: {
+//             content: {
+//                 type: "text", // Treat content as a single string
+//             },
+//             timestamp: {
+//                 type: "date", // ISO-8601 date format
+//             },
+//             // embedding: {
+//             //     type: "knn_vector", // K-Nearest Neighbors vector for similarity search
+//             //     dimension: 1536, // Dimensions of the embedding vector
+//             //     method: {
+//             //         engine: "lucene",
+//             //         space_type: "l2",
+//             //         name: "hnsw",
+//             //         parameters: {}
+//             //     }
+//             // },
+//             metadata: {
+//                 properties: {
+//                     Name: { type: "keyword" },
+//                     Version: { type: "keyword" },
+//                     ID: { type: "keyword" },
+//                 },
+//             },
+//         },
+//     },
+// };
 
-const nonTokenizedMapping = {
-    mappings: {
-        properties: {
-            content: {
-                type: "text",
-                index_options: "offsets",
-                analyzer: "keyword", // Use the keyword analyzer to avoid tokenization
-            },
-            timestamp: {
-                type: "date", // ISO-8601 date format
-            },
-            metadata: {
-                properties: {
-                    Name: { type: "keyword" },
-                    Version: { type: "keyword" },
-                    ID: { type: "keyword" },
-                },
-            },
-        },
-    },
-};
+// const nonTokenizedMapping = {
+//     mappings: {
+//         properties: {
+//             content: {
+//                 type: "text",
+//                 index_options: "offsets",
+//                 analyzer: "keyword", // Use the keyword analyzer to avoid tokenization
+//             },
+//             timestamp: {
+//                 type: "date", // ISO-8601 date format
+//             },
+//             metadata: {
+//                 properties: {
+//                     Name: { type: "keyword" },
+//                     Version: { type: "keyword" },
+//                     ID: { type: "keyword" },
+//                 },
+//             },
+//         },
+//     },
+// };
 
 // Lambda handler
 export const handler: APIGatewayProxyHandler = async () => {
