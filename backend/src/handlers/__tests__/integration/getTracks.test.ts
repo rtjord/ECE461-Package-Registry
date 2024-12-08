@@ -1,4 +1,4 @@
-import { handler } from '../GetTracks';
+import { handler } from '../../GetTracks';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 
 describe('Lambda Handler Tests', () => {

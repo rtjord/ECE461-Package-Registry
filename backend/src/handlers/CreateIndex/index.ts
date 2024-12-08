@@ -2,7 +2,7 @@ import https from "https";
 import { Context } from 'aws-lambda';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { checkIndexExists, createIndex } = require(`${commonPath}/opensearch`);
+const { checkIndexExists, deleteIndex, createIndex } = require(`${commonPath}/opensearch`);
 
 interface EventResourceProperties {
   DomainEndpoint: string;
@@ -47,16 +47,16 @@ export const handler = async (event: LambdaEvent, context: Context) => {
           timestamp: {
             type: "date", // ISO-8601 date format
           },
-          embedding: {
-            type: "knn_vector", // K-Nearest Neighbors vector for similarity search
-            dimension: 1536, // Dimensions of the embedding vector
-            method: {
-              engine: "lucene",
-              space_type: "l2",
-              name: "hnsw",
-              parameters: {}
-            }
-          },
+          // embedding: {
+          //   type: "knn_vector", // K-Nearest Neighbors vector for similarity search
+          //   dimension: 1536, // Dimensions of the embedding vector
+          //   method: {
+          //     engine: "lucene",
+          //     space_type: "l2",
+          //     name: "hnsw",
+          //     parameters: {}
+          //   }
+          // },
           metadata: {
             properties: {
               Name: { type: "keyword" },
@@ -89,35 +89,22 @@ export const handler = async (event: LambdaEvent, context: Context) => {
       },
     };
 
-    let indexName = "readmes";
-    let exists = await checkIndexExists(indexName);
-
-    if (!exists) {
-      console.log(`Index '${indexName}' does not exist. Creating...`);
-      await createIndex(indexName, nonTokenizedMapping);
-    } else {
-      console.log(`Index '${indexName}' already exists. Skipping creation.`);
+    if (await checkIndexExists("readmes")) {
+      await deleteIndex("readmes");
     }
 
-    indexName = "packagejsons";
-    exists = await checkIndexExists(indexName);
-
-    if (!exists) {
-      console.log(`Index '${indexName}' does not exist. Creating...`);
-      await createIndex(indexName, nonTokenizedMapping);
-    } else {
-      console.log(`Index '${indexName}' already exists. Skipping creation.`);
+    if (await checkIndexExists("packagejsons")) {
+      await deleteIndex("packagejsons");
     }
 
-    indexName = "recommend";
-    exists = await checkIndexExists(indexName);
-
-    if (!exists) {
-      console.log(`Index '${indexName}' does not exist. Creating...`);
-      await createIndex(indexName, tokenizedMapping);
-    } else {
-      console.log(`Index '${indexName}' already exists. Skipping creation.`);
+    if (await checkIndexExists("recommend")) {
+      await deleteIndex("recommend");
     }
+
+    createIndex("readmes", nonTokenizedMapping);
+    createIndex("packagejsons", nonTokenizedMapping);
+    createIndex("recommend", tokenizedMapping);
+    console.log("CreateIndex handler completed successfully");
 
     response.Status = "SUCCESS";
     response.Reason = "Index operation completed successfully";

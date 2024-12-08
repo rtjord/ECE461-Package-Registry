@@ -1,4 +1,4 @@
-import { handler } from '../CreateAuthToken';
+import { handler } from '../../CreateAuthToken';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 
 describe('Lambda Handler Tests', () => {
