@@ -43,12 +43,10 @@ export class npmAnalysis {
         try {
             const oid = await git.resolveRef({ fs, dir, ref: 'HEAD' });
             const { tree } = await git.readTree({ fs, dir, oid });
-            console.log('tree', tree);
     
             const readmeEntry = tree.find(entry => 
                 ['readme.md', 'readme', 'readme.txt', 'readme.rst'].includes(entry.path.toLowerCase())
             );
-            console.log('readmeEntry', readmeEntry);
     
             let readmeContent: string | null = null;
             if (readmeEntry) {
@@ -83,7 +81,6 @@ export class npmAnalysis {
         this.logger.logDebug(`Finding time since last commit...`);
         try {
             const commits = await git.log({ fs, dir, depth: 1 });
-            console.log('commits:', commits);
             const lastCommit = commits[0]; 
         
             if (lastCommit) {
@@ -368,7 +365,6 @@ export class gitAnalysis {
             const packageJsonContentEncoded = packageJsonResponse.data.content;
             const packageJsonContent = Buffer.from(packageJsonContentEncoded, 'base64').toString('utf-8');
             const packageJson = JSON.parse(packageJsonContent);
-            console.log('packageJson:', packageJson);
             if (packageJson.license) {
                 gitData.licenses = packageJson.license;
                 this.logger.logDebug(`License found in package.json for ${gitData.repoName}`);

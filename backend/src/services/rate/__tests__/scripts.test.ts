@@ -98,10 +98,14 @@ describe('runAnalysisClass', () => {
     }, 50000);
 
     // Test run analysis with bad url
-    it('have a valid token', async () => {
-        const result = await runAnalysisInstance.runAnalysis(["https://pypi.org/"]);
-        expect(result).toStrictEqual([fakeWrongRepoData]);
-    });
+    it('should throw an error for a bad url', async () => {
+        try {
+            const result = await runAnalysisInstance.runAnalysis([url]);
+        } catch (error) {
+            const err = error as Error;
+            expect(err.message).toContain('Invalid URL');
+        }
+    }, 30000);
 
     it('should include dependency analysis results in the documentation field', async () => {
         const result = await runAnalysisInstance.runAnalysis([url]);

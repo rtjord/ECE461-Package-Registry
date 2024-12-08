@@ -72,7 +72,7 @@ export class runAnalysis {
     } 
 
     async evaluateMods(url: string, index: number): Promise<repoData> {
-        const [type, cleanedUrl, version] = await this.urlAnalysis.evalUrl(url);
+        const [status, cleanedUrl, version] = await this.urlAnalysis.evalUrl(url);
         let repoData: repoData = {
             repoName: '',
             repoUrl: url,
@@ -109,9 +109,10 @@ export class runAnalysis {
             }
         };
 
-        if (type === -1 || cleanedUrl === '') {
+        if (status === -1 || cleanedUrl === '') {
             this.logger.logDebug(`Invalid URL - ${url}`);
-            return repoData;
+            throw new Error(`Invalid URL - ${url}`);
+            // return repoData;
         }
 
         const [npmData, gitData] = await Promise.all([
@@ -152,8 +153,6 @@ export class runAnalysis {
                 pullRequests: gitData.latency.pullRequests
             }
         };
-
-        console.log('RepoData:', repoData);
         return repoData;
     }
 }

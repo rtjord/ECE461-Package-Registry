@@ -92,7 +92,7 @@ export interface PackageTableRow {
     JSProgram?: string; // JavaScript program for sensitive modules
     standaloneCost?: number; // Standalone cost, excluding dependencies
     totalCost?: number; // Total cost including dependencies if applicable
-    Rating: PackageRating;
+    Rating?: PackageRating;
 }
 
 export interface RecommendationRequest {

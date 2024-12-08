@@ -1,11 +1,12 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { S3Client } from '@aws-sdk/client-s3';
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 const commonPath = process.env.COMMON_PATH || '/opt/nodejs/common';
-const { createErrorResponse, getEnvVariable } = require(`${commonPath}/utils`);
-const { getPackageById } = require(`${commonPath}/dynamodb`);
+const { createErrorResponse } = require(`${commonPath}/utils`);
+const { getPackageById, deletePackageFromDynamoDB } = require(`${commonPath}/dynamodb`);
+const { deletePackageFromS3 } = require(`${commonPath}/s3`);
 const { deleteFromOpenSearch } = require(`${commonPath}/opensearch`);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const interfaces = require(`${commonPath}/interfaces`);
@@ -49,74 +50,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         return createErrorResponse(500, "Internal server error occurred while deleting the package.");
     }
 };
-
-// Delete package metadata from DynamoDB
-async function deletePackageFromDynamoDB(client: DynamoDBDocumentClient, id: string): Promise<void> {
-    try {
-        const deleteParams = {
-            TableName: 'PackageMetadata',
-            Key: { ID: id },
-        };
-        await client.send(new DeleteCommand(deleteParams));
-        console.log(`Successfully deleted metadata for package ID: ${id}`);
-    } catch (error) {
-        console.error(`Error deleting package metadata for ID: ${id}`, error);
-        throw new Error("Failed to delete package metadata.");
-    }
-}
-
-// Delete the package file from S3
-async function deletePackageFromS3(client: S3Client, s3Key: string): Promise<void> {
-    const bucketName = getEnvVariable('S3_BUCKET_NAME');
-
-    if (!s3Key) {
-        throw new Error('S3 key not provided for deletion.');
-    }
-
-    try {
-        await client.send(
-            new DeleteObjectCommand({
-                Bucket: bucketName,
-                Key: s3Key,
-            })
-        );
-        console.log(`Successfully deleted file from S3 with key: ${s3Key}`);
-    } catch (error) {
-        console.error(`Error deleting file from S3 with key: ${s3Key}`, error);
-        throw new Error('Failed to delete package file from S3.');
-    }
-}
-
-// async function deleteDocumentById(domainEndpoint: string, indexName: string, documentId: string) {
-//     const credentials = await defaultProvider()();
-
-//     // Construct the delete document request
-//     const request = {
-//         host: domainEndpoint.replace(/^https?:\/\//, ""),
-//         path: `/${indexName}/_doc/${documentId}`, // Path to the specific document
-//         service: "es",
-//         method: "DELETE",
-//         headers: {
-//             "Content-Type": "application/json",
-//         },
-//     };
-
-//     aws4.sign(request, credentials);
-
-//     console.log(`Deleting document with ID '${documentId}' from index: '${indexName}'`);
-//     try {
-//         const response = await axios({
-//             method: request.method,
-//             url: `https://${request.host}${request.path}`,
-//             headers: request.headers,
-//         });
-//         console.log(`Document with ID '${documentId}' deleted from index '${indexName}':`, response.data);
-//     } catch (error) {
-//         console.error(`Error deleting document with ID '${documentId}' from index '${indexName}':`, error);
-//         throw new Error(`Failed to delete document with ID '${documentId}' from index '${indexName}'.`);
-//     }
-// }
-
 
 // Create success response
 function createSuccessResponse(packageName: string, version: string): APIGatewayProxyResult {
