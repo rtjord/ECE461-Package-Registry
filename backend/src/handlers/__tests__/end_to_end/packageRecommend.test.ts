@@ -10,18 +10,17 @@ async function upload(name: string, url: string) {
         URL: url,
         debloat: false
     };
-
+    console.log("Uploading package: ", name);
     await axios.post(`${baseUrl}/package`, requestBody);
 }
 
 describe("E2E Test for PackageRecommend Endpoint", () => {
     beforeAll(async () => {
         // Reset the registry before running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
 
         // Upload packages to the registry
         await upload("yazl", "https://www.npmjs.com/package/yazl");
-        await upload("express", "https://www.npmjs.com/package/express");
         await upload("debug", "https://www.npmjs.com/package/debug");
         await upload("inversify", "https://www.npmjs.com/package/inversify");
         await upload("tslib", "https://www.npmjs.com/package/tslib");
@@ -33,7 +32,7 @@ describe("E2E Test for PackageRecommend Endpoint", () => {
     }, 90000);
     afterAll(async () => {
         // Reset the registry after running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
     }, 90000);
 
     it("should return a list of 5 packages with express as the first", async () => {
