@@ -380,6 +380,8 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref PackageMetadataTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PackageHistoryTable
 
   GetCostRole:
     Type: AWS::IAM::Role
