@@ -8,12 +8,18 @@ import {
   getRepoUrl,
   extractFieldFromPackageJson,
 } from "../utils"; // Adjust path if needed
-import { fromIni } from "@aws-sdk/credential-providers";
+import { fromIni, fromNodeProviderChain } from "@aws-sdk/credential-providers";
+
+const isGitHub = process.env.GITHUB_ACTIONS === "true";
 
 describe("Function Tests", () => {
   let secretsClient: SecretsManagerClient;
   beforeAll(() => {
-    secretsClient = new SecretsManagerClient({ region: "us-east-2", credentials: fromIni({ profile: "dev" }) });
+    secretsClient = new SecretsManagerClient({
+      region: "us-east-2", credentials: isGitHub
+        ? fromNodeProviderChain() // Use default credentials in GitHub Actions
+        : fromIni({ profile: "dev" })
+    });
   });
 
   describe("createErrorResponse", () => {

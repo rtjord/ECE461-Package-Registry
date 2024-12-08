@@ -9,7 +9,9 @@ import {
 } from "../dynamodb";
 import { PackageID, User, PackageTableRow, PackageMetadata } from "../interfaces"; // Replace with actual interfaces path
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { fromIni } from "@aws-sdk/credential-providers";
+import { fromIni, fromNodeProviderChain } from "@aws-sdk/credential-providers";
+
+const isGitHub = process.env.GITHUB_ACTIONS === "true";
 
 describe("DynamoDB Functions", () => {
     let dynamoDBClient: DynamoDBDocumentClient;
@@ -30,7 +32,12 @@ describe("DynamoDB Functions", () => {
 
     const testUser: User = { name: "test-user", isAdmin: true };
     beforeAll(async () => {
-        const client = new DynamoDBClient({ region: "us-east-2", credentials: fromIni({ profile: "dev" }) });
+        const client = new DynamoDBClient({
+            region: "us-east-2",
+            credentials: isGitHub
+              ? fromNodeProviderChain() // Use default credentials in GitHub Actions
+              : fromIni({ profile: "dev" }) // Use the 'dev' profile locally
+          });
         dynamoDBClient = DynamoDBDocumentClient.from(client);
         await clearDynamoDBTable(dynamoDBClient, "PackageMetadata", (item) => ({ ID: item.ID }));
         await clearDynamoDBTable(dynamoDBClient, "PackageHistoryTable", (item) => ({

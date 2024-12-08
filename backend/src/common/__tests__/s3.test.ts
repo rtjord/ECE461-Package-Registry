@@ -9,7 +9,8 @@ import {
     deletePackageFromS3,
     emptyS3Bucket
 } from "../s3"; // Adjust path to your file
-import { fromIni } from "@aws-sdk/credential-providers";
+import { fromIni, fromNodeProviderChain } from "@aws-sdk/credential-providers";
+
 
 describe("S3 Operations", () => {
     let s3Client: S3Client;
@@ -18,13 +19,18 @@ describe("S3 Operations", () => {
     const testFileContent = Buffer.from("This is a test file.");
     const testPackageName = "test-package";
     const testVersion = "1.0.0";
+    const isGitHub = process.env.GITHUB_ACTIONS === "true";
 
     beforeAll(() => {
         if (!bucketName) {
             throw new Error("Environment variable S3_BUCKET_NAME is not defined.");
         }
 
-        s3Client = new S3Client({ region: "us-east-2", credentials: fromIni({ profile: "dev" })});
+        s3Client = new S3Client({
+            region: "us-east-2", credentials: isGitHub
+                ? fromNodeProviderChain() // Use default credentials in GitHub Actions
+                : fromIni({ profile: "dev" }),
+        });
     });
 
     describe("uploadToS3", () => {
