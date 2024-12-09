@@ -128,6 +128,9 @@ paths:
           $ref: '#/components/schemas/PackageID'
         in: path
         required: true
+        examples:
+          ExampleID:
+            value: "{id}"  # Dynamic placeholder for Restler
       responses:
         "200":
           content:
@@ -180,7 +183,6 @@ paths:
       operationId: PackageRetrieve
       summary: Interact with the package with this ID. (BASELINE)
       description: Return this package.
-    operationId: PackageRecommend
     post:
       requestBody:
         content:
@@ -353,6 +355,9 @@ paths:
         $ref: '#/components/schemas/PackageID'
       in: path
       required: true
+      examples:
+          ExampleID:
+            value: "{id}"  # Dynamic placeholder for Restler
     - name: X-Authorization
       description: ""
       schema:
@@ -403,6 +408,9 @@ paths:
         $ref: '#/components/schemas/PackageID'
       in: path
       required: true
+      examples:
+          ExampleID:
+            value: "{id}"  # Dynamic placeholder for Restler
     - name: dependency
       schema:
         type: boolean
