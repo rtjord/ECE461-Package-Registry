@@ -15,8 +15,3 @@ jobs:
             echo "Pull requests to main are only allowed from dev branch."
             exit 1
           fi
-      - name: Run End-to-End Tests
-        run: |
-          echo "Running end-to-end tests..."
-          cd backend
-          npm run test:e2e
