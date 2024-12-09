@@ -3,44 +3,55 @@ import { expect } from 'chai';
 import 'mocha';
 
 describe('Team Five Packages Website', function () {
-    let driver: WebDriver;
-  
-    // Initialize WebDriver
-    before(async function () {
-      driver = await new Builder().forBrowser('chrome').build();
-    });
+  let driver: WebDriver;
 
+  // Increase test timeout for slow loading pages
+  this.timeout(30000);
 
-    it('should load the homepage with correct title', async function () {
-        await driver.get('https://www.teamfivepackages.com');
-        const title = await driver.getTitle();
-        expect(title).to.include('Team Five Packages'); // Replace with expected title
-    });
+  // Initialize WebDriver
+  before(async function () {
+    driver = await new Builder().forBrowser('chrome').build();
+  });
 
+  it('should load the homepage with the correct title', async function () {
+    await driver.get('https://www.teamfivepackages.com');
 
-    it('should navigate to the Packages page', async function () {
-        const packagesLink = await driver.findElement(By.linkText('Packages'));
-        await packagesLink.click();
-    
-        await driver.wait(until.urlContains('/packages'), 5000); // Adjust timeout as needed
-        const currentUrl = await driver.getCurrentUrl();
-        expect(currentUrl).to.include('/packages');
-    });
+    // Wait for the title to load
+    await driver.wait(until.titleContains('NPM-like Package Manager'), 10000);
 
-  
-    it('should search for a package and display results', async function () {
-    const searchBox = await driver.findElement(By.name('search')); // Adjust selector
-    await searchBox.sendKeys('example-package');
+    const title = await driver.getTitle();
+    expect(title).to.include('NPM-like Package Manager'); // Replace with actual title
+  });
 
-    const searchButton = await driver.findElement(By.css('button[type="submit"]'));
+  it('should navigate to the Packages page', async function () {
+    // Wait for the "Packages" link to be visible
+    const packagesLink = await driver.wait(until.elementLocated(By.linkText('Package Directory')), 10000);
+    await packagesLink.click();
+
+    // Wait for the URL to change
+    await driver.wait(until.urlContains('/packages'), 10000);
+
+    const currentUrl = await driver.getCurrentUrl();
+    expect(currentUrl).to.include('/packages');
+  });
+
+  it('should search for a package and display results', async function () {
+    await driver.get('https://www.teamfivepackages.com');
+    // Wait for the search box to be visible
+    const searchBox = await driver.wait(until.elementLocated(By.name('Enter package name, ID, or search pattern...')), 10000);
+    await searchBox.sendKeys('debug');
+
+    // Wait for the search button and click it
+    const searchButton = await driver.wait(until.elementLocated(By.linkText('Search by Name')), 10000);
     await searchButton.click();
 
-    await driver.wait(until.elementLocated(By.css('.package-result')), 5000); // Adjust selector
+    // Wait for the search results to be displayed
+    await driver.wait(until.elementsLocated(By.css('.package-result')), 10000);
+
     const results = await driver.findElements(By.css('.package-result'));
     expect(results.length).to.be.greaterThan(0); // Ensure results are displayed
-    });
+  });
 
-    
   // Quit WebDriver after tests
   after(async function () {
     await driver.quit();
