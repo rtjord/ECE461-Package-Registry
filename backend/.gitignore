@@ -12,7 +12,7 @@ dist/
 *.js
 
 ## log files  ##
-*.log
+output.log
 
 .serverless/
 

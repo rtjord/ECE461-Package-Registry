@@ -100,7 +100,7 @@ Resources:
     Type: Custom::CreateIndex
     Properties:
       ServiceToken: !GetAtt CreateIndex.Arn
-      Version: 1
+      Version: 2
 
   PackageCreateUpdateRole:
     Type: AWS::IAM::Role

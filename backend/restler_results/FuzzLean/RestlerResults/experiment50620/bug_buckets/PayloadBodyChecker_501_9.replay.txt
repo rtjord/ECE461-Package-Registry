@@ -1,0 +1,24 @@
+################################################################################
+ PayloadBodyChecker_501
+
+ InvalidJson
+false
+
+ Hash: PayloadBodyChecker_501_93e3a97fc2c06c7b4fe1db05b9fabc4e5974c5a9
+
+ To attempt to reproduce this bug using restler, run restler with the command
+ line option of --replay_log <path_to_this_log>.
+ If an authentication token is required, you must also specify the token_refresh_cmd.
+
+ This log may contain specific values for IDs or names that were generated
+ during fuzzing, using the fuzzing dictionary. Such names will be re-played
+ without modification. You must update the replay log manually with any changes
+ required to execute the requests in your environment (for example, replacing
+ pre-created account, subscription, or other resource IDs, as needed).
+################################################################################
+
+-> PUT /authenticate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\nfalse
+! producer_timing_delay 0
+! max_async_wait_time 0
+PREVIOUS RESPONSE: 'HTTP/1.1 501 Not Implemented\r\nDate: Mon, 09 Dec 2024 00:53:01 GMT\r\nContent-Type: application/json\r\nContent-Length: 58\r\nConnection: keep-alive\r\nx-amzn-RequestId: cbd13530-cc0b-40f6-96cd-d85844511d7d\r\nx-amz-apigw-id: Cf7ZHFnGiYcEnNg=\r\nX-Amzn-Trace-Id: Root=1-67563f6d-1410e0922de9447f06e1d672;Parent=2d3d0addbb21e0d7;Sampled=0;Lineage=1:571bce3f:0\r\n\r\n{"message":"This system does not support authentication."}'
+

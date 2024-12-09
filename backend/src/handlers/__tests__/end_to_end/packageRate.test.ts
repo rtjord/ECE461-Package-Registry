@@ -28,7 +28,7 @@ describe("E2E Test for Package Rate Endpoint", () => {
         // Upload a package with a URL to the registry
         const requestBody2: PackageData = {
             Name: "yazl",
-            URL: "https://www.npmjs.com/package/yazl/v/3.1.0",
+            URL: "https://www.npmjs.com/package/yazl",
             debloat: false,
         };
 

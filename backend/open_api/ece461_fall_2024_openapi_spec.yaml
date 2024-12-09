@@ -29,6 +29,9 @@ info:
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+- url: https://dev.teamfivepackages.com
+  description: Development Server
 paths:
   /packages:
     post:

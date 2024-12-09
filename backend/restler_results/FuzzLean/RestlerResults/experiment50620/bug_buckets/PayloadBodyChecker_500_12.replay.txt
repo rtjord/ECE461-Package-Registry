@@ -1,0 +1,24 @@
+################################################################################
+ PayloadBodyChecker_500
+
+ StructMissing_/metadata{...}/data{...}
+{'fuzz': False}
+
+ Hash: PayloadBodyChecker_500_bc040ec67948bdc14880bf32ce54f22c77ad7656
+
+ To attempt to reproduce this bug using restler, run restler with the command
+ line option of --replay_log <path_to_this_log>.
+ If an authentication token is required, you must also specify the token_refresh_cmd.
+
+ This log may contain specific values for IDs or names that were generated
+ during fuzzing, using the fuzzing dictionary. Such names will be re-played
+ without modification. You must update the replay log manually with any changes
+ required to execute the requests in your environment (for example, replacing
+ pre-created account, subscription, or other resource IDs, as needed).
+################################################################################
+
+-> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{ "fuzz" : false }
+! producer_timing_delay 0
+! max_async_wait_time 0
+PREVIOUS RESPONSE: 'HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 00:55:16 GMT\r\nContent-Type: application/json\r\nContent-Length: 39\r\nConnection: keep-alive\r\nx-amzn-RequestId: 20560826-7011-4a76-ac55-31fb42d61499\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7uSGdaiYcEgBQ=\r\nX-Amzn-Trace-Id: Root=1-67563ff4-1430736f5df084f024b3d9e6;Parent=7c2cd8a647a3b6fb;Sampled=0;Lineage=1:91af299f:0\r\n\r\n{"message":"Failed to upload package."}'
+
