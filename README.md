@@ -67,6 +67,11 @@ To build the frontend application, run the following command from the `frontend`
    - Visit the Amplify-provided URL to confirm the frontend is functioning as expected.
 
 ## Verification
+- In backend/src/handlers/__tests__/end_to_end/config.ts, set the base url to the url provided by API Gateway. Then run the following commands
+```sh
+    cd backend
+    npm run test:e2e
+```
 - Ensure the backend endpoints are functional using tools like Postman or curl.
 - Test the frontend by accessing the deployed Amplify URL and interacting with the interface.
 
