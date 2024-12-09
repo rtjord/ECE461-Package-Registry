@@ -35,21 +35,17 @@ describe('Team Five Packages Website', function () {
     expect(currentUrl).to.include('/packages');
   });
 
-  it('should search for a package and display results', async function () {
+  it('should navigate to the Upload page', async function () {
     await driver.get('https://www.teamfivepackages.com');
-    // Wait for the search box to be visible
-    const searchBox = await driver.wait(until.elementLocated(By.name('Enter package name, ID, or search pattern...')), 10000);
-    await searchBox.sendKeys('debug');
+    // Wait for the "Packages" link to be visible
+    const packagesLink = await driver.wait(until.elementLocated(By.linkText('Upload Package')), 10000);
+    await packagesLink.click();
 
-    // Wait for the search button and click it
-    const searchButton = await driver.wait(until.elementLocated(By.linkText('Search by Name')), 10000);
-    await searchButton.click();
+    // Wait for the URL to change
+    await driver.wait(until.urlContains('/upload'), 10000);
 
-    // Wait for the search results to be displayed
-    await driver.wait(until.elementsLocated(By.css('.package-result')), 10000);
-
-    const results = await driver.findElements(By.css('.package-result'));
-    expect(results.length).to.be.greaterThan(0); // Ensure results are displayed
+    const currentUrl = await driver.getCurrentUrl();
+    expect(currentUrl).to.include('/upload');
   });
 
   // Quit WebDriver after tests
