@@ -1,0 +1,16 @@
+{
+    "status_code": "502",
+    "checker_name": "InvalidValueChecker",
+    "reproducible": true,
+    "verb": "POST",
+    "endpoint": "/package/byRegEx",
+    "status_text": "Bad Gateway",
+    "request_sequence": [
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 20,
+            "replay_request": "POST /package/byRegEx HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: D0at>\u000bVA1CM\r\nContent-Type: application/json\r\n\r\n{\n    \"RegEx\":\"fuzzstring\"}\r\n",
+            "response": "HTTP/1.1 502 Bad Gateway\r\nServer: awselb/2.0\r\nDate: Mon, 09 Dec 2024 03:12:52 GMT\r\nContent-Type: text/html\r\nContent-Length: 122\r\nConnection: keep-alive\r\n\r\n<html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n</body>\r\n</html>\r\n"
+        }
+    ]
+}

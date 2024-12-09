@@ -1,0 +1,24 @@
+################################################################################
+ PayloadBodyChecker_500
+
+ StructMissing_/metadata{...}
+{'data': {'Name': {'fuzz': False}, 'Content': 'fuzzstring', 'URL': 'fuzzstring', 'debloat': False, 'JSProgram': 'fuzzstring'}}
+
+ Hash: PayloadBodyChecker_500_c435efb3c2340c841fd856174f70210d1d39900c
+
+ To attempt to reproduce this bug using restler, run restler with the command
+ line option of --replay_log <path_to_this_log>.
+ If an authentication token is required, you must also specify the token_refresh_cmd.
+
+ This log may contain specific values for IDs or names that were generated
+ during fuzzing, using the fuzzing dictionary. Such names will be re-played
+ without modification. You must update the replay log manually with any changes
+ required to execute the requests in your environment (for example, replacing
+ pre-created account, subscription, or other resource IDs, as needed).
+################################################################################
+
+-> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{"data":{"Name":{ "fuzz" : false },"Content":"fuzzstring","URL":"fuzzstring","debloat":false,"JSProgram":"fuzzstring"}}
+! producer_timing_delay 0
+! max_async_wait_time 0
+PREVIOUS RESPONSE: 'HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 03:06:02 GMT\r\nContent-Type: application/json\r\nContent-Length: 39\r\nConnection: keep-alive\r\nx-amzn-RequestId: 2ccac5e9-ff1d-4ca5-9786-ebb3806d8e7d\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: CgO4LFnoiYcEqhA=\r\nX-Amzn-Trace-Id: Root=1-67565e9a-47b013b67345322a192405b9;Parent=5846c871f4aa117b;Sampled=0;Lineage=1:fb6c88d0:0\r\n\r\n{"message":"Failed to upload package."}'
+

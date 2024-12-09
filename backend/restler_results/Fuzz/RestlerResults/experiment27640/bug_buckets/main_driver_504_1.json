@@ -1,0 +1,34 @@
+{
+    "status_code": "504",
+    "checker_name": "main_driver",
+    "reproducible": false,
+    "verb": "POST",
+    "endpoint": "/packages",
+    "status_text": "Gateway Timeout",
+    "request_sequence": [
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "POST /packages HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\nContent-Type: application/json\r\n\r\n[{\"Name\":\"fuzzstring\"}]",
+            "response": "HTTP/1.1 200 OK\r\nDate: Mon, 09 Dec 2024 03:48:49 GMT\r\nContent-Type: application/json\r\nContent-Length: 2\r\nConnection: keep-alive\r\nx-amzn-RequestId: 002d37cd-ea55-436c-975c-4518f08ac70d\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: CgVJSGVjCYcEgew=\r\noffset: 0\r\nX-Amzn-Trace-Id: Root=1-675668a1-74c741ee5f899e892a76d2f3;Parent=4ea919008d5bb911;Sampled=0;Lineage=1:0c5592f8:0\r\n\r\n[]"
+        },
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "DELETE /reset HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n",
+            "response": "HTTP/1.1 200 OK\r\nDate: Mon, 09 Dec 2024 03:48:51 GMT\r\nContent-Type: application/json\r\nContent-Length: 53\r\nConnection: keep-alive\r\nx-amzn-RequestId: 45d4fcf4-4b57-4a2b-bb81-7194b6c5557c\r\nx-amz-apigw-id: CgVJTETMiYcEX4Q=\r\nX-Amzn-Trace-Id: Root=1-675668a1-4c3575cb28b0c4ba4a31885b;Parent=385c0993b31e884b;Sampled=0;Lineage=1:a1ed07e9:0\r\n\r\n{\"message\":\"Tables and bucket cleared successfully.\"}"
+        },
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "POST /packages HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\nContent-Type: application/json\r\n\r\n[{\"Name\":\"fuzzstring\"}]",
+            "response": "HTTP/1.1 200 OK\r\nDate: Mon, 09 Dec 2024 03:48:51 GMT\r\nContent-Type: application/json\r\nContent-Length: 2\r\nConnection: keep-alive\r\nx-amzn-RequestId: cf8c0399-b05f-4b12-ace2-73ec9a68e12e\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: CgVJjEtniYcEn3A=\r\noffset: 0\r\nX-Amzn-Trace-Id: Root=1-675668a3-44adf7427c2477bd7dfa528c;Parent=20744803021a738a;Sampled=0;Lineage=1:0c5592f8:0\r\n\r\n[]"
+        },
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "DELETE /reset HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n",
+            "response": "HTTP/1.1 504 Gateway Timeout\r\nDate: Mon, 09 Dec 2024 03:49:20 GMT\r\nContent-Type: application/json\r\nContent-Length: 41\r\nConnection: keep-alive\r\nx-amzn-RequestId: af5299da-85f4-4d12-8d1c-2e87f085fd60\r\nx-amzn-ErrorType: InternalServerErrorException\r\nx-amz-apigw-id: CgVJjHMuCYcEFWA=\r\n\r\n{\"message\": \"Endpoint request timed out\"}"
+        }
+    ]
+}

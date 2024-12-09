@@ -1,0 +1,16 @@
+{
+    "status_code": "500",
+    "checker_name": "PayloadBodyChecker",
+    "reproducible": true,
+    "verb": "POST",
+    "endpoint": null,
+    "status_text": "Internal Server Error",
+    "request_sequence": [
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "POST /packages?offset=fuzzstring HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\nContent-Type: application/json\r\n\r\n[{\"Name\":\"fuzzstring\"}]",
+            "response": "HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 03:01:27 GMT\r\nContent-Type: application/json\r\nContent-Length: 45\r\nConnection: keep-alive\r\nx-amzn-RequestId: a8aa66bb-4737-42a2-8f65-3bbab261dfea\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: CgONOFXlCYcEKdA=\r\nX-Amzn-Trace-Id: Root=1-67565d87-789c9de4079f508f5f0d4bd2;Parent=41c6ee38c69ca574;Sampled=0;Lineage=1:0c5592f8:0\r\n\r\n{\"message\":\"Internal server error occurred.\"}"
+        }
+    ]
+}
