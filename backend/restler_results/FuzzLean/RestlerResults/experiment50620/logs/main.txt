@@ -354,5 +354,8 @@ Testing completed -- below are the final stats:
 2024-12-08 20:10:21.162: Num requests not rendered due to invalid sequence re-renders: 0
 2024-12-08 20:10:21.162: Num invalid requests caused by failed resource creations: 0
 2024-12-08 20:10:21.162: Total Creations of Dyn Objects: 0
-2024-12-08 20:10:21.162: Total Requests Sent: {'gc': 0, 'main_driver': 54, 'LeakageRuleChecker': 0, 'ResourceHierarchyChecker': 0, 'UseAfterFreeChecker': 0, 'InvalidDynamicObjectChecker': 0, 'PayloadBodyChecker': 1442, 'ExamplesChecker': 0, 'InvalidValueChecker': 0}
-2024-12-08 20:10:21.162: Bug Buckets: {'InvalidValueChecker_500': 7, 'InvalidValueChecker_501': 1, 'InvalidValueChecker_502': 8, 'PayloadBodyChecker_500': 17, 'PayloadBodyChecker_501': 12, 'main_driver_501': 1}
+2024-12-08 20:10:21.162: Total Requests Sent: {'gc': 0, 'main_driver': 54, 'LeakageRuleChecker': 0, 
+'ResourceHierarchyChecker': 0, 'UseAfterFreeChecker': 0, 'InvalidDynamicObjectChecker': 0, 'PayloadBodyChecker': 1442, 
+'ExamplesChecker': 0, 'InvalidValueChecker': 0}
+2024-12-08 20:10:21.162: Bug Buckets: {'InvalidValueChecker_500': 7, 'InvalidValueChecker_501': 1, 'InvalidValueChecker_502': 8, 
+'PayloadBodyChecker_500': 17, 'PayloadBodyChecker_501': 12, 'main_driver_501': 1}

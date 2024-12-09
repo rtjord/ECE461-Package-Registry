@@ -1,0 +1,52 @@
+{
+  "Package Cost Test Group": { "Total": "2 / 3 (3 hidden)" },
+  "Package Read Test Group": {
+    "Get Package By ID Test Package 0": 1,
+    "Get Package By ID Test Package 1": 1,
+    "Get Package By ID Test Package 2": 1,
+    "Get Package By ID Test Package 3": 1,
+    "Get Package By ID Test Package 4": 1,
+    "Get Package By ID Test Package 5": 1,
+    "Get Package By ID Test Package 6": 1,
+    "Get Package By Name Test Package 0": 1,
+    "Get Package By Name Test Package 1": 1,
+    "Get Package By Name Test Package 2": 1,
+    "Get Package By Name Test Package 3": 1,
+    "Get Package By Name Test Package 4": 1,
+    "Get Package By Name Test Package 5": 1,
+    "Get Package By Name Test Package 6": 1,
+    "Invalid Package Read Test": 1,
+    "Total": "15 / 15 "
+  },
+  "Rate packages Test Group": { "Total": "9 / 22 (8 hidden)" },
+  "Regex Tests Group": {
+    "Exact Match Name Regex Test": 1,
+    "Extra Chars Name Regex Test": 1,
+    "Random String Regex Test": 1,
+    "Total": "3 / 3 "
+  },
+  "Setup and Reset Test Group": {
+    "Check No Packages after Reset": 1,
+    "System Reset Test": 1,
+    "System Tracks Test": 1,
+    "Total": "3 / 5 "
+  },
+  "Total": "47 / 66 ",
+  "Update Package Test Group": { "Total": "6 / 9 (9 hidden)" },
+  "Upload Packages Test Group": {
+    "Get Package Query Test": 1,
+    "Total": "9 / 9 ",
+    "Upload Content package 1 via Content": 1,
+    "Upload Content package 2 via Content": 1,
+    "Upload Content package 3 via Content": 1,
+    "Upload Ingest package 1 via Ingest": 1,
+    "Upload Ingest package 2 via Ingest": 1,
+    "Upload Ingest package 3 via Ingest": 1,
+    "Upload Ingest package 4 via Ingest": 1
+  },
+  "autgrader_run_log": "data/5/run/phase2/autograder_09-12-02-18.log",
+  "end_time": "2024-12-09 02:21:25.249134",
+  "run_time": "148.646449 seconds",
+  "start_time": "2024-12-09 02:18:56.602685",
+  "system_run_log": "data/5/run/phase2/autograder_09-12-02-18.sysout.log"
+}

@@ -1,0 +1,90 @@
+POST /packages
+	StructMissing_/Version
+	[{'Name': 'fuzzstring'}]
+
+	TypeMismatch_Name
+	[{'Name': {'fuzz': False}}]
+
+	InvalidJson
+	false
+
+	TypeMismatch__array
+	{'fuzz': False}
+
+	TypeMismatch_Version
+	[{'Version': 0, 'Name': 'fuzzstring'}]
+
+POST /package/{id}
+	StructMissing_/data{...}
+	{'metadata': {'Name': 'fuzzstring', 'Version': 'fuzzstring', 'ID': 'fuzzstring'}}
+
+	StructMissing_/metadata{...}/+Content/+URL/+debloat/+JSProgram
+	{'data': {'Name': {'fuzz': False}}}
+
+	StructMissing_/metadata{...}/+Name/+Content/+URL/+debloat
+	{'data': {'JSProgram': 'fuzzstring'}}
+
+	StructMissing_/metadata{...}/+Name/+Content/+debloat/+JSProgram
+	{'data': {'URL': 'fuzzstring'}}
+
+	StructMissing_/metadata{...}/+Name/+Content/+URL/+JSProgram
+	{'data': {'debloat': False}}
+
+	StructMissing_/metadata{...}/+Name/+URL/+debloat/+JSProgram
+	{'data': {'Content': 'fuzzstring'}}
+
+	StructMissing_/metadata{...}
+	{'data': {'Name': {'fuzz': False}, 'Content': 'fuzzstring', 'URL': 'fuzzstring', 'debloat': False, 'JSProgram': 'fuzzstring'}}
+
+	StructMissing_/+Name/+Version/data{...}
+	{'metadata': {'ID': 'fuzzstring'}}
+
+	TypeMismatch_metadata_Version
+	{'metadata': {'Name': 'fuzzstring', 'Version': {'fuzz': False}, 'ID': 'fuzzstring'}}
+
+	TypeMismatch_metadata_Name
+	{'metadata': {'Name': {'fuzz': False}, 'Version': 'fuzzstring', 'ID': 'fuzzstring'}}
+
+	InvalidJson
+	false
+
+	StructMissing_/metadata{...}/data{...}
+	{'fuzz': False}
+
+PUT /authenticate
+	Other
+	{'User': {'name': 'fuzzstring', 'isAdmin': False}, 'Secret': {'password': 'fuzzstring'}}
+
+	StructMissing_/+isAdmin/Secret{...}
+	{'User': {'name': 'fuzzstring'}}
+
+	StructMissing_/+name
+	{'User': {'isAdmin': False}, 'Secret': {'password': 'fuzzstring'}}
+
+	StructMissing_/+isAdmin
+	{'User': {'name': 'fuzzstring'}, 'Secret': {'password': 'fuzzstring'}}
+
+	StructMissing_/+name/Secret{...}
+	{'User': {'isAdmin': False}}
+
+	StructMissing_/Secret{...}
+	{'User': {'name': 'fuzzstring', 'isAdmin': False}}
+
+	StructMissing_/User{...}
+	{'Secret': {'password': 'fuzzstring'}}
+
+	TypeMismatch_User_name
+	{'User': {'name': {'fuzz': False}}}
+
+	InvalidJson
+	false
+
+	TypeMismatch_User__object
+	{'User': False}
+
+	StructMissing_/+name/+isAdmin/Secret{...}
+	{'User': {'fuzz': False}}
+
+	StructMissing_/User{...}/Secret{...}
+	{'fuzz': False}
+

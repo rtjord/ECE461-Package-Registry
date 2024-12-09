@@ -1,0 +1,21 @@
+################################################################################
+ InvalidValueChecker_500
+
+ Hash: InvalidValueChecker_500_a358254d7587ce91fd8ec868c3ba0c0a76bbf31a
+
+ To attempt to reproduce this bug using restler, run restler with the command
+ line option of --replay_log <path_to_this_log>.
+ If an authentication token is required, you must also specify the token_refresh_cmd.
+
+ This log may contain specific values for IDs or names that were generated
+ during fuzzing, using the fuzzing dictionary. Such names will be re-played
+ without modification. You must update the replay log manually with any changes
+ required to execute the requests in your environment (for example, replacing
+ pre-created account, subscription, or other resource IDs, as needed).
+################################################################################
+
+-> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{\n    "metadata":\n        {\n            "Name":\n                "D0at>\x0bVA1CM"\n            ,\n            "Version":"1.2.3",\n            "ID":\n                "123567192081501"\n        }\n    ,\n    "data":\n        {\n            "Name":\n                { "fuzz": false }\n            ,\n            "Content":"fuzzstring",\n            "URL":"fuzzstring",\n            "debloat":true,\n            "JSProgram":"fuzzstring"\n        }\n    }\r\n
+! producer_timing_delay 0
+! max_async_wait_time 20
+PREVIOUS RESPONSE: 'HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 03:07:41 GMT\r\nContent-Type: application/json\r\nContent-Length: 39\r\nConnection: keep-alive\r\nx-amzn-RequestId: 9a7776ec-525a-46da-80bd-a5850b4b82b3\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: CgPHmGZAiYcEe4A=\r\nX-Amzn-Trace-Id: Root=1-67565efd-5c72a0db17524c370771fe1f;Parent=1cb52e05140bf6e2;Sampled=0;Lineage=1:fb6c88d0:0\r\n\r\n{"message":"Failed to upload package."}'
+

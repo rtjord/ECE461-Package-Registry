@@ -1,0 +1,16 @@
+{
+    "status_code": "501",
+    "checker_name": "main_driver",
+    "reproducible": true,
+    "verb": "PUT",
+    "endpoint": "/authenticate",
+    "status_text": "Not Implemented",
+    "request_sequence": [
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "PUT /authenticate HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{\n    \"User\":\n        {\n            \"name\":\"Alfalfa\",\n            \"isAdmin\":true\n        }\n    ,\n    \"Secret\":\n        {\n            \"password\":\"fuzzstring\"\n        }\n    }\r\n",
+            "response": "HTTP/1.1 501 Not Implemented\r\nDate: Mon, 09 Dec 2024 03:11:55 GMT\r\nContent-Type: application/json\r\nContent-Length: 58\r\nConnection: keep-alive\r\nx-amzn-RequestId: 359003fe-8f9f-4202-b763-3c30a64cc4b2\r\nx-amz-apigw-id: CgPvPF1DCYcEXAQ=\r\nX-Amzn-Trace-Id: Root=1-67565ffa-0012c5765fa978b123756c85;Parent=2211cc1981a2c747;Sampled=0;Lineage=1:32219004:0\r\n\r\n{\"message\":\"This system does not support authentication.\"}"
+        }
+    ]
+}

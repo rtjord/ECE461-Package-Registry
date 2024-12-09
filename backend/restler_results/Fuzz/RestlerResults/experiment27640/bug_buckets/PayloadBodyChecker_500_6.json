@@ -1,0 +1,16 @@
+{
+    "status_code": "500",
+    "checker_name": "PayloadBodyChecker",
+    "reproducible": true,
+    "verb": "POST",
+    "endpoint": null,
+    "status_text": "Internal Server Error",
+    "request_sequence": [
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "POST /package/fuzzstring HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{\"metadata\":{\"Name\":\"fuzzstring\",\"Version\":\"fuzzstring\",\"ID\":\"fuzzstring\"}}",
+            "response": "HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 03:05:43 GMT\r\nContent-Type: application/json\r\nContent-Length: 39\r\nConnection: keep-alive\r\nx-amzn-RequestId: 9e70ded4-51c2-4b57-947e-604b68f5ccf8\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: CgO1MGm7CYcEq7g=\r\nX-Amzn-Trace-Id: Root=1-67565e87-0fdf55503db24af639d0c54c;Parent=42bbbbe38ec4fb03;Sampled=0;Lineage=1:fb6c88d0:0\r\n\r\n{\"message\":\"Failed to upload package.\"}"
+        }
+    ]
+}

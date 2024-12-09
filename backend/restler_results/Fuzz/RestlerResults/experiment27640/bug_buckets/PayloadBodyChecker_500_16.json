@@ -1,0 +1,16 @@
+{
+    "status_code": "500",
+    "checker_name": "PayloadBodyChecker",
+    "reproducible": true,
+    "verb": "POST",
+    "endpoint": null,
+    "status_text": "Internal Server Error",
+    "request_sequence": [
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: prod.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\nfalse",
+            "response": "HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 03:06:10 GMT\r\nContent-Type: application/json\r\nContent-Length: 39\r\nConnection: keep-alive\r\nx-amzn-RequestId: 219b2473-dc27-4a5c-8c3f-2068a47d0b1d\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: CgO5dFchiYcEWcw=\r\nX-Amzn-Trace-Id: Root=1-67565ea2-5296626d5db90f02584ef53d;Parent=089cbf9ef0838f2d;Sampled=0;Lineage=1:fb6c88d0:0\r\n\r\n{\"message\":\"Failed to upload package.\"}"
+        }
+    ]
+}
