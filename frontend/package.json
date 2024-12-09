@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "mocha --loader ts-node/esm tests/**/*.test.ts"
+    "test": "NODE_OPTIONS=--experimental-loader=ts-node/esm mocha tests/**/*.test.ts"
   },
   "type": "module",
   "dependencies": {
