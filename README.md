@@ -72,6 +72,9 @@ To build the frontend application, run the following command from the `frontend`
     cd backend
     npm run test:e2e
 ```
-- Ensure the backend endpoints are functional using tools like Postman or curl.
-- Test the frontend by accessing the deployed Amplify URL and interacting with the interface.
+- Test the frontend by running these commands:
+```sh
+    cd frontend
+    npm test
+```
 

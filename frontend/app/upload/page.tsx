@@ -191,7 +191,7 @@ export default function UploadFile() {
           type="submit"
           style={{
             padding: '10px 20px',
-            backgroundColor: '#007bff',
+            backgroundColor: '#006ee5',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
