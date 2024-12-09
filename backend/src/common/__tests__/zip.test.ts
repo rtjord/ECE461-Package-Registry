@@ -35,14 +35,14 @@ describe("File Operations and Compression Functions", () => {
 
     describe("cloneAndZipRepository", () => {
         it("should clone a repository and zip it", async () => {
-            const repoUrl = "https://github.com/isomorphic-git/isomorphic-git"; // Use a real repo URL
+            const repoUrl = "https://github.com/thejoshwolfe/yazl"; // Use a real repo URL
             const zipBuffer = await cloneAndZipRepository(repoUrl);
 
             const zip = await JSZip.loadAsync(zipBuffer);
             const files = Object.keys(zip.files);
 
             expect(files).toContain("README.md");
-        });
+        }, 60000);
     });
 
     describe("zipDirectory", () => {

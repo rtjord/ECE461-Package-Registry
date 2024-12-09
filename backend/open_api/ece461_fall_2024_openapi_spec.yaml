@@ -29,6 +29,9 @@ info:
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+- url: https://dev.teamfivepackages.com
+  description: Development Server
 paths:
   /packages:
     post:
@@ -128,6 +131,9 @@ paths:
           $ref: '#/components/schemas/PackageID'
         in: path
         required: true
+        examples:
+          ExampleID:
+            value: "{id}"  # Dynamic placeholder for Restler
       responses:
         "200":
           content:
@@ -180,7 +186,6 @@ paths:
       operationId: PackageRetrieve
       summary: Interact with the package with this ID. (BASELINE)
       description: Return this package.
-    operationId: PackageRecommend
     post:
       requestBody:
         content:
@@ -353,6 +358,9 @@ paths:
         $ref: '#/components/schemas/PackageID'
       in: path
       required: true
+      examples:
+          ExampleID:
+            value: "{id}"  # Dynamic placeholder for Restler
     - name: X-Authorization
       description: ""
       schema:
@@ -403,6 +411,9 @@ paths:
         $ref: '#/components/schemas/PackageID'
       in: path
       required: true
+      examples:
+          ExampleID:
+            value: "{id}"  # Dynamic placeholder for Restler
     - name: dependency
       schema:
         type: boolean

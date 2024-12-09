@@ -12,7 +12,7 @@ describe("E2E Test for Get Cost Endpoint", () => {
     let circular2_id: string;
     beforeAll(async () => {
         // Reset the registry before running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
 
         // Upload yazl to the registry
         const requestBody: PackageData = {
@@ -59,7 +59,7 @@ describe("E2E Test for Get Cost Endpoint", () => {
     }, 90000);
     afterAll(async () => {
         // Reset the registry after running the tests
-        await axios.delete(`${baseUrl}/reset`);
+        await axios.delete(`${baseUrl}/reset`, { timeout: 60000 });
     }, timeout);
 
     it("should only return total cost if dependency is false", async () => {
