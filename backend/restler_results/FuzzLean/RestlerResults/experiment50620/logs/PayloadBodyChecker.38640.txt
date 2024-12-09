@@ -1,0 +1,850 @@
+fuzzing valid True
+fuzzing invalid True
+start with examples True
+size dep budget True
+use feedback True
+skip_uuid_substitution False
+recipe None
+Start fuzzing request: POST /recommend
+#node: 1
+Fuzz using dynamic feedback
+#N: 1, #max: 200, #width: 20
+Task begin Invalid-JSON
+Tracker begin (Invalid-JSON):
+    Valid: 0
+    Invalid: 2
+    misc: 1 (2: 2)
+Tracker end
+Task end Invalid-JSON
+
+Task begin Structure
+Tracker begin (Structure):
+    Valid: 0
+    Invalid: 2
+    misc: 1 (2: 2)
+Tracker end
+Task end Structure
+
+Task begin Type
+Tracker begin (Type):
+    Valid: 0
+    Invalid: 10
+    misc: 1 (10: 10)
+Tracker end
+Task end Type
+Skip visited request /recommend
+Start fuzzing request: PUT /authenticate
+#node: 8
+Fuzz using dynamic feedback
+#N: 8, #max: 200, #width: 20
+Task begin Invalid-JSON
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+Tracker begin (Invalid-JSON):
+    Valid: 0
+    Invalid: 12
+    misc: 1 (12: 12)
+Tracker end
+Task end Invalid-JSON
+
+Task begin Structure
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+Tracker begin (Structure):
+    Valid: 0
+    Invalid: 14
+    misc: 1 (14: 14)
+Tracker end
+Task end Structure
+
+Task begin Type
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+
+Suspect sequence: 501
+PUT /authenticate
+Tracker begin (Type):
+    Valid: 0
+    Invalid: 28
+    misc: 1 (28: 28)
+Tracker end
+Task end Type
+Skip visited request /authenticate
+Skip visited request /authenticate
+Skip visited request /authenticate
+Start fuzzing request: POST /package/{id}
+#node: 13
+Fuzz using dynamic feedback
+#N: 13, #max: 200, #width: 20
+Task begin Invalid-JSON
+Tracker begin (Invalid-JSON):
+    Valid: 0
+    Invalid: 88
+    misc: 2 (88: 44 44)
+Tracker end
+Task end Invalid-JSON
+
+Task begin Structure
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+Tracker begin (Structure):
+    Valid: 0
+    Invalid: 152
+    misc: 4 (152: 68 56 20 8)
+Tracker end
+Task end Structure
+
+Task begin Type
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+
+Suspect sequence: 500
+POST /package/fuzzstring
+Tracker begin (Type):
+    Valid: 0
+    Invalid: 680
+    misc: 4 (680: 428 72 124 56)
+Tracker end
+Task end Type
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Skip visited request /package/{id}
+Start fuzzing request: POST /package
+#node: 6
+Fuzz using dynamic feedback
+#N: 6, #max: 200, #width: 20
+Task begin Invalid-JSON
+Tracker begin (Invalid-JSON):
+    Valid: 0
+    Invalid: 12
+    misc: 1 (12: 12)
+Tracker end
+Task end Invalid-JSON
+
+Task begin Structure
+Tracker begin (Structure):
+    Valid: 0
+    Invalid: 12
+    misc: 2 (12: 8 4)
+Tracker end
+Task end Structure
+
+Task begin Type
+Tracker begin (Type):
+    Valid: 0
+    Invalid: 26
+    misc: 2 (26: 22 4)
+Tracker end
+Task end Type
+Skip visited request /package
+Start fuzzing request: POST /package/byRegEx
+#node: 2
+Fuzz using dynamic feedback
+#N: 2, #max: 200, #width: 20
+Task begin Invalid-JSON
+Tracker begin (Invalid-JSON):
+    Valid: 0
+    Invalid: 8
+    misc: 1 (8: 8)
+Tracker end
+Task end Invalid-JSON
+
+Task begin Structure
+Tracker begin (Structure):
+    Valid: 0
+    Invalid: 4
+    misc: 1 (4: 4)
+Tracker end
+Task end Structure
+
+Task begin Type
+Tracker begin (Type):
+    Valid: 0
+    Invalid: 36
+    misc: 1 (36: 36)
+Tracker end
+Task end Type
+Skip visited request /package/byRegEx
+Skip visited request /package/byRegEx
+Skip visited request /package/byRegEx
+Start fuzzing request: POST /tracks
+#node: 2
+Fuzz using dynamic feedback
+#N: 2, #max: 200, #width: 20
+Task begin Invalid-JSON
+Tracker begin (Invalid-JSON):
+    Valid: 0
+    Invalid: 4
+    misc: 1 (4: 4)
+Tracker end
+Task end Invalid-JSON
+
+Task begin Structure
+Tracker begin (Structure):
+    Valid: 0
+    Invalid: 2
+    misc: 1 (2: 2)
+Tracker end
+Task end Structure
+
+Task begin Type
+Tracker begin (Type):
+    Valid: 0
+    Invalid: 18
+    misc: 1 (18: 18)
+Tracker end
+Task end Type
+Skip visited request /tracks
+Start fuzzing request: POST /packages
+#node: 4
+Fuzz using dynamic feedback
+#N: 4, #max: 200, #width: 20
+Task begin Invalid-JSON
+Tracker begin (Invalid-JSON):
+    Valid: 0
+    Invalid: 12
+    misc: 1 (12: 12)
+Tracker end
+Task end Invalid-JSON
+
+Task begin Structure
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+Tracker begin (Structure):
+    Valid: 2
+    Invalid: 10
+    misc: 3 (10: 4 2 4)
+Tracker end
+Task end Structure
+
+Task begin Type
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+
+Suspect sequence: 500
+POST /packages
+Tracker begin (Type):
+    Valid: 4
+    Invalid: 96
+    misc: 5 (96: 24 56 4 8 4)
+Tracker end
+Task end Type
+Skip visited request /packages
+Skip visited request /packages

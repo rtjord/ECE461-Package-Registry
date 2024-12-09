@@ -1,0 +1,16 @@
+{
+    "status_code": "501",
+    "checker_name": "PayloadBodyChecker",
+    "reproducible": true,
+    "verb": "PUT",
+    "endpoint": null,
+    "status_text": "Not Implemented",
+    "request_sequence": [
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 0,
+            "replay_request": "PUT /authenticate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{\"User\":false}",
+            "response": "HTTP/1.1 501 Not Implemented\r\nDate: Mon, 09 Dec 2024 00:53:01 GMT\r\nContent-Type: application/json\r\nContent-Length: 58\r\nConnection: keep-alive\r\nx-amzn-RequestId: 07fffc7c-956e-4811-a663-efc1be1ac607\r\nx-amz-apigw-id: Cf7ZMEnTCYcEY0g=\r\nX-Amzn-Trace-Id: Root=1-67563f6d-5f17942b2b4f1d5976596206;Parent=3298456c8a8095c0;Sampled=0;Lineage=1:571bce3f:0\r\n\r\n{\"message\":\"This system does not support authentication.\"}"
+        }
+    ]
+}

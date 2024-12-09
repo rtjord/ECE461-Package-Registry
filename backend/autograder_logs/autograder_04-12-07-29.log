@@ -1,0 +1,72 @@
+12/04/24 07:29:47 AM : INFO : Testing Directory: /app
+12/04/24 07:29:47 AM : Test Start : Running Tests for: ECE461: Autograder Phase 2
+12/04/24 07:29:47 AM : Test Start : Running Tests for: Setup and Reset Test Group
+12/04/24 07:29:48 AM : Test Success : > System Tracks Test passed!
+12/04/24 07:29:48 AM : Test Fail : > Access Control Track is not present!
+12/04/24 07:29:48 AM : Test Fail : > Unable to Login! (Unstaisfied dependency 'Check if access control track is present')       
+12/04/24 07:29:50 AM : Test Success : > System Reset Test passed!
+12/04/24 07:29:50 AM : Test Success : > No Packages present after reset!
+12/04/24 07:29:50 AM : Test Result : Total score: 3 / 5
+
+12/04/24 07:29:50 AM : Test Start : Running Tests for: Upload Packages Test Group
+12/04/24 07:29:51 AM : Test Success : > Content package 1 upload passed!
+12/04/24 07:29:51 AM : Test Success : > Single Package Query Test passed!
+12/04/24 07:29:51 AM : Test Success : > Content package 2 upload passed!
+12/04/24 07:29:52 AM : Test Success : > Content package 3 upload passed!
+12/04/24 07:29:58 AM : Test Success : > Ingest package 1 upload passed!
+12/04/24 07:30:05 AM : Test Success : > Ingest package 2 upload passed!
+12/04/24 07:30:18 AM : Test Success : > Ingest package 3 upload passed!
+12/04/24 07:30:27 AM : Test Success : > Ingest package 4 upload passed!
+12/04/24 07:30:27 AM : Test Success : > All Package Query Test passed!
+12/04/24 07:30:27 AM : Test Result : Total score: 9 / 9
+
+12/04/24 07:30:27 AM : Test Start : Running Tests for: Regex Tests Group
+12/04/24 07:30:28 AM : Test Success : > Exact Match Name Regex Test passed!
+12/04/24 07:30:29 AM : Test Success : > Extra Chars Name Regex Test passed!
+12/04/24 07:30:29 AM : Test Fail : > Random String Regex Test failed!
+12/04/24 07:30:29 AM : Test Fail : > ReDOS Regex Test Latge Group failed!
+12/04/24 07:30:30 AM : Test Fail : > ReDOS Regex Test Multiple Groups failed!
+12/04/24 07:30:30 AM : Test Fail : > ReDOS Regex Test Backtracking failed!
+12/04/24 07:30:30 AM : Test Result : Total score: 2 / 6
+
+12/04/24 07:30:30 AM : Test Start : Running Tests for: Read and Delete Test Group
+12/04/24 07:30:30 AM : Test Success : > Get Package By Name Test 0 passed!
+12/04/24 07:30:30 AM : Test Success : > Get Package By Name Test 1 passed!
+12/04/24 07:30:30 AM : Test Success : > Get Package By Name Test 2 passed!
+12/04/24 07:30:30 AM : Test Success : > Get Package By Name Test 3 passed!
+12/04/24 07:30:30 AM : Test Success : > Get Package By Name Test 4 passed!
+12/04/24 07:30:31 AM : Test Success : > Get Package By Name Test 5 passed!
+12/04/24 07:30:31 AM : Test Success : > Get Package By Name Test 6 passed!
+12/04/24 07:30:32 AM : Test Success : > Get Package By ID Test 0 passed!
+12/04/24 07:30:34 AM : Test Success : > Get Package By ID Test 1 passed!
+12/04/24 07:30:35 AM : Test Success : > Get Package By ID Test 2 passed!
+12/04/24 07:30:36 AM : Test Success : > Get Package By ID Test 3 passed!
+12/04/24 07:30:37 AM : Test Success : > Get Package By ID Test 4 passed!
+12/04/24 07:30:38 AM : Test Success : > Get Package By ID Test 5 passed!
+12/04/24 07:30:39 AM : Test Success : > Get Package By ID Test 6 passed!
+12/04/24 07:30:39 AM : Test Result : Total score: 14 / 14
+
+12/04/24 07:30:39 AM : Test Start : Running Tests for: Rate packages Test Group
+12/04/24 07:30:39 AM : Test Fail : > Invalid Package Rate Test failed!
+12/04/24 07:30:42 AM : ERROR : Error parsing output for test PackageRating
+12/04/24 07:30:42 AM : ERROR : 'BusFactorLatency'Could be the error or the missing field.
+12/04/24 07:30:42 AM : ERROR : Error running test: Get Package Rate Test Package 3
+12/04/24 07:30:42 AM : ERROR : 'NoneType' object has no attribute 'to_dict'
+12/04/24 07:30:43 AM : ERROR : Error parsing output for test PackageRating
+12/04/24 07:30:43 AM : ERROR : 'BusFactorLatency'Could be the error or the missing field.
+12/04/24 07:30:43 AM : ERROR : Error running test: Get Package Rate Test Package 4
+12/04/24 07:30:43 AM : ERROR : 'NoneType' object has no attribute 'to_dict'
+12/04/24 07:30:43 AM : ERROR : Error parsing output for test PackageRating
+12/04/24 07:30:43 AM : ERROR : 'BusFactorLatency'Could be the error or the missing field.
+12/04/24 07:30:43 AM : ERROR : Error running test: Get Package Rate Test Package 5
+12/04/24 07:30:43 AM : ERROR : 'NoneType' object has no attribute 'to_dict'
+12/04/24 07:30:44 AM : ERROR : Error parsing output for test PackageRating
+12/04/24 07:30:44 AM : ERROR : 'BusFactorLatency'Could be the error or the missing field.
+12/04/24 07:30:44 AM : ERROR : Error running test: Get Package Rate Test Package 6
+12/04/24 07:30:44 AM : ERROR : 'NoneType' object has no attribute 'to_dict'
+12/04/24 07:30:44 AM : Test Result : Total score: 0 / 22
+
+12/04/24 07:30:44 AM : Test Start : Running Tests for: Package Cost Test Group
+12/04/24 07:30:45 AM : Test Result : Total score: 0 / 3
+
+12/04/24 07:30:45 AM : Test Result : Total score: 28 / 59
