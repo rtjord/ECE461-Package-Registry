@@ -1,0 +1,16 @@
+{
+    "status_code": "500",
+    "checker_name": "InvalidValueChecker",
+    "reproducible": true,
+    "verb": "POST",
+    "endpoint": "/package/byRegEx",
+    "status_text": "Internal Server Error",
+    "request_sequence": [
+        {
+            "producer_timing_delay": 0,
+            "max_async_wait_time": 20,
+            "replay_request": "POST /package/byRegEx HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: MvB5}i5BA\tS\n\r\nContent-Type: application/json\r\n\r\n{\n    \"RegEx\":\"fuzzstring\"}\r\n",
+            "response": "HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 01:02:24 GMT\r\nContent-Type: application/json\r\nContent-Length: 61\r\nConnection: keep-alive\r\nx-amzn-RequestId: edef14ae-3b06-4e3d-860d-63f3cb0a00dd\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8xLGiWCYcEX4Q=\r\nX-Amzn-Trace-Id: Root=1-675641a0-0f04f457634146f608b7e9fc;Parent=21083353900dd3c7;Sampled=0;Lineage=1:6685a065:0\r\n\r\n{\"message\":\"An error occurred while processing the request.\"}"
+        }
+    ]
+}

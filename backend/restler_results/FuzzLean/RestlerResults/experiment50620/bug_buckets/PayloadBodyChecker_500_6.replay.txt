@@ -1,0 +1,24 @@
+################################################################################
+ PayloadBodyChecker_500
+
+ StructMissing_/metadata{...}/+Name/+URL/+debloat/+JSProgram
+{'data': {'Content': 'fuzzstring'}}
+
+ Hash: PayloadBodyChecker_500_081bf008f06d750dbd20fdaa07a358b24907112a
+
+ To attempt to reproduce this bug using restler, run restler with the command
+ line option of --replay_log <path_to_this_log>.
+ If an authentication token is required, you must also specify the token_refresh_cmd.
+
+ This log may contain specific values for IDs or names that were generated
+ during fuzzing, using the fuzzing dictionary. Such names will be re-played
+ without modification. You must update the replay log manually with any changes
+ required to execute the requests in your environment (for example, replacing
+ pre-created account, subscription, or other resource IDs, as needed).
+################################################################################
+
+-> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{"data":{"Content":"fuzzstring"}}
+! producer_timing_delay 0
+! max_async_wait_time 0
+PREVIOUS RESPONSE: 'HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 00:54:38 GMT\r\nContent-Type: application/json\r\nContent-Length: 39\r\nConnection: keep-alive\r\nx-amzn-RequestId: 2b332d6b-9716-4e16-bbfb-470d81a69f85\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7oUHVOiYcErxw=\r\nX-Amzn-Trace-Id: Root=1-67563fce-462b5be052c6d16807a7257a;Parent=4cc8f4dfb1015496;Sampled=0;Lineage=1:91af299f:0\r\n\r\n{"message":"Failed to upload package."}'
+

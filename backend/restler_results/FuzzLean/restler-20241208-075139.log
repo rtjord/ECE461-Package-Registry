@@ -1,0 +1,44 @@
+Restler Information: 0 : Starting task FuzzLean...
+    DateTime=2024-12-09T00:51:39.5062351Z
+Restler Information: 0 : Launching 'python.exe --version'
+    DateTime=2024-12-09T00:51:39.9151459Z
+Restler Information: 0 : Process execution terminated in 00:00:00.0479036 with exit code 0x0: 'python.exe --version'
+    DateTime=2024-12-09T00:51:39.9761144Z
+Restler Information: 0 : (38024) python.exe --version exited with code: 0
+    DateTime=2024-12-09T00:51:39.9808907Z
+Restler Information: 0 : Launching 'python.exe -B "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\restler_bin\restler\../engine/restler.py" --restler_grammar "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\grammar.py" --custom_mutations "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\dict.json" --set_version 9.2.4        --enable_checkers * --disable_checkers namespacerule    --include_user_agent --no_tokens_in_logs t --garbage_collection_interval 30 --fuzzing_mode directed-smoke-test'
+    DateTime=2024-12-09T00:51:39.9940340Z
+Restler Information: 0 : Process execution terminated in 00:18:41.1981433 with exit code 0x0: 'python.exe -B "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\restler_bin\restler\../engine/restler.py" --restler_grammar "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\grammar.py" --custom_mutations "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\dict.json" --set_version 9.2.4        --enable_checkers * --disable_checkers namespacerule    --include_user_agent --no_tokens_in_logs t --garbage_collection_interval 30 --fuzzing_mode directed-smoke-test'
+    DateTime=2024-12-09T01:10:21.1924289Z
+Restler Information: 0 : (50620) python.exe -B "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\restler_bin\restler\../engine/restler.py" --restler_grammar "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\grammar.py" --custom_mutations "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\dict.json" --set_version 9.2.4        --enable_checkers * --disable_checkers namespacerule    --include_user_agent --no_tokens_in_logs t --garbage_collection_interval 30 --fuzzing_mode directed-smoke-test exited with code: 0
+    DateTime=2024-12-09T01:10:21.1926371Z
+Restler Information: 0 : Launching 'dotnet "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\restler_bin\restler\../resultsAnalyzer/Restler.ResultsAnalyzer.dll" analyze "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\FuzzLean" --output_dir "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\FuzzLean\ResponseBuckets" --dictionary_file "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\dict.json" --max_instances_per_bucket 10'
+    DateTime=2024-12-09T01:10:21.1998300Z
+Restler Information: 0 : Process execution terminated in 00:00:03.0154418 with exit code 0xE0434352: 'dotnet "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\restler_bin\restler\../resultsAnalyzer/Restler.ResultsAnalyzer.dll" analyze "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\FuzzLean" --output_dir "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\FuzzLean\ResponseBuckets" --dictionary_file "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\dict.json" --max_instances_per_bucket 10'
+    DateTime=2024-12-09T01:10:24.2154323Z
+Restler Information: 0 : (29112) dotnet "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\restler_bin\restler\../resultsAnalyzer/Restler.ResultsAnalyzer.dll" analyze "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\FuzzLean" --output_dir "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\FuzzLean\ResponseBuckets" --dictionary_file "C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\Compile\dict.json" --max_instances_per_bucket 10 exited with code: -532462766
+    DateTime=2024-12-09T01:10:24.2157235Z
+Restler Error: 0 : Results analyzer for logs in C:\Users\rtjor\OneDrive - purdue.edu\Documents\Courses\Fall 2024\ECE 461\restler-fuzzer\FuzzLean failed.
+    DateTime=2024-12-09T01:10:24.2205470Z
+Restler Information: 0 : Request coverage (successful / total): 2 / 11
+    DateTime=2024-12-09T01:10:24.3475883Z
+Restler Information: 0 : Attempted requests: 11 / 11
+    DateTime=2024-12-09T01:10:24.3478222Z
+Restler Information: 0 : Bugs were found!
+    DateTime=2024-12-09T01:10:24.3513869Z
+Restler Information: 0 : Bug buckets:
+    DateTime=2024-12-09T01:10:24.3515631Z
+Restler Information: 0 : 
+InvalidValueChecker_500: 7
+InvalidValueChecker_501: 1
+InvalidValueChecker_502: 8
+PayloadBodyChecker_500: 17
+PayloadBodyChecker_501: 12
+main_driver_501: 1
+    DateTime=2024-12-09T01:10:24.3525283Z
+Restler Information: 0 : See 'coverage_failures_to_investigate.txt' to investigate API coverage.
+    DateTime=2024-12-09T01:10:24.4185421Z
+Restler Information: 0 : Task FuzzLean succeeded.
+    DateTime=2024-12-09T01:10:24.4206384Z
+Restler Information: 0 : Collecting logs...
+    DateTime=2024-12-09T01:10:24.6870828Z
