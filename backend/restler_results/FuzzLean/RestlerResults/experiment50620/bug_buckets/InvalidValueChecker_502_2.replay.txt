@@ -1,0 +1,21 @@
+################################################################################
+ InvalidValueChecker_502
+
+ Hash: InvalidValueChecker_502_a358254d7587ce91fd8ec868c3ba0c0a76bbf31a
+
+ To attempt to reproduce this bug using restler, run restler with the command
+ line option of --replay_log <path_to_this_log>.
+ If an authentication token is required, you must also specify the token_refresh_cmd.
+
+ This log may contain specific values for IDs or names that were generated
+ during fuzzing, using the fuzzing dictionary. Such names will be re-played
+ without modification. You must update the replay log manually with any changes
+ required to execute the requests in your environment (for example, replacing
+ pre-created account, subscription, or other resource IDs, as needed).
+################################################################################
+
+-> POST /package/D0at>\x0bVA1CM HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{\n    "metadata":\n        {\n            "Name":\n                "fuzzstring"\n            ,\n            "Version":"1.2.3",\n            "ID":\n                "123567192081501"\n        }\n    ,\n    "data":\n        {\n            "Name":\n                { "fuzz": false }\n            ,\n            "Content":"fuzzstring",\n            "URL":"fuzzstring",\n            "debloat":true,\n            "JSProgram":"fuzzstring"\n        }\n    }\r\n
+! producer_timing_delay 0
+! max_async_wait_time 20
+PREVIOUS RESPONSE: 'HTTP/1.1 502 Bad Gateway\r\nServer: awselb/2.0\r\nDate: Mon, 09 Dec 2024 00:55:57 GMT\r\nContent-Type: text/html\r\nContent-Length: 122\r\nConnection: close\r\n\r\n<html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n</body>\r\n</html>\r\n'
+

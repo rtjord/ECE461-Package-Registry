@@ -1,0 +1,238 @@
+This file contains the failing requests, ordered by the number of blocked dependent requests.
+To improve coverage, fix the failing requests in the order listed in this file.
+
+Note: some requests are labeled as 'sequence failure'.
+This means the request depends on another request that is failing intermittently.
+For example, a DELETE request for a resource may be skipped because the resource
+PUT request failed due to exceeding quota.  The same PUT request succeeded earlier (and may
+succeed later depending on the resource clean-up behavior in the service), so it is
+considered an intermittent failure.
+
+-----------------------------------------------
+Request: Post /recommend
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> POST /recommend HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{}\r\n
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 00:51:40 GMT\r\nContent-Type: application/json\r\nContent-Length: 71\r\nConnection: keep-alive\r\nx-amzn-RequestId: d41c4ccd-1e94-48cf-9f23-1bab22477093\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7MNEKiCYcERYg=\r\nX-Amzn-Trace-Id: Root=1-67563f1a-4134c8416c8e3a1340fae1b2;Parent=54183e7fda456684;Sampled=0;Lineage=1:36659b03:0\r\n\r\n{"message":"Missing or invalid Description field in the request body."}
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> POST /recommend HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{}
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 00:51:41 GMT\r\nContent-Type: application/json\r\nContent-Length: 71\r\nConnection: keep-alive\r\nx-amzn-RequestId: 5e29355e-58a9-4317-9a4d-06f75571fb79\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7MtFNMiYcEIaw=\r\nX-Amzn-Trace-Id: Root=1-67563f1d-19e3dc0071fb375b1d4ffa37;Parent=1cce368c1550577a;Sampled=0;Lineage=1:36659b03:0\r\n\r\n{"message":"Missing or invalid Description field in the request body."}
+
+
+-----------------------------------------------
+Request: Get /package/{id}/rate
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> GET /package/%7Bid%7D/rate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 00:51:44 GMT\r\nContent-Type: application/json\r\nContent-Length: 37\r\nConnection: keep-alive\r\nx-amzn-RequestId: 4ed070c2-d721-417c-9584-95611f13b48a\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7MyFLzCYcEnyA=\r\nX-Amzn-Trace-Id: Root=1-67563f1e-7556be243583ed8545dc852f;Parent=7f636027330e6793;Sampled=0;Lineage=1:e6f9ec03:0\r\n\r\n{"message":"Package does not exist."}
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> GET /package/fuzzstring/rate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 00:52:20 GMT\r\nContent-Type: application/json\r\nContent-Length: 37\r\nConnection: keep-alive\r\nx-amzn-RequestId: 4441f329-e390-4f58-ba23-3bd8180df0a0\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7SyH52iYcERzA=\r\nX-Amzn-Trace-Id: Root=1-67563f44-62549f177f7758b6167fc1d4;Parent=4e822563b062e7a1;Sampled=0;Lineage=1:e6f9ec03:0\r\n\r\n{"message":"Package does not exist."}
+
+
+	+++ Combination 3 +++:
+	Request sequence: 
+	> GET /package/%7Bid%7D/rate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 00:52:21 GMT\r\nContent-Type: application/json\r\nContent-Length: 37\r\nConnection: keep-alive\r\nx-amzn-RequestId: 08a03950-3212-4aad-af72-420d41cadcb1\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7S1HTXCYcEMCg=\r\nX-Amzn-Trace-Id: Root=1-67563f44-3d7617ec6d60a50c3e0677ca;Parent=2aef0d359558bac5;Sampled=0;Lineage=1:e6f9ec03:0\r\n\r\n{"message":"Package does not exist."}
+
+
+	+++ Combination 4 +++:
+	Request sequence: 
+	> GET /package/fuzzstring/rate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 00:52:52 GMT\r\nContent-Type: application/json\r\nContent-Length: 37\r\nConnection: keep-alive\r\nx-amzn-RequestId: 0af7aaa5-f872-45e0-9916-544ec48983d0\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7X0FxviYcEHew=\r\nX-Amzn-Trace-Id: Root=1-67563f64-642c52eb1dd3d34627e706a9;Parent=0078052476acda89;Sampled=0;Lineage=1:e6f9ec03:0\r\n\r\n{"message":"Package does not exist."}
+
+
+-----------------------------------------------
+Request: Put /authenticate
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> PUT /authenticate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{\n    "User":\n        {\n            "name":"Alfalfa",\n            "isAdmin":true\n        }\n    ,\n    "Secret":\n        {\n            "password":"fuzzstring"\n        }\n    }\r\n
+	< HTTP/1.1 501 Not Implemented\r\nDate: Mon, 09 Dec 2024 00:52:54 GMT\r\nContent-Type: application/json\r\nContent-Length: 58\r\nConnection: keep-alive\r\nx-amzn-RequestId: 34c4700f-c435-4692-82ae-c8d0632430d4\r\nx-amz-apigw-id: Cf7X6GGoiYcEHyA=\r\nX-Amzn-Trace-Id: Root=1-67563f65-782d6b8c3d7ea82c54a19331;Parent=5217d06a94dca0b0;Sampled=0;Lineage=1:571bce3f:0\r\n\r\n{"message":"This system does not support authentication."}
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> PUT /authenticate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{\n    "User":\n        {\n            "name":"fuzzstring",\n            "isAdmin":true\n        }\n    ,\n    "Secret":\n        {\n            "password":"fuzzstring"\n        }\n    }\r\n
+	< HTTP/1.1 501 Not Implemented\r\nDate: Mon, 09 Dec 2024 00:53:41 GMT\r\nContent-Type: application/json\r\nContent-Length: 58\r\nConnection: keep-alive\r\nx-amzn-RequestId: 21a5fc05-88bb-47da-9bbe-0868e2ae7c03\r\nx-amz-apigw-id: Cf7fbFSGiYcEHyA=\r\nX-Amzn-Trace-Id: Root=1-67563f95-4b3c662a6256dc4c3440bfd3;Parent=45f5992033a84ccb;Sampled=0;Lineage=1:571bce3f:0\r\n\r\n{"message":"This system does not support authentication."}
+
+
+	+++ Combination 3 +++:
+	Request sequence: 
+	> PUT /authenticate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{"User":{"name":"Alfalfa","isAdmin":true},"Secret":{"password":"fuzzstring"}}
+	< HTTP/1.1 501 Not Implemented\r\nDate: Mon, 09 Dec 2024 00:53:41 GMT\r\nContent-Type: application/json\r\nContent-Length: 58\r\nConnection: keep-alive\r\nx-amzn-RequestId: 04d8d695-d011-481d-a746-c5ec93254d98\r\nx-amz-apigw-id: Cf7ffHRJiYcEF8w=\r\nX-Amzn-Trace-Id: Root=1-67563f95-2aa1596556380a721d79929b;Parent=7a3a89d0dc909a07;Sampled=0;Lineage=1:571bce3f:0\r\n\r\n{"message":"This system does not support authentication."}
+
+
+	+++ Combination 4 +++:
+	Request sequence: 
+	> PUT /authenticate HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{"User":{"name":"fuzzstring","isAdmin":true},"Secret":{"password":"fuzzstring"}}
+	< HTTP/1.1 501 Not Implemented\r\nDate: Mon, 09 Dec 2024 00:54:11 GMT\r\nContent-Type: application/json\r\nContent-Length: 58\r\nConnection: keep-alive\r\nx-amzn-RequestId: 24712425-5ebe-4969-be18-0adac5049e76\r\nx-amz-apigw-id: Cf7kCEWTiYcEVNw=\r\nX-Amzn-Trace-Id: Root=1-67563fb3-0079465248dc14074bfa37ca;Parent=5db03b44f7d7cae8;Sampled=0;Lineage=1:571bce3f:0\r\n\r\n{"message":"This system does not support authentication."}
+
+
+-----------------------------------------------
+Request: Post /package/{id}
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{\n    "metadata":\n        {\n            "Name":\n                "fuzzstring"\n            ,\n            "Version":"1.2.3",\n            "ID":\n                "123567192081501"\n        }\n    ,\n    "data":\n        {\n            "Name":\n                { "fuzz": false }\n            ,\n            "Content":"fuzzstring",\n            "URL":"fuzzstring",\n            "debloat":true,\n            "JSProgram":"fuzzstring"\n        }\n    }\r\n
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 00:54:14 GMT\r\nContent-Type: application/json\r\nContent-Length: 61\r\nConnection: keep-alive\r\nx-amzn-RequestId: d563771c-ac69-4c7c-a9a1-0eb2c99e1440\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf7kHF-hCYcEYHw=\r\nX-Amzn-Trace-Id: Root=1-67563fb3-5f89272954dc05de66e74f55;Parent=6fe7c7927118d327;Sampled=0;Lineage=1:91af299f:0\r\n\r\n{"message":"Exactly one of Content or URL must be provided."}
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{\n    "metadata":\n        {\n            "Name":\n                "fuzzstring"\n            ,\n            "Version":"1.2.3",\n            "ID":\n                "fuzzstring"\n        }\n    ,\n    "data":\n        {\n            "Name":\n                { "fuzz": false }\n            ,\n            "Content":"fuzzstring",\n            "URL":"fuzzstring",\n            "debloat":true,\n            "JSProgram":"fuzzstring"\n        }\n    }\r\n
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 00:57:45 GMT\r\nContent-Type: application/json\r\nContent-Length: 71\r\nConnection: keep-alive\r\nx-amzn-RequestId: ed282ba2-0347-4d9b-9283-3c3b7079d60b\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8FhEWgiYcEQXw=\r\nX-Amzn-Trace-Id: Root=1-67564089-19db3f490d6369d22a05ee4b;Parent=3abc555dfb2ece97;Sampled=0;Lineage=1:91af299f:0\r\n\r\n{"message":"ID in the request body does not match the ID in the path."}
+
+
+	+++ Combination 3 +++:
+	Request sequence: 
+	> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{\n    "metadata":\n        {\n            "Name":\n                "fuzzstring"\n            ,\n            "Version":"fuzzstring",\n            "ID":\n                "123567192081501"\n        }\n    ,\n    "data":\n        {\n            "Name":\n                { "fuzz": false }\n            ,\n            "Content":"fuzzstring",\n            "URL":"fuzzstring",\n            "debloat":true,\n            "JSProgram":"fuzzstring"\n        }\n    }\r\n
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 00:57:45 GMT\r\nContent-Type: application/json\r\nContent-Length: 61\r\nConnection: keep-alive\r\nx-amzn-RequestId: d5dba3d0-0f63-4223-a99b-1238a3eabd82\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8FkGTLiYcEW4A=\r\nX-Amzn-Trace-Id: Root=1-67564089-3db70700037d9fa74b3b106d;Parent=4c798f30d55b6606;Sampled=0;Lineage=1:91af299f:0\r\n\r\n{"message":"Exactly one of Content or URL must be provided."}
+
+
+	+++ Combination 4 +++:
+	Request sequence: 
+	> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{\n    "metadata":\n        {\n            "Name":\n                "fuzzstring"\n            ,\n            "Version":"fuzzstring",\n            "ID":\n                "fuzzstring"\n        }\n    ,\n    "data":\n        {\n            "Name":\n                { "fuzz": false }\n            ,\n            "Content":"fuzzstring",\n            "URL":"fuzzstring",\n            "debloat":true,\n            "JSProgram":"fuzzstring"\n        }\n    }\r\n
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 00:57:46 GMT\r\nContent-Type: application/json\r\nContent-Length: 71\r\nConnection: keep-alive\r\nx-amzn-RequestId: bb468f9b-6d7a-42c1-95b6-67056ab584d6\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8FoFGoiYcEOBQ=\r\nX-Amzn-Trace-Id: Root=1-6756408a-08d6836e39ce5bb923fbb49c;Parent=1f8aa61da4ddec9c;Sampled=0;Lineage=1:91af299f:0\r\n\r\n{"message":"ID in the request body does not match the ID in the path."}
+
+
+	+++ Combination 5 +++:
+	Request sequence: 
+	> POST /package/123567192081501 HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\nContent-Type: application/json\r\n\r\n{\n    "metadata":\n        {\n            "Name":\n                "fuzzstring"\n            ,\n            "Version":"1.2.3",\n            "ID":\n                "123567192081501"\n        }\n    ,\n    "data":\n        {\n            "Name":\n                { "fuzz": false }\n            ,\n            "Content":"fuzzstring",\n            "URL":"fuzzstring",\n            "debloat":true,\n            "JSProgram":"fuzzstring"\n        }\n    }\r\n
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 00:57:46 GMT\r\nContent-Type: application/json\r\nContent-Length: 61\r\nConnection: keep-alive\r\nx-amzn-RequestId: 3978f0b4-10ca-46c5-a560-9c0966df86ff\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8FrF5mCYcEfEQ=\r\nX-Amzn-Trace-Id: Root=1-6756408a-5fdbb51061f8778d05c93428;Parent=4c4b00bd1a7fccb6;Sampled=0;Lineage=1:91af299f:0\r\n\r\n{"message":"Exactly one of Content or URL must be provided."}
+
+
+-----------------------------------------------
+Request: Post /package
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> POST /package HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\nContent-Type: application/json\r\n\r\n{\n    "Name":\n        { "fuzz": false }\n    ,\n    "Content":"fuzzstring",\n    "URL":"fuzzstring",\n    "debloat":true,\n    "JSProgram":"fuzzstring"}\r\n
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 01:00:49 GMT\r\nContent-Type: application/json\r\nContent-Length: 61\r\nConnection: keep-alive\r\nx-amzn-RequestId: 9b9330d1-cf2a-4ac9-a5f6-eb7f70bdfcb9\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8iRFm6iYcEo0w=\r\nX-Amzn-Trace-Id: Root=1-67564141-66511157745ebed968511493;Parent=41d1d092de979eb3;Sampled=0;Lineage=1:39532148:0\r\n\r\n{"message":"Exactly one of Content or URL must be provided."}
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> POST /package HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\nContent-Type: application/json\r\n\r\n{}
+	< HTTP/1.1 400 Bad Request\r\nDate: Mon, 09 Dec 2024 01:01:47 GMT\r\nContent-Type: application/json\r\nContent-Length: 61\r\nConnection: keep-alive\r\nx-amzn-RequestId: 98c2d8bc-223c-4f53-96a3-b60edec83851\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8rYF3vCYcEX5A=\r\nX-Amzn-Trace-Id: Root=1-6756417b-104f54cf64039e613c301fe9;Parent=1560ffa0d37bee62;Sampled=0;Lineage=1:39532148:0\r\n\r\n{"message":"Exactly one of Content or URL must be provided."}
+
+
+-----------------------------------------------
+Request: Post /package/byRegEx
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> POST /package/byRegEx HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{\n    "RegEx":"fuzzstring"}\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:02:07 GMT\r\nContent-Type: application/json\r\nContent-Length: 73\r\nConnection: keep-alive\r\nx-amzn-RequestId: 478bbd9c-5aea-4828-ab3e-f7ec2301fdde\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8t3E_PCYcECjw=\r\nX-Amzn-Trace-Id: Root=1-6756418b-18ee57f326a6009f00817ce5;Parent=60dfb0a984f511e4;Sampled=0;Lineage=1:6685a065:0\r\n\r\n{"message":"No packages found matching the provided regular expression."}
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> POST /package/byRegEx HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\nContent-Type: application/json\r\n\r\n{\n    "RegEx":"fuzzstring"}\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:03:19 GMT\r\nContent-Type: application/json\r\nContent-Length: 73\r\nConnection: keep-alive\r\nx-amzn-RequestId: 7cc4b25e-d1d9-4f26-bc04-414fdea4cc06\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf85uE9TiYcED4A=\r\nX-Amzn-Trace-Id: Root=1-675641d7-2de4bbca42bc30de15316fbc;Parent=682ae75d480b6526;Sampled=0;Lineage=1:6685a065:0\r\n\r\n{"message":"No packages found matching the provided regular expression."}
+
+
+	+++ Combination 3 +++:
+	Request sequence: 
+	> POST /package/byRegEx HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\nContent-Type: application/json\r\n\r\n{"RegEx":"fuzzstring"}
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:03:20 GMT\r\nContent-Type: application/json\r\nContent-Length: 73\r\nConnection: keep-alive\r\nx-amzn-RequestId: e878bde3-e7d1-4651-84d4-8b1c47a2e875\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf85zFZNCYcEK9w=\r\nX-Amzn-Trace-Id: Root=1-675641d7-3f4e613b1b5671ab313f875c;Parent=3f181d6d5188d492;Sampled=0;Lineage=1:6685a065:0\r\n\r\n{"message":"No packages found matching the provided regular expression."}
+
+
+	+++ Combination 4 +++:
+	Request sequence: 
+	> POST /package/byRegEx HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\nContent-Type: application/json\r\n\r\n{"RegEx":"fuzzstring"}
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:04:20 GMT\r\nContent-Type: application/json\r\nContent-Length: 73\r\nConnection: keep-alive\r\nx-amzn-RequestId: 0b3ddffc-e78f-4070-9e13-2ca3a9f1399f\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9DPE0aiYcEuvQ=\r\nX-Amzn-Trace-Id: Root=1-67564214-2852d5de38f4152876737246;Parent=58a78bd03762c65c;Sampled=0;Lineage=1:6685a065:0\r\n\r\n{"message":"No packages found matching the provided regular expression."}
+
+
+-----------------------------------------------
+Request: Post /tracks
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> POST /tracks HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{\n    "RegEx":"fuzzstring"}\r\n
+	< HTTP/1.1 403 Forbidden\r\nDate: Mon, 09 Dec 2024 01:04:21 GMT\r\nContent-Type: application/json\r\nContent-Length: 43\r\nConnection: keep-alive\r\nx-amzn-RequestId: 51e9b6bb-f81f-44de-a7bd-f83768944b91\r\nx-amzn-ErrorType: MissingAuthenticationTokenException\r\nx-amz-apigw-id: Cf9DWF_uCYcEObQ=\r\n\r\n{"message":"Missing Authentication Token"}\n
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> POST /tracks HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nContent-Type: application/json\r\n\r\n{"RegEx":"fuzzstring"}
+	< HTTP/1.1 403 Forbidden\r\nDate: Mon, 09 Dec 2024 01:04:27 GMT\r\nContent-Type: application/json\r\nContent-Length: 43\r\nConnection: keep-alive\r\nx-amzn-RequestId: aafa1ab2-75c0-46dc-9931-88934ab5d958\r\nx-amzn-ErrorType: MissingAuthenticationTokenException\r\nx-amz-apigw-id: Cf9ESEzoCYcEhZQ=\r\n\r\n{"message":"Missing Authentication Token"}\n
+
+
+-----------------------------------------------
+Request: Get /package/{id}/cost
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> GET /package/%7Bid%7D/cost?dependency=true HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:06:09 GMT\r\nContent-Type: application/json\r\nContent-Length: 37\r\nConnection: keep-alive\r\nx-amzn-RequestId: ab413094-4b4b-4b83-b66e-b30464a63d90\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9T7GeviYcEJdA=\r\nX-Amzn-Trace-Id: Root=1-6756427f-7752ca032250b2d04e1e0bc5;Parent=7859afd4ba9b48c0;Sampled=0;Lineage=1:e5e5b96a:0\r\n\r\n{"message":"Package does not exist."}
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> GET /package/fuzzstring/cost?dependency=true HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:07:24 GMT\r\nContent-Type: application/json\r\nContent-Length: 37\r\nConnection: keep-alive\r\nx-amzn-RequestId: e8be411f-697c-4734-ab91-2a2d5ffac023\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9gBFfliYcElJA=\r\nX-Amzn-Trace-Id: Root=1-675642cc-30abd5957a09041a583ed531;Parent=238a5d900aef4338;Sampled=0;Lineage=1:e5e5b96a:0\r\n\r\n{"message":"Package does not exist."}
+
+
+	+++ Combination 3 +++:
+	Request sequence: 
+	> GET /package/%7Bid%7D/cost HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:07:24 GMT\r\nContent-Type: application/json\r\nContent-Length: 37\r\nConnection: keep-alive\r\nx-amzn-RequestId: a0378849-9ad5-40e5-aa5f-919b3ff16671\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9gEFWniYcEeQA=\r\nX-Amzn-Trace-Id: Root=1-675642cc-6723355a344f58c418ecbcae;Parent=6f266b0d6c23fff1;Sampled=0;Lineage=1:e5e5b96a:0\r\n\r\n{"message":"Package does not exist."}
+
+
+	+++ Combination 4 +++:
+	Request sequence: 
+	> GET /package/fuzzstring/cost HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:08:13 GMT\r\nContent-Type: application/json\r\nContent-Length: 37\r\nConnection: keep-alive\r\nx-amzn-RequestId: f39c0260-9b2a-4d0f-984f-4381716d55c5\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9npGsXiYcEQRg=\r\nX-Amzn-Trace-Id: Root=1-675642fd-629dc3ef3bff58dc7a5eb31b;Parent=11970a9db0403bd5;Sampled=0;Lineage=1:e5e5b96a:0\r\n\r\n{"message":"Package does not exist."}
+
+
+-----------------------------------------------
+Request: Get /package/{id}
+Number of blocked dependent requests: 0
+
+	+++ Combination 1 +++:
+	Request sequence: 
+	> GET /package/%7Bid%7D HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:08:14 GMT\r\nContent-Type: application/json\r\nContent-Length: 32\r\nConnection: keep-alive\r\nx-amzn-RequestId: 980c8b2d-75bb-4cf2-b774-6f6c4536ec6d\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9nuGLhiYcERfA=\r\nX-Amzn-Trace-Id: Root=1-675642fd-6bedd3d940d964597e69b6ec;Parent=2076f6be6839147b;Sampled=0;Lineage=1:c60e962e:0\r\n\r\n{"message":"Package not found."}
+
+
+	+++ Combination 2 +++:
+	Request sequence: 
+	> GET /package/%7Bid%7D HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:09:19 GMT\r\nContent-Type: application/json\r\nContent-Length: 32\r\nConnection: keep-alive\r\nx-amzn-RequestId: b91d427e-748e-4716-b002-a0e2d6fa3491\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9x9FJJCYcEMcg=\r\nX-Amzn-Trace-Id: Root=1-6756433f-3798adae1b1f875b2eb2701a;Parent=7c6f0c92f1ef888c;Sampled=0;Lineage=1:c60e962e:0\r\n\r\n{"message":"Package not found."}
+
+
+	+++ Combination 3 +++:
+	Request sequence: 
+	> GET /package/fuzzstring HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:09:19 GMT\r\nContent-Type: application/json\r\nContent-Length: 32\r\nConnection: keep-alive\r\nx-amzn-RequestId: ad4766c5-1122-4e91-8b35-92a5f93efed4\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9yCEjGiYcEfeQ=\r\nX-Amzn-Trace-Id: Root=1-6756433f-17c1451376d080a0065415f9;Parent=57a08436c032cfeb;Sampled=0;Lineage=1:c60e962e:0\r\n\r\n{"message":"Package not found."}
+
+
+	+++ Combination 4 +++:
+	Request sequence: 
+	> GET /package/fuzzstring HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: fuzzstring\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:09:20 GMT\r\nContent-Type: application/json\r\nContent-Length: 32\r\nConnection: keep-alive\r\nx-amzn-RequestId: bf324e25-bb51-4847-b6ca-74898ac78fe8\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9yFFD-iYcEDXQ=\r\nX-Amzn-Trace-Id: Root=1-67564340-61717d5237d392f9769c6972;Parent=14acf7d93428a788;Sampled=0;Lineage=1:c60e962e:0\r\n\r\n{"message":"Package not found."}
+
+
+	+++ Combination 5 +++:
+	Request sequence: 
+	> GET /package/%7Bid%7D HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c\r\n\r\n
+	< HTTP/1.1 404 Not Found\r\nDate: Mon, 09 Dec 2024 01:09:20 GMT\r\nContent-Type: application/json\r\nContent-Length: 32\r\nConnection: keep-alive\r\nx-amzn-RequestId: d4fecc0b-74d9-4f9b-af2c-71f0dabdf21b\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf9yKFHwCYcEUyQ=\r\nX-Amzn-Trace-Id: Root=1-67564340-47fdd13a6b51146f4ffaef79;Parent=7e079cde814b5d9a;Sampled=0;Lineage=1:c60e962e:0\r\n\r\n{"message":"Package not found."}
+
+

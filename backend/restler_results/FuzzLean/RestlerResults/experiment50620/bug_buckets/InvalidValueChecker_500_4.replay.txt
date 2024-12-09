@@ -1,0 +1,21 @@
+################################################################################
+ InvalidValueChecker_500
+
+ Hash: InvalidValueChecker_500_8325db0ff290cd2fdb455c140b995fb360b1cdb6
+
+ To attempt to reproduce this bug using restler, run restler with the command
+ line option of --replay_log <path_to_this_log>.
+ If an authentication token is required, you must also specify the token_refresh_cmd.
+
+ This log may contain specific values for IDs or names that were generated
+ during fuzzing, using the fuzzing dictionary. Such names will be re-played
+ without modification. You must update the replay log manually with any changes
+ required to execute the requests in your environment (for example, replacing
+ pre-created account, subscription, or other resource IDs, as needed).
+################################################################################
+
+-> POST /package/byRegEx HTTP/1.1\r\nAccept: application/json\r\nHost: dev.teamfivepackages.com\r\nX-Authorization: MvB5}i5BA\tS\n\r\nContent-Type: application/json\r\n\r\n{\n    "RegEx":"fuzzstring"}\r\n
+! producer_timing_delay 0
+! max_async_wait_time 20
+PREVIOUS RESPONSE: 'HTTP/1.1 500 Internal Server Error\r\nDate: Mon, 09 Dec 2024 01:02:24 GMT\r\nContent-Type: application/json\r\nContent-Length: 61\r\nConnection: keep-alive\r\nx-amzn-RequestId: edef14ae-3b06-4e3d-860d-63f3cb0a00dd\r\nAccess-Control-Allow-Origin: *\r\nx-amz-apigw-id: Cf8xLGiWCYcEX4Q=\r\nX-Amzn-Trace-Id: Root=1-675641a0-0f04f457634146f608b7e9fc;Parent=21083353900dd3c7;Sampled=0;Lineage=1:6685a065:0\r\n\r\n{"message":"An error occurred while processing the request."}'
+
